@@ -9,8 +9,8 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "markquote" && tab?.id) {
+function triggerCopy(tab: chrome.tabs.Tab) {
+  if (tab.id) {
     chrome.scripting.executeScript(
       {
         target: { tabId: tab.id },
@@ -23,6 +23,16 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       }
     );
   }
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "markquote" && tab) {
+    triggerCopy(tab);
+  }
+});
+
+chrome.action.onClicked.addListener((tab) => {
+  triggerCopy(tab);
 });
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
