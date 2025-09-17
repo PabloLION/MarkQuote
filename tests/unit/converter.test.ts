@@ -20,4 +20,10 @@ describe('convertHtmlToMarkdown', () => {
 *   Second item`;
     expect(convertHtmlToMarkdown(html)).toBe(expectedMarkdown);
   });
+
+  it('should convert an image tag', () => {
+    const html = '<img src="https://example.com/image.png" alt="An example image">';
+    const expectedMarkdown = '![An example image](https://example.com/image.png)';
+    expect(convertHtmlToMarkdown(html)).toBe(expectedMarkdown);
+  });
 });
