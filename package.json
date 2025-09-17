@@ -12,7 +12,8 @@
     "build:background": "tsc src/background.ts --outDir dist",
     "build:selection": "tsc src/selection.ts --outDir dist",
     "build:offscreen": "tsc src/offscreen.ts --outDir dist",
-    "build": "pnpm build:content && pnpm build:background && pnpm build:selection && pnpm build:offscreen"
+    "build:settings": "tsc src/settings.ts --outDir dist",
+    "build": "pnpm build:content && pnpm build:background && pnpm build:selection && pnpm build:offscreen && pnpm build:settings"
   },
   "keywords": [],
   "author": "",
