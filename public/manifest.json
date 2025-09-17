@@ -3,7 +3,10 @@
   "name": "MarkQuote",
   "version": "1.0.0",
   "description": "A Chrome extension to copy selected text as markdown with source link.",
-  "permissions": ["contextMenus", "activeTab"],
+  "permissions": ["contextMenus", "activeTab", "scripting", "offscreen"],
+  "background": {
+    "service_worker": "dist/background.js"
+  },
   "action": {
     "default_popup": "settings.html",
     "default_icon": "icons/icon-48.png"
