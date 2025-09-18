@@ -40,7 +40,7 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     const markdown = convertHtmlToMarkdown(request.html);
     const title = sender.tab?.title || 'Page Title';
     const url = sender.tab?.url || 'https://example.com';
-    const formatted = formatForClipboard(markdown, title, url);
+    const formatted = await formatForClipboard(markdown, title, url);
 
     await createOffscreenDocument();
     chrome.runtime.sendMessage({ type: 'copy-to-clipboard', text: formatted });
