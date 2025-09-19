@@ -21,12 +21,12 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 | Category | Technology | Purpose | Rationale |
 | :--- | :--- | :--- | :--- |
 | Language | TypeScript | Superset of JS | Provides type safety and better developer experience. |
-| Framework | **Svelte** | Settings Page UI | Chosen for its performance and developer experience for the settings page. |
-| UI Library | **shadcn-svelte** | Settings Page UI | Used selectively for specific components to speed up UI development. |
-| State Management | None | N/A | Global state is not complex enough to require a library. |
-| Build Tool | tsc | Compilation | For Epic 1, we will use the TypeScript compiler directly. Vite will be introduced in Epic 2. |
+| Framework | **Vanilla TypeScript** | All UI | The settings page and all extension logic are built with plain TypeScript and standard browser APIs. |
+| UI Library | None | N/A | No UI component libraries are currently in use. |
+| State Management | `chrome.storage` | Settings Persistence | Chrome's built-in storage is sufficient for storing user settings. |
+| Build Tool | Vite | Compilation & Bundling | `Vite` is used for the final build and by the Vitest test runner. |
 | Styling | CSS | Native browser styling | Standard CSS files will be used. |
-| Testing | Vitest | Unit & Integration | Vitest for its modern features. Automated E2E testing is deferred. |
+| Testing | Vitest / JSDOM | Unit & Integration | Vitest for its modern features, with JSDOM to simulate a browser environment. |
 
 ## Project Structure
 
@@ -34,22 +34,20 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 /
 ├── public/                  # Static assets and manifest
 │   ├── manifest.json
+│   ├── offscreen.html
+│   ├── settings.html
 │   └── icons/
-│       ├── icon-16.png
-│       ├── icon-48.png
-│       └── icon-128.png
 ├── src/                     # TypeScript source code
 │   ├── background.ts        # Background service worker for the extension
-│   ├── content.ts           # Content script injected into pages
-│   ├── core/                # Core business logic
-│   │   └── markdown.ts      # Markdown conversion logic
-│   └── settings/            # Code for the settings page
-│       ├── settings.html
-│       ├── settings.ts
-│       └── components/      # Shadcn UI components will be placed here
+│   ├── clipboard.ts         # Logic for formatting clipboard content
+│   ├── content.ts           # Initial content script (currently minimal)
+│   ├── converter.ts         # HTML to Markdown conversion logic
+│   ├── offscreen.ts         # Script for the offscreen document (clipboard access)
+│   ├── selection.ts         # Script to get the user's selection
+│   └── settings.ts          # Logic for the settings page
 ├── tests/                   # Test files
-│   ├── unit/
-│   └── integration/
+│   └── unit/
+├── .gitignore
 ├── package.json             # Project dependencies and scripts
 └── tsconfig.json            # TypeScript compiler configuration
 ```
