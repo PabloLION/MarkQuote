@@ -24,7 +24,7 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 | Framework | **Vanilla TypeScript** | All UI | The settings page and all extension logic are built with plain TypeScript and standard browser APIs. |
 | UI Library | None | N/A | No UI component libraries are currently in use. |
 | State Management | `chrome.storage` | Settings Persistence | Chrome's built-in storage is sufficient for storing user settings. |
-| Build Tool | tsc / Vite | Compilation & Testing | `tsc` is used for the final build, and Vite is used by the Vitest test runner. |
+| Build Tool | Vite | Compilation & Bundling | `Vite` is used for the final build and by the Vitest test runner. |
 | Styling | CSS | Native browser styling | Standard CSS files will be used. |
 | Testing | Vitest / JSDOM | Unit & Integration | Vitest for its modern features, with JSDOM to simulate a browser environment. |
 
