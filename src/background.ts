@@ -1,4 +1,3 @@
-import { convertHtmlToMarkdown } from './converter.js';
 import { formatForClipboard } from './clipboard.js';
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -14,7 +13,7 @@ function triggerCopy(tab: chrome.tabs.Tab) {
     chrome.scripting.executeScript(
       {
         target: { tabId: tab.id },
-        files: ['dist/selection.js'],
+        files: ['selection.js'],
       },
       () => {
         if (chrome.runtime.lastError) {
@@ -36,13 +35,17 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  if (request.html) {
-    const markdown = convertHtmlToMarkdown(request.html);
+  console.log("Background script received message:", request);
+  if (request.markdown) {
+    console.log("Received Markdown:", request.markdown);
+    const markdown = request.markdown;
     const title = sender.tab?.title || 'Page Title';
     const url = sender.tab?.url || 'https://example.com';
     const formatted = await formatForClipboard(markdown, title, url);
+    console.log("Final formatted text:", formatted);
 
     await createOffscreenDocument();
+    console.log("Sending to offscreen document for copying.");
     chrome.runtime.sendMessage({ type: 'copy-to-clipboard', text: formatted });
   }
 });
