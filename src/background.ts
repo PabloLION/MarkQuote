@@ -6,6 +6,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Copy as Markdown Quote",
     contexts: ["selection"],
   });
+
+  chrome.contextMenus.create({
+    id: "markquote-options",
+    title: "Options",
+    contexts: ["action"],
+  });
 });
 
 function triggerCopy(tab: chrome.tabs.Tab) {
@@ -27,6 +33,8 @@ function triggerCopy(tab: chrome.tabs.Tab) {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "markquote" && tab) {
     triggerCopy(tab);
+  } else if (info.menuItemId === "markquote-options") {
+    chrome.runtime.openOptionsPage();
   }
 });
 
@@ -47,6 +55,9 @@ chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     await createOffscreenDocument();
     console.log("Sending to offscreen document for copying.");
     chrome.runtime.sendMessage({ type: 'copy-to-clipboard', text: formatted });
+
+    // Send the formatted text to the popup for preview
+    chrome.runtime.sendMessage({ type: 'copied-text-preview', text: formatted });
   }
 });
 

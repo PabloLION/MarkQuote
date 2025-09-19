@@ -8,14 +8,14 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "settings.html",
+    "default_popup": "popup.html",
     "default_icon": "icon.svg"
   },
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Shift+C",
-        "mac": "Command+Shift+C"
+        "default": "Ctrl+Alt+C",
+        "mac": "Command+Alt+C"
       },
       "description": "Copy as Markdown Quote"
     }

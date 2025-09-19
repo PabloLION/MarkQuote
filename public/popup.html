@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MarkQuote</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        width: 300px;
+        padding: 10px;
+      }
+      #message {
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      #preview {
+        white-space: pre-wrap;
+        font-family: monospace;
+        background-color: #f0f0f0;
+        padding: 5px;
+        border-radius: 5px;
+        max-height: 100px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+      }
+      .button-container button {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #eee;
+        cursor: pointer;
+      }
+      .button-container button:hover {
+        background-color: #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="message"></div>
+    <div id="preview"></div>
+    <div class="button-container">
+      <button id="settings-button">Settings</button>
+      <button id="source-link-formatter-button">Source Link Formatter</button>
+      <button id="hotkeys-button">Hotkeys</button>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
