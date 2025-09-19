@@ -53,3 +53,7 @@ To set up and run the MarkQuote extension locally:
    - Enable "Developer mode" in the top right corner.
    - Click "Load unpacked".
    - Select the `dist` folder in your project directory.
+
+## Special thanks
+
+- Icon inspired by [dcurtis/markdown-mark](https://github.com/dcurtis/markdown-mark)
