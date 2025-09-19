@@ -1,20 +1,46 @@
-import { describe, it, expect } from 'vitest';
-import { formatForClipboard } from '../../src/clipboard';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { formatForClipboard } from '../../src/clipboard.js';
+
+// Mock the chrome API
+vi.stubGlobal('chrome', {
+  storage: {
+    sync: {
+      get: vi.fn(),
+    },
+  },
+});
 
 describe('formatForClipboard', () => {
-  it('should format a single line of markdown', () => {
+  beforeEach(() => {
+    // Reset mocks before each test
+    vi.clearAllMocks();
+  });
+
+  it('should use the default format when none is in storage', async () => {
     const markdown = '# Hello, World!';
     const title = 'My Page';
     const url = 'https://example.com';
     const expected = `> # Hello, World!\n> Source: [My Page](https://example.com)`;
-    expect(formatForClipboard(markdown, title, url)).toBe(expected);
+
+    // @ts-ignore
+    chrome.storage.sync.get.mockResolvedValueOnce({});
+
+    const result = await formatForClipboard(markdown, title, url);
+    expect(result).toBe(expected);
+    expect(chrome.storage.sync.get).toHaveBeenCalledWith('format');
   });
 
-  it('should format multiple lines of markdown', () => {
+  it('should use the custom format from storage when it exists', async () => {
     const markdown = 'Line 1\nLine 2';
     const title = 'Another Page';
     const url = 'https://example.org';
-    const expected = `> Line 1\n> Line 2\n> Source: [Another Page](https://example.org)`;
-    expect(formatForClipboard(markdown, title, url)).toBe(expected);
+    const customFormat = `*Source: {{title}} ({{url}})*`;
+    const expected = `> Line 1\n> Line 2\n*Source: Another Page (https://example.org)*`;
+
+    // @ts-ignore
+    chrome.storage.sync.get.mockResolvedValueOnce({ format: customFormat });
+
+    const result = await formatForClipboard(markdown, title, url);
+    expect(result).toBe(expected);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { convertHtmlToMarkdown } from '../../src/converter';
+import { convertHtmlToMarkdown } from '../../src/converter.js';
 
 describe('convertHtmlToMarkdown', () => {
   it('should convert a simple h1 tag', () => {

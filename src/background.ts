@@ -1,5 +1,5 @@
-import { convertHtmlToMarkdown } from './converter';
-import { formatForClipboard } from './clipboard';
+import { convertHtmlToMarkdown } from './converter.js';
+import { formatForClipboard } from './clipboard.js';
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
