@@ -9,7 +9,8 @@
   "scripts": {
     "test": "vitest",
     "build:popup": "tsc src/popup.ts --outDir dist",
-    "build": "vite build && pnpm build:popup"
+    "build": "vite build && pnpm build:popup",
+    "tool:gen-icons": "svg2png assets/icons/icon.svg --output=public/icons/icon-16.png --width=16 --height=16 && svg2png assets/icons/icon-32.png --width=32 --height=32 && svg2png assets/icons/icon-48.png --width=48 --height=48 && svg2png assets/icons/icon-128.png --width=128 --height=128"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,7 @@
     "@types/chrome": "^0.1.12",
     "@types/turndown": "^5.0.5",
     "jsdom": "^26.1.0",
+    "svg2png": "^4.1.1",
     "typescript": "^5.9.2",
     "vite": "^7.1.6",
     "vite-plugin-static-copy": "^3.1.2",
