@@ -26,7 +26,7 @@
     "_execute_action": {
       "suggested_key": {
         "default": "Alt+C",
-        "mac": "Option+C"
+        "mac": "Alt+C"
       },
       "description": "Copy as Markdown Quote"
     }
