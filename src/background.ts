@@ -1,4 +1,3 @@
-import { convertHtmlToMarkdown } from './converter.js';
 import { formatForClipboard } from './clipboard.js';
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -7,6 +6,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Copy as Markdown Quote",
     contexts: ["selection"],
   });
+
+  chrome.contextMenus.create({
+    id: "markquote-options",
+    title: "Options",
+    contexts: ["action"],
+  });
 });
 
 function triggerCopy(tab: chrome.tabs.Tab) {
@@ -14,7 +19,7 @@ function triggerCopy(tab: chrome.tabs.Tab) {
     chrome.scripting.executeScript(
       {
         target: { tabId: tab.id },
-        files: ['dist/selection.js'],
+        files: ['selection.js'],
       },
       () => {
         if (chrome.runtime.lastError) {
@@ -28,6 +33,8 @@ function triggerCopy(tab: chrome.tabs.Tab) {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "markquote" && tab) {
     triggerCopy(tab);
+  } else if (info.menuItemId === "markquote-options") {
+    chrome.runtime.openOptionsPage();
   }
 });
 
@@ -36,14 +43,21 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-  if (request.html) {
-    const markdown = convertHtmlToMarkdown(request.html);
+  console.log("Background script received message:", request);
+  if (request.markdown) {
+    console.log("Received Markdown:", request.markdown);
+    const markdown = request.markdown;
     const title = sender.tab?.title || 'Page Title';
     const url = sender.tab?.url || 'https://example.com';
     const formatted = await formatForClipboard(markdown, title, url);
+    console.log("Final formatted text:", formatted);
 
     await createOffscreenDocument();
+    console.log("Sending to offscreen document for copying.");
     chrome.runtime.sendMessage({ type: 'copy-to-clipboard', text: formatted });
+
+    // Send the formatted text to the popup for preview
+    chrome.runtime.sendMessage({ type: 'copied-text-preview', text: formatted });
   }
 });
 

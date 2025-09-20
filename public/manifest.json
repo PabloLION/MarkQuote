@@ -2,26 +2,40 @@
   "manifest_version": 3,
   "name": "MarkQuote",
   "version": "1.0.0",
-  "description": "A Chrome extension to copy selected text as markdown with source link.",
-  "permissions": ["contextMenus", "activeTab", "scripting", "offscreen", "storage"],
+  "description": "copy selected text as markdown with source link.",
+  "permissions": [
+    "contextMenus",
+    "activeTab",
+    "scripting",
+    "offscreen",
+    "storage",
+    "clipboardWrite"
+  ],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "settings.html",
-    "default_icon": "icon.svg"
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
   },
   "commands": {
     "_execute_action": {
       "suggested_key": {
-        "default": "Ctrl+Shift+C",
-        "mac": "Command+Shift+C"
+        "default": "Alt+C",
+        "mac": "Option+C"
       },
       "description": "Copy as Markdown Quote"
     }
   },
   "icons": {
-    "128": "icon.svg"
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
   "content_scripts": [
     {

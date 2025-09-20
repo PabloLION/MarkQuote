@@ -4,6 +4,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig({
   build: {
+    minify: false,
     rollupOptions: {
       input: {
         background: resolve(__dirname, 'src/background.ts'),
