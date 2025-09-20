@@ -2,16 +2,48 @@
 <html>
   <head>
     <title>MarkQuote Settings</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        width: 400px;
+        padding: 10px;
+      }
+      h1 {
+        font-size: 1.2em;
+      }
+      label {
+        font-weight: bold;
+      }
+      textarea {
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 10px;
+      }
+      #preview-container {
+        margin-top: 10px;
+      }
+      #preview {
+        white-space: pre-wrap;
+        font-family: monospace;
+        background-color: #f0f0f0;
+        padding: 5px;
+        border-radius: 5px;
+      }
+    </style>
   </head>
   <body>
     <h1>MarkQuote Settings</h1>
-    <form id="settings-form">
+
+    <div id="source-link-formatter">
       <label for="format-template">Source Link Format:</label>
-      <textarea id="format-template" rows="5" cols="50"></textarea>
-      <button type="submit">Save</button>
-    </form>
-    <h2>Preview</h2>
-    <pre><code></code></pre>
-    <script src="../dist/settings.js"></script>
+      <textarea id="format-template" rows="5"></textarea>
+    </div>
+
+    <div id="preview-container">
+      <label>Preview:</label>
+      <div id="preview"></div>
+    </div>
+
+    <script src="settings.js"></script>
   </body>
 </html>
