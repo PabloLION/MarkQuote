@@ -5,6 +5,15 @@ MarkQuote is a Chrome extension designed to streamline the process of referencin
 - Debug info are available in the console of the "Inspect views" of the extension in `chrome://extensions`.
 - Not minified for its small size and better readability.
 
+## Usage
+
+MarkQuote provides several ways to copy selected web content as a Markdown quote:
+
+- **Context Menu:** Select text on a webpage, right-click, and choose "Copy as Markdown Quote".
+- **Toolbar Icon:** Click the MarkQuote icon in the Chrome toolbar. This will directly copy the currently selected text.
+- **Keyboard Shortcut:** Use the configured keyboard shortcut (default: `Alt+C` on Windows/Linux, `Option+C` on Mac) to copy the selected text. Note that this shortcut will *not* open the extension's popup; it performs the copy silently.
+- **Options Page:** Right-click the MarkQuote icon in the Chrome toolbar and select "Options" to access the extension's settings.
+
 ## Architecture Overview
 
 This extension is built following the Manifest V3 architecture for Chrome Extensions, which emphasizes the use of Service Workers for background tasks and Offscreen Documents for DOM-related operations.
