@@ -11,7 +11,7 @@ MarkQuote provides several ways to copy selected web content as a Markdown quote
 
 - **Context Menu:** Select text on a webpage, right-click, and choose "Copy as Markdown Quote".
 - **Toolbar Icon:** Click the MarkQuote icon in the Chrome toolbar. This will directly copy the currently selected text.
-- **Keyboard Shortcut:** Use the configured keyboard shortcut (default: `Alt+C` on Windows/Linux, `Option+C` on Mac) to copy the selected text. Note that this shortcut will *not* open the extension's popup; it performs the copy silently.
+- **Keyboard Shortcut:** Use the configured keyboard shortcut (default: `Alt+C` on Windows/Linux, `Option+C` on Mac) to copy the selected text. Note that this shortcut will _not_ open the extension's popup; it performs the copy silently.
 - **Options Page:** Right-click the MarkQuote icon in the Chrome toolbar and select "Options" to access the extension's settings.
 
 ## Architecture Overview
@@ -65,4 +65,4 @@ To set up and run the MarkQuote extension locally:
 
 ## Special thanks
 
-- Icon inspired by [dcurtis/markdown-mark](https://github.com/dcurtis/markdown-mark)
+- Icon inspired by [dcurtis/markdown-mark](https://github.com/dcurtis/markdown-mark) and created with **Gill Sans Bold** and [Google Font to Svg Path](https://danmarshall.github.io/google-font-to-svg-path/)
