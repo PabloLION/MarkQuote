@@ -8,9 +8,9 @@
   },
   "scripts": {
     "test": "vitest",
-    "build": "pnpm build:generate-icons && vite build && pnpm build:popup",
     "build:popup": "tsc src/popup.ts --outDir dist",
-    "build:generate-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=dist/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=dist/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=dist/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=dist/icons/icon-128.png"
+    "build": "vite build && pnpm build:popup",
+    "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
   },
   "keywords": [],
   "author": "",
