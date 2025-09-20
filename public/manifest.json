@@ -23,6 +23,7 @@
       "128": "icons/icon-128.png"
     }
   },
+  "options_page": "settings.html",
   "commands": {
     "copy-as-markdown-quote": {
       "suggested_key": {
