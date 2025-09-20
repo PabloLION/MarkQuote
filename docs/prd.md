@@ -136,6 +136,7 @@ The project should include a testing suite. Unit tests should cover individual J
 
 ### Future Stories
 
+- **Story: Post-Copy Feedback Popup:** As a user, I want an optional popup to appear after a copy action, confirming the success and showing a preview of the copied content, so I have immediate feedback on the operation.
 - **Story: Per-Site Formatting Rules:** As a user, I want to define different source link formats for different websites (e.g., by domain), so that I can have tailored outputs for my most-used sources.
 - **Story: Selection-Activated Tooltip:** As a user, I want a small tooltip/button to appear near my selected text, so that I have a very fast, contextual way to trigger the copy action. (Includes a "diminishing" dismiss button).
 

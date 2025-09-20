@@ -38,8 +38,11 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  triggerCopy(tab);
+chrome.commands.onCommand.addListener((command, tab) => {
+  if (command === 'copy-as-markdown-quote') {
+    const showPopupAfterCopy = false; // Placeholder for future functionality
+    triggerCopy(tab);
+  }
 });
 
 chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
