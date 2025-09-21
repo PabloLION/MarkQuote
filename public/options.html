@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MarkQuote Options</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+        width: 600px; /* Wider frame */
+        margin: 20px auto; /* Center the page */
+        max-width: 800px; /* Prevent too wide on large screens */
+        background-color: #fff; /* Consistent background for the frame */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      textarea {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #status {
+        margin-top: 10px;
+        font-weight: bold;
+        color: green;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #333; /* Darker background for the frame in dark mode */
+          color: #eee;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+          color: #eee;
+        }
+        textarea {
+          background-color: #444;
+          border-color: #666;
+          color: #eee;
+        }
+        button {
+          background-color: #666;
+        }
+        button:hover {
+          background-color: #888;
+        }
+        #status {
+          color: #90ee90; /* Light green for status in dark mode */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MarkQuote Options</h1>
+    <p>By default, the title remains the title of the website, but you can customize per website some regex to transform the title of the markdown link.</p>
+    <p>If some URL (regex) pattern matches, the page title will go through the replacing process with the corresponding match pattern and replacement config.</p>
+    <p>For how to use the title replace feature, search "String.prototype.replace" document for more details.</p>
+
+    <div class="controls">
+      <button id="add-rule">Add</button>
+      <button id="reset-rules">Reset</button>
+      <button id="save-rules">Save</button>
+    </div>
+
+    <div class="rule-inputs">
+      <input type="text" id="url-match-pattern" placeholder="URL Match Pattern">
+      <input type="text" id="title-match-pattern" placeholder="Title Match Pattern">
+      <input type="text" id="title-replacement" placeholder="Title Replacement">
+    </div>
+
+    <div id="rules-list">
+      <!-- Dynamic rule rows will be added here -->
+    </div>
+
+    <p id="status"></p>
+
+    <script src="options.js"></script>
+  </body>
+</html>
