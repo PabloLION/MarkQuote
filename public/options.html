@@ -5,45 +5,52 @@
     <style>
       body {
         font-family: sans-serif;
+        padding: 20px;
         width: 400px;
-        padding: 10px;
       }
       h1 {
-        font-size: 1.2em;
+        color: #333;
       }
       label {
+        display: block;
+        margin-bottom: 8px;
         font-weight: bold;
       }
       textarea {
         width: 100%;
-        margin-top: 5px;
+        padding: 10px;
         margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
       }
-      #preview-container {
+      button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #status {
         margin-top: 10px;
-      }
-      #preview {
-        white-space: pre-wrap;
-        font-family: monospace;
-        background-color: #f0f0f0;
-        padding: 5px;
-        border-radius: 5px;
+        font-weight: bold;
+        color: green;
       }
     </style>
   </head>
   <body>
     <h1>MarkQuote Settings</h1>
-
-    <div id="source-link-formatter">
+    <form id="settings-form">
       <label for="format-template">Source Link Format:</label>
-      <textarea id="format-template" rows="5"></textarea>
-    </div>
-
-    <div id="preview-container">
-      <label>Preview:</label>
-      <div id="preview"></div>
-    </div>
-
+      <textarea id="format-template" rows="5" cols="50"></textarea>
+      <button type="submit">Save</button>
+      <p id="status"></p>
+    </form>
     <script src="options.js"></script>
   </body>
 </html>
