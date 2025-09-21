@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+export function initializeOptions() {
   const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement;
   const resetRulesButton = document.getElementById('reset-rules') as HTMLButtonElement;
   const saveRulesButton = document.getElementById('save-rules') as HTMLButtonElement;
@@ -88,4 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initial load
   loadRules();
-});
+}
+
+document.addEventListener('DOMContentLoaded', initializeOptions);

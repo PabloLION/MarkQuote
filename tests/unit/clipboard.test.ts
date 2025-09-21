@@ -1,19 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { formatForClipboard } from '../../src/clipboard.js';
 
-// Mock the chrome API
-vi.stubGlobal('chrome', {
-  storage: {
-    sync: {
-      get: vi.fn(),
-    },
-  },
-});
-
 describe('formatForClipboard', () => {
   beforeEach(() => {
     // Reset mocks before each test
     vi.clearAllMocks();
+    // The global chrome mock is cleared by the setup file's beforeEach
   });
 
   it('should use the default format when none is in storage', async () => {
@@ -27,7 +19,7 @@ describe('formatForClipboard', () => {
 
     const result = await formatForClipboard(markdown, title, url);
     expect(result).toBe(expected);
-    expect(chrome.storage.sync.get).toHaveBeenCalledWith('format');
+    expect(chrome.storage.sync.get).toHaveBeenCalledWith(['format', 'titleRules']);
   });
 
   it('should use the custom format from storage when it exists', async () => {
