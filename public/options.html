@@ -41,16 +41,56 @@
         font-weight: bold;
         color: green;
       }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #222;
+          color: #eee;
+        }
+        h1 {
+          color: #eee;
+        }
+        textarea {
+          background-color: #333;
+          border-color: #555;
+          color: #eee;
+        }
+        button {
+          background-color: #555;
+        }
+        button:hover {
+          background-color: #777;
+        }
+        #status {
+          color: #90ee90; /* Light green for status in dark mode */
+        }
+      }
     </style>
   </head>
   <body>
     <h1>MarkQuote Settings</h1>
-    <form id="settings-form">
-      <label for="format-template">Source Link Format:</label>
-      <textarea id="format-template" rows="5" cols="50"></textarea>
-      <button type="submit">Save</button>
-      <p id="status"></p>
-    </form>
+    <p>By default, the title remains the title of the website, but you can customize per website some regex to transform the title of the markdown link.</p>
+    <p>If some URL (regex) pattern matches, the page title will go through the replacing process with the corresponding match pattern and replacement config.</p>
+    <p>For how to use the title replace feature, search "String.prototype.replace" document for more details.</p>
+
+    <div class="controls">
+      <button id="add-rule">Add</button>
+      <button id="reset-rules">Reset</button>
+      <button id="save-rules">Save</button>
+    </div>
+
+    <div class="rule-inputs">
+      <input type="text" id="url-match-pattern" placeholder="URL Match Pattern">
+      <input type="text" id="title-match-pattern" placeholder="Title Match Pattern">
+      <input type="text" id="title-replacement" placeholder="Title Replacement">
+    </div>
+
+    <div id="rules-list">
+      <!-- Dynamic rule rows will be added here -->
+    </div>
+
+    <p id="status"></p>
+
     <script src="options.js"></script>
   </body>
 </html>
