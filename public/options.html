@@ -1,12 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>MarkQuote Settings</title>
+    <title>MarkQuote Options</title>
     <style>
       body {
         font-family: sans-serif;
         padding: 20px;
-        width: 400px;
+        width: 600px; /* Wider frame */
+        margin: 20px auto; /* Center the page */
+        max-width: 800px; /* Prevent too wide on large screens */
+        background-color: #fff; /* Consistent background for the frame */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
       h1 {
         color: #333;
@@ -44,22 +49,23 @@
 
       @media (prefers-color-scheme: dark) {
         body {
-          background-color: #222;
+          background-color: #333; /* Darker background for the frame in dark mode */
           color: #eee;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
         h1 {
           color: #eee;
         }
         textarea {
-          background-color: #333;
-          border-color: #555;
+          background-color: #444;
+          border-color: #666;
           color: #eee;
         }
         button {
-          background-color: #555;
+          background-color: #666;
         }
         button:hover {
-          background-color: #777;
+          background-color: #888;
         }
         #status {
           color: #90ee90; /* Light green for status in dark mode */
@@ -68,7 +74,7 @@
     </style>
   </head>
   <body>
-    <h1>MarkQuote Settings</h1>
+    <h1>MarkQuote Options</h1>
     <p>By default, the title remains the title of the website, but you can customize per website some regex to transform the title of the markdown link.</p>
     <p>If some URL (regex) pattern matches, the page title will go through the replacing process with the corresponding match pattern and replacement config.</p>
     <p>For how to use the title replace feature, search "String.prototype.replace" document for more details.</p>
