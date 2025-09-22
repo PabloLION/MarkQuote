@@ -37,6 +37,9 @@ devDependencies:
   vitest:
     specifier: ^3.2.4
     version: 3.2.4(jsdom@26.1.0)
+  vitest-chrome:
+    specifier: ^0.1.0
+    version: 0.1.0
 
 packages:
 
@@ -507,6 +510,13 @@ packages:
     resolution: {integrity: sha512-8kB30R7Hwqf40JPiKhVzodJs2Qc1ZJ5zuT3uzw5Hq/dhNCl3G3l83jfpdI1e20BP348+fV7VIL/+FxaXkqBmWg==}
     dependencies:
       '@types/deep-eql': 4.0.2
+    dev: true
+
+  /@types/chrome@0.0.114:
+    resolution: {integrity: sha512-i7qRr74IrxHtbnrZSKUuP5Uvd5EOKwlwJq/yp7+yTPihOXnPhNQO4Z5bqb1XTnrjdbUKEJicaVVbhcgtRijmLA==}
+    dependencies:
+      '@types/filesystem': 0.0.36
+      '@types/har-format': 1.2.16
     dev: true
 
   /@types/chrome@0.1.12:
@@ -2037,6 +2047,12 @@ packages:
       tinyglobby: 0.2.15
     optionalDependencies:
       fsevents: 2.3.3
+    dev: true
+
+  /vitest-chrome@0.1.0:
+    resolution: {integrity: sha512-Bs1uywAolbc46h2tcaETQyFMTnOHjSA85iH10Zoe8ZMEl/71nuSdxs3z+KMxVZtN88TEgWicnl5vmbDO1OhoEw==}
+    dependencies:
+      '@types/chrome': 0.0.114
     dev: true
 
   /vitest@3.2.4(jsdom@26.1.0):
