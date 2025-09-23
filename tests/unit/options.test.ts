@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import sinonChrome from 'sinon-chrome/extensions';
-import fs from 'fs';
-import path from 'path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Load the options.html content to simulate the DOM
 const html = fs.readFileSync(path.resolve(__dirname, '../../public/options.html'), 'utf8');
@@ -20,7 +20,7 @@ describe('Options Page', () => {
     disposeOptions = initializeOptions();
 
     // Clear storage before each test
-    // @ts-ignore
+    // @ts-expect-error
     await chrome.storage.sync.clear();
     vi.clearAllMocks(); // Clear any previous mock calls
 

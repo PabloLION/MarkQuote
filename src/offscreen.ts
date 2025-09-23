@@ -1,7 +1,7 @@
 chrome.runtime.onMessage.addListener((msg) => {
-  console.log("Offscreen document received message:", msg);
+  console.log('Offscreen document received message:', msg);
   if (msg.type === 'copy-to-clipboard') {
-    console.log("Attempting to copy text to clipboard:", msg.text);
+    console.log('Attempting to copy text to clipboard:', msg.text);
     const textarea = document.getElementById('clipboard-textarea') as HTMLTextAreaElement;
     textarea.value = msg.text;
     textarea.select();

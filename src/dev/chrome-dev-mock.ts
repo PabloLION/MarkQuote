@@ -59,7 +59,7 @@ function resolveStorageResult(store: StorageMap, keys: StorageKeys): StorageMap 
 
   const result: StorageMap = { ...keys };
   for (const key in keys) {
-    if (Object.prototype.hasOwnProperty.call(store, key)) {
+    if (Object.hasOwn(store, key)) {
       result[key] = store[key];
     }
   }
@@ -79,21 +79,25 @@ function configureStorageArea(storeRef: { current: StorageMap }, mode: Persisten
     return Promise.resolve(result);
   };
 
-  sinonChrome.storage.sync.get.callsFake((keys?: unknown, callback?: (items: StorageMap) => void) => {
-    if (typeof keys === 'function') {
-      return getImpl(undefined, keys as (items: StorageMap) => void);
-    }
+  sinonChrome.storage.sync.get.callsFake(
+    (keys?: unknown, callback?: (items: StorageMap) => void) => {
+      if (typeof keys === 'function') {
+        return getImpl(undefined, keys as (items: StorageMap) => void);
+      }
 
-    return getImpl(keys as StorageKeys, callback);
-  });
+      return getImpl(keys as StorageKeys, callback);
+    },
+  );
 
-  sinonChrome.storage.local.get.callsFake((keys?: unknown, callback?: (items: StorageMap) => void) => {
-    if (typeof keys === 'function') {
-      return getImpl(undefined, keys as (items: StorageMap) => void);
-    }
+  sinonChrome.storage.local.get.callsFake(
+    (keys?: unknown, callback?: (items: StorageMap) => void) => {
+      if (typeof keys === 'function') {
+        return getImpl(undefined, keys as (items: StorageMap) => void);
+      }
 
-    return getImpl(keys as StorageKeys, callback);
-  });
+      return getImpl(keys as StorageKeys, callback);
+    },
+  );
 
   const setImpl = (items: Record<string, unknown>, callback?: () => void) => {
     storeRef.current = { ...storeRef.current, ...items };
@@ -102,8 +106,12 @@ function configureStorageArea(storeRef: { current: StorageMap }, mode: Persisten
     return Promise.resolve();
   };
 
-  sinonChrome.storage.sync.set.callsFake((items: Record<string, unknown>, callback?: () => void) => setImpl(items, callback));
-  sinonChrome.storage.local.set.callsFake((items: Record<string, unknown>, callback?: () => void) => setImpl(items, callback));
+  sinonChrome.storage.sync.set.callsFake((items: Record<string, unknown>, callback?: () => void) =>
+    setImpl(items, callback),
+  );
+  sinonChrome.storage.local.set.callsFake((items: Record<string, unknown>, callback?: () => void) =>
+    setImpl(items, callback),
+  );
 
   const removeImpl = (keys: string | string[], callback?: () => void) => {
     const toRemove = Array.isArray(keys) ? keys : [keys];
@@ -115,8 +123,12 @@ function configureStorageArea(storeRef: { current: StorageMap }, mode: Persisten
     return Promise.resolve();
   };
 
-  sinonChrome.storage.sync.remove.callsFake((keys: string | string[], callback?: () => void) => removeImpl(keys, callback));
-  sinonChrome.storage.local.remove.callsFake((keys: string | string[], callback?: () => void) => removeImpl(keys, callback));
+  sinonChrome.storage.sync.remove.callsFake((keys: string | string[], callback?: () => void) =>
+    removeImpl(keys, callback),
+  );
+  sinonChrome.storage.local.remove.callsFake((keys: string | string[], callback?: () => void) =>
+    removeImpl(keys, callback),
+  );
 
   sinonChrome.storage.sync.clear.callsFake((callback?: () => void) => {
     storeRef.current = {};
@@ -161,7 +173,8 @@ export type EnsureChromeMockOptions = {
 };
 
 export function ensureChromeMock(options: EnsureChromeMockOptions = {}) {
-  const persistence: PersistenceMode = options.persistence ?? (hasLocalStorage ? 'localStorage' : 'memory');
+  const persistence: PersistenceMode =
+    options.persistence ?? (hasLocalStorage ? 'localStorage' : 'memory');
   const storeRef = { current: readPersistedStore(persistence) };
 
   sinonChrome.reset();
@@ -177,12 +190,27 @@ export function ensureChromeMock(options: EnsureChromeMockOptions = {}) {
     },
   });
 
-  (globalThis as any).chrome = sinonChrome;
+  type GlobalWithChrome = typeof globalThis & { chrome: typeof sinonChrome };
+  (globalThis as GlobalWithChrome).chrome = sinonChrome;
 
   if (hasWindow) {
-    (window as any).__MARKQUOTE_DEV__ = {
+    type DevHelpers = {
+      emitMessage: (payload: unknown) => void;
+      clearStorage: () => void;
+      readonly store: StorageMap;
+    };
+
+    type WindowWithDev = Window & { __MARKQUOTE_DEV__: DevHelpers };
+
+    const windowWithDev = window as WindowWithDev;
+
+    windowWithDev.__MARKQUOTE_DEV__ = {
       emitMessage(payload: unknown) {
-        sinonChrome.runtime.onMessage.dispatch(payload, {} as chrome.runtime.MessageSender, () => {});
+        sinonChrome.runtime.onMessage.dispatch(
+          payload,
+          {} as chrome.runtime.MessageSender,
+          () => {},
+        );
       },
       clearStorage() {
         storeRef.current = {};

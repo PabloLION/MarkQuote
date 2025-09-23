@@ -8,13 +8,28 @@ export function initializeOptions(): () => void {
   const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement | null;
   const resetRulesButton = document.getElementById('reset-rules') as HTMLButtonElement | null;
   const saveRulesButton = document.getElementById('save-rules') as HTMLButtonElement | null;
-  const urlMatchPatternInput = document.getElementById('url-match-pattern') as HTMLInputElement | null;
-  const titleMatchPatternInput = document.getElementById('title-match-pattern') as HTMLInputElement | null;
-  const titleReplacementInput = document.getElementById('title-replacement') as HTMLInputElement | null;
+  const urlMatchPatternInput = document.getElementById(
+    'url-match-pattern',
+  ) as HTMLInputElement | null;
+  const titleMatchPatternInput = document.getElementById(
+    'title-match-pattern',
+  ) as HTMLInputElement | null;
+  const titleReplacementInput = document.getElementById(
+    'title-replacement',
+  ) as HTMLInputElement | null;
   const rulesListDiv = document.getElementById('rules-list') as HTMLDivElement | null;
   const statusParagraph = document.getElementById('status') as HTMLParagraphElement | null;
 
-  if (!addRuleButton || !resetRulesButton || !saveRulesButton || !urlMatchPatternInput || !titleMatchPatternInput || !titleReplacementInput || !rulesListDiv || !statusParagraph) {
+  if (
+    !addRuleButton ||
+    !resetRulesButton ||
+    !saveRulesButton ||
+    !urlMatchPatternInput ||
+    !titleMatchPatternInput ||
+    !titleReplacementInput ||
+    !rulesListDiv ||
+    !statusParagraph
+  ) {
     console.warn('Options UI is missing expected elements; aborting initialization.');
     return () => {};
   }
@@ -72,15 +87,19 @@ export function initializeOptions(): () => void {
       rulesListDiv.appendChild(ruleDiv);
     });
 
-    rulesListDiv.querySelectorAll('.remove-rule').forEach(button => {
-      button.addEventListener('click', (event) => {
-        const index = (event.target as HTMLElement).dataset.index;
-        if (index !== undefined) {
-          rules.splice(parseInt(index), 1);
-          renderRules();
-          void saveRules();
-        }
-      }, { signal });
+    rulesListDiv.querySelectorAll('.remove-rule').forEach((button) => {
+      button.addEventListener(
+        'click',
+        (event) => {
+          const index = (event.target as HTMLElement).dataset.index;
+          if (index !== undefined) {
+            rules.splice(parseInt(index, 10), 1);
+            renderRules();
+            void saveRules();
+          }
+        },
+        { signal },
+      );
     });
   }
 
@@ -95,29 +114,41 @@ export function initializeOptions(): () => void {
     clearStatusAfterDelay();
   }
 
-  addRuleButton.addEventListener('click', () => {
-    const newRule: Rule = {
-      urlMatch: urlMatchPatternInput.value,
-      titleMatch: titleMatchPatternInput.value,
-      titleReplace: titleReplacementInput.value,
-    };
-    rules.push(newRule);
-    renderRules();
-    void saveRules();
-    urlMatchPatternInput.value = '';
-    titleMatchPatternInput.value = '';
-    titleReplacementInput.value = '';
-  }, { signal });
+  addRuleButton.addEventListener(
+    'click',
+    () => {
+      const newRule: Rule = {
+        urlMatch: urlMatchPatternInput.value,
+        titleMatch: titleMatchPatternInput.value,
+        titleReplace: titleReplacementInput.value,
+      };
+      rules.push(newRule);
+      renderRules();
+      void saveRules();
+      urlMatchPatternInput.value = '';
+      titleMatchPatternInput.value = '';
+      titleReplacementInput.value = '';
+    },
+    { signal },
+  );
 
-  resetRulesButton.addEventListener('click', () => {
-    rules = [];
-    renderRules();
-    void saveRules();
-  }, { signal });
+  resetRulesButton.addEventListener(
+    'click',
+    () => {
+      rules = [];
+      renderRules();
+      void saveRules();
+    },
+    { signal },
+  );
 
-  saveRulesButton.addEventListener('click', () => {
-    void saveRules();
-  }, { signal });
+  saveRulesButton.addEventListener(
+    'click',
+    () => {
+      void saveRules();
+    },
+    { signal },
+  );
 
   void loadRules();
 

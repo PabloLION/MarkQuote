@@ -1,7 +1,7 @@
+import type { initializeOptions as InitializeOptions } from '../options';
 import { ensureChromeMock } from './chrome-dev-mock';
 import { mountDevNav } from './dev-nav';
 import { injectPublicPageMarkup } from './load-static-page';
-import type { initializeOptions as InitializeOptions } from '../options';
 
 ensureChromeMock();
 mountDevNav('options');
@@ -22,7 +22,9 @@ async function mountOptions() {
   mountPoint.innerHTML = '';
   cleanupMarkup = await injectPublicPageMarkup(optionsMarkupUrl, mountPoint);
 
-  const { initializeOptions } = await import('../options') as { initializeOptions: typeof InitializeOptions };
+  const { initializeOptions } = (await import('../options')) as {
+    initializeOptions: typeof InitializeOptions;
+  };
   disposeOptions?.();
   disposeOptions = initializeOptions();
 }

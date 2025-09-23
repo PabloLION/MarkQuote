@@ -1,7 +1,7 @@
+import type { initializePopup as InitializePopup } from '../popup';
 import { ensureChromeMock } from './chrome-dev-mock';
 import { mountDevNav } from './dev-nav';
 import { injectPublicPageMarkup } from './load-static-page';
-import type { initializePopup as InitializePopup } from '../popup';
 
 ensureChromeMock();
 mountDevNav('popup');
@@ -22,7 +22,9 @@ async function mountPopup() {
   mountPoint.innerHTML = '';
   cleanupMarkup = await injectPublicPageMarkup(popupMarkupUrl, mountPoint);
 
-  const { initializePopup } = await import('../popup') as { initializePopup: typeof InitializePopup };
+  const { initializePopup } = (await import('../popup')) as {
+    initializePopup: typeof InitializePopup;
+  };
   disposePopup?.();
   disposePopup = initializePopup();
 }

@@ -1,4 +1,7 @@
-export async function injectPublicPageMarkup(path: string | URL, mount: HTMLElement): Promise<() => void> {
+export async function injectPublicPageMarkup(
+  path: string | URL,
+  mount: HTMLElement,
+): Promise<() => void> {
   const response = await fetch(path);
 
   if (!response.ok) {
