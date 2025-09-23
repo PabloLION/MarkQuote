@@ -11,11 +11,17 @@ type ViteHotModule<TModule> = {
 ensureChromeMock();
 mountDevNav('popup');
 
-const mountPoint = document.getElementById('dev-root');
+function requireDevRoot(): HTMLElement {
+  const element = document.getElementById('dev-root');
 
-if (!(mountPoint instanceof HTMLElement)) {
-  throw new Error('Unable to find #dev-root for popup dev preview.');
+  if (!(element instanceof HTMLElement)) {
+    throw new Error('Unable to find #dev-root for popup dev preview.');
+  }
+
+  return element;
 }
+
+const mountPoint = requireDevRoot();
 
 let cleanupMarkup: (() => void) | undefined;
 let disposePopup: (() => void) | undefined;
