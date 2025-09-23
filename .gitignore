@@ -1,6 +1,7 @@
 .DS_Store
 /.ignored
 /.gemini-clipboard
+/test-results
 
 # Logs
 logs

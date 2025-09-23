@@ -5,7 +5,7 @@ export function convertHtmlToMarkdown(html: string): string {
 
   turndownService.addRule('image', {
     filter: 'img',
-    replacement: function (content, node) {
+    replacement: (_content, node) => {
       const img = node as HTMLImageElement;
       const alt = img.alt || '';
       const src = img.src || '';

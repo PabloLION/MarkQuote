@@ -8,17 +8,26 @@
   },
   "scripts": {
     "test": "vitest",
+    "test:e2e": "pnpm exec playwright test",
+    "dev": "vite",
     "build": "vite build",
-    "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
+    "check": "biome check --write --unsafe",
+    "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png",
+    "dev:playwright": "node scripts/dev/playwright-dev.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@playwright/test": "^1.55.0",
     "@types/chrome": "^0.1.12",
+    "@types/sinon-chrome": "^2.2.16",
     "@types/turndown": "^5.0.5",
     "jsdom": "^26.1.0",
+    "playwright": "^1.55.0",
+    "sinon-chrome": "^3.0.1",
     "svg2png": "^4.1.1",
     "typescript": "^5.9.2",
     "vite": "^7.1.6",

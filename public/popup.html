@@ -3,10 +3,34 @@
   <head>
     <title>MarkQuote</title>
     <style>
+      :root {
+        color-scheme: light dark;
+        --page-background: #ffffff;
+        --page-foreground: #1e1e1e;
+        --preview-background: #f0f0f0;
+        --button-background: #eeeeee;
+        --button-border: #cccccc;
+        --button-hover: #dddddd;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --page-background: #121212;
+          --page-foreground: #f5f5f5;
+          --preview-background: #1f1f1f;
+          --button-background: #2a2a2a;
+          --button-border: #3a3a3a;
+          --button-hover: #333333;
+        }
+      }
+
       body {
-        font-family: sans-serif;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         width: 300px;
         padding: 10px;
+        margin: 0;
+        background: var(--page-background);
+        color: var(--page-foreground);
       }
       #message {
         font-weight: bold;
@@ -14,8 +38,8 @@
       }
       #preview {
         white-space: pre-wrap;
-        font-family: monospace;
-        background-color: #f0f0f0;
+        font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        background-color: var(--preview-background);
         padding: 5px;
         border-radius: 5px;
         max-height: 100px;
@@ -26,13 +50,15 @@
         width: 100%;
         padding: 8px;
         margin-bottom: 5px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--button-border);
         border-radius: 4px;
-        background-color: #eee;
+        background-color: var(--button-background);
+        color: inherit;
         cursor: pointer;
+        transition: background-color 120ms ease;
       }
       .button-container button:hover {
-        background-color: #ddd;
+        background-color: var(--button-hover);
       }
     </style>
   </head>
