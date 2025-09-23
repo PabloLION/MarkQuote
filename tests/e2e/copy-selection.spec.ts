@@ -24,7 +24,10 @@ async function launchExtensionContext(): Promise<{ context: BrowserContext; back
     await rm(userDataDir, { recursive: true, force: true });
   };
 
-  const background = await context.waitForEvent('serviceworker');
+  const existing = context.serviceWorkers();
+  const background = existing.length
+    ? existing[0]
+    : await context.waitForEvent('serviceworker', { timeout: 10_000 });
 
   return { context, background, cleanup };
 }
@@ -109,18 +112,20 @@ test('copies highlighted text into the popup preview', async () => {
     selection.addRange(range);
   });
 
-  const tabId = await background.evaluate(({ url }) => {
+  await userPage.bringToFront();
+
+  const tabId = await background.evaluate(() => {
     return new Promise<number>((resolve, reject) => {
-      chrome.tabs.query({ url }, (tabs) => {
+      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
         const [tab] = tabs;
         if (!tab?.id) {
-          reject(new Error(`No tab found for ${url}`));
+          reject(new Error('No active tab found for injection'));
         } else {
           resolve(tab.id);
         }
       });
     });
-  }, { url: fixtureUrl });
+  });
 
   await background.evaluate(({ tabId }) => {
     return new Promise<void>((resolve, reject) => {
