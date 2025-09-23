@@ -1,5 +1,5 @@
 import './polyfills';
-import sinonChrome from 'sinon-chrome/extensions';
+import sinonChrome from 'sinon-chrome/extensions/index.js';
 
 const STORAGE_KEY = 'markquote-dev-storage';
 
@@ -10,6 +10,18 @@ type StorageKeys = string | string[] | Record<string, unknown> | undefined;
 type MaybeCallback<T> = ((value: T) => void) | undefined;
 
 type PersistenceMode = 'localStorage' | 'memory';
+
+type DevHelpers = {
+  emitMessage: (payload: unknown) => void;
+  clearStorage: () => void;
+  readonly store: StorageMap;
+};
+
+declare global {
+  interface Window {
+    __MARKQUOTE_DEV__?: DevHelpers;
+  }
+}
 
 const hasWindow = typeof window !== 'undefined';
 const hasLocalStorage = hasWindow && 'localStorage' in window;
@@ -194,17 +206,7 @@ export function ensureChromeMock(options: EnsureChromeMockOptions = {}) {
   (globalThis as GlobalWithChrome).chrome = sinonChrome;
 
   if (hasWindow) {
-    type DevHelpers = {
-      emitMessage: (payload: unknown) => void;
-      clearStorage: () => void;
-      readonly store: StorageMap;
-    };
-
-    type WindowWithDev = Window & { __MARKQUOTE_DEV__: DevHelpers };
-
-    const windowWithDev = window as WindowWithDev;
-
-    windowWithDev.__MARKQUOTE_DEV__ = {
+    window.__MARKQUOTE_DEV__ = {
       emitMessage(payload: unknown) {
         sinonChrome.runtime.onMessage.dispatch(
           payload,
