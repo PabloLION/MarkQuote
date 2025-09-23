@@ -11,9 +11,9 @@ type ViteHotModule<TModule> = {
 ensureChromeMock();
 mountDevNav('options');
 
-const mountPoint = document.getElementById('dev-root') as HTMLElement | null;
+const mountPoint = document.getElementById('dev-root');
 
-if (!mountPoint) {
+if (!(mountPoint instanceof HTMLElement)) {
   throw new Error('Unable to find #dev-root for options dev preview.');
 }
 

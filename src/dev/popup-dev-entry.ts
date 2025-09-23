@@ -1,14 +1,19 @@
-import type { initializePopup as InitializePopup } from '../popup';
-import { ensureChromeMock } from './chrome-dev-mock';
-import { mountDevNav } from './dev-nav';
-import { injectPublicPageMarkup } from './load-static-page';
+import type { initializePopup as InitializePopup } from '../popup.js';
+import { ensureChromeMock } from './chrome-dev-mock.js';
+import { mountDevNav } from './dev-nav.js';
+import { injectPublicPageMarkup } from './load-static-page.js';
+
+type ViteHotModule<TModule> = {
+  accept: (path: string, handler: (mod: TModule) => void) => void;
+  dispose: (handler: () => void) => void;
+};
 
 ensureChromeMock();
 mountDevNav('popup');
 
 const mountPoint = document.getElementById('dev-root');
 
-if (!mountPoint) {
+if (!(mountPoint instanceof HTMLElement)) {
   throw new Error('Unable to find #dev-root for popup dev preview.');
 }
 
@@ -22,7 +27,7 @@ async function mountPopup() {
   mountPoint.innerHTML = '';
   cleanupMarkup = await injectPublicPageMarkup(popupMarkupUrl, mountPoint);
 
-  const { initializePopup } = (await import('../popup')) as {
+  const { initializePopup } = (await import('../popup.js')) as {
     initializePopup: typeof InitializePopup;
   };
   disposePopup?.();
@@ -31,13 +36,17 @@ async function mountPopup() {
 
 void mountPopup();
 
-if (import.meta.hot) {
-  import.meta.hot.accept('../popup', async (mod) => {
+const hot = (import.meta as ImportMeta & {
+  hot?: ViteHotModule<{ initializePopup: typeof InitializePopup }>;
+}).hot;
+
+if (hot) {
+  hot.accept('../popup.js', (mod) => {
     disposePopup?.();
     disposePopup = mod.initializePopup();
   });
 
-  import.meta.hot.dispose(() => {
+  hot.dispose(() => {
     disposePopup?.();
     cleanupMarkup?.();
   });
