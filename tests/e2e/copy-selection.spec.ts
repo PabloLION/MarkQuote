@@ -13,6 +13,7 @@ async function launchExtensionContext(): Promise<{ context: BrowserContext; back
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
+    colorScheme: 'dark',
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
