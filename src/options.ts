@@ -5,34 +5,37 @@ type Rule = {
 };
 
 export function initializeOptions(): () => void {
-  const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement | null;
-  const resetRulesButton = document.getElementById('reset-rules') as HTMLButtonElement | null;
-  const saveRulesButton = document.getElementById('save-rules') as HTMLButtonElement | null;
-  const urlMatchPatternInput = document.getElementById(
-    'url-match-pattern',
-  ) as HTMLInputElement | null;
-  const titleMatchPatternInput = document.getElementById(
-    'title-match-pattern',
-  ) as HTMLInputElement | null;
-  const titleReplacementInput = document.getElementById(
-    'title-replacement',
-  ) as HTMLInputElement | null;
-  const rulesListDiv = document.getElementById('rules-list') as HTMLDivElement | null;
-  const statusParagraph = document.getElementById('status') as HTMLParagraphElement | null;
+  const addRuleButtonElement = document.getElementById('add-rule');
+  const resetRulesButtonElement = document.getElementById('reset-rules');
+  const saveRulesButtonElement = document.getElementById('save-rules');
+  const urlMatchPatternInputElement = document.getElementById('url-match-pattern');
+  const titleMatchPatternInputElement = document.getElementById('title-match-pattern');
+  const titleReplacementInputElement = document.getElementById('title-replacement');
+  const rulesListElement = document.getElementById('rules-list');
+  const statusParagraphElement = document.getElementById('status');
 
   if (
-    !addRuleButton ||
-    !resetRulesButton ||
-    !saveRulesButton ||
-    !urlMatchPatternInput ||
-    !titleMatchPatternInput ||
-    !titleReplacementInput ||
-    !rulesListDiv ||
-    !statusParagraph
+    !(addRuleButtonElement instanceof HTMLButtonElement) ||
+    !(resetRulesButtonElement instanceof HTMLButtonElement) ||
+    !(saveRulesButtonElement instanceof HTMLButtonElement) ||
+    !(urlMatchPatternInputElement instanceof HTMLInputElement) ||
+    !(titleMatchPatternInputElement instanceof HTMLInputElement) ||
+    !(titleReplacementInputElement instanceof HTMLInputElement) ||
+    !(rulesListElement instanceof HTMLDivElement) ||
+    !(statusParagraphElement instanceof HTMLParagraphElement)
   ) {
     console.warn('Options UI is missing expected elements; aborting initialization.');
     return () => {};
   }
+
+  const addRuleButton = addRuleButtonElement;
+  const resetRulesButton = resetRulesButtonElement;
+  const saveRulesButton = saveRulesButtonElement;
+  const urlMatchPatternInput = urlMatchPatternInputElement;
+  const titleMatchPatternInput = titleMatchPatternInputElement;
+  const titleReplacementInput = titleReplacementInputElement;
+  const rulesListDiv = rulesListElement;
+  const statusParagraph = statusParagraphElement;
 
   const storageArea = chrome?.storage?.sync;
 

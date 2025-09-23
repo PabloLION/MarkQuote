@@ -42,9 +42,11 @@ async function mountPopup() {
 
 void mountPopup();
 
-const hot = (import.meta as ImportMeta & {
-  hot?: ViteHotModule<{ initializePopup: typeof InitializePopup }>;
-}).hot;
+const hot = (
+  import.meta as ImportMeta & {
+    hot?: ViteHotModule<{ initializePopup: typeof InitializePopup }>;
+  }
+).hot;
 
 if (hot) {
   hot.accept('../popup.js', (mod) => {

@@ -1,11 +1,17 @@
-import { initializePopup } from './popup';
+import { initializePopup } from './popup.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const dispose = initializePopup();
 
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => {
-      dispose?.();
-    });
-  }
+  const hot = (
+    import.meta as ImportMeta & {
+      hot?: {
+        dispose: (handler: () => void) => void;
+      };
+    }
+  ).hot;
+
+  hot?.dispose(() => {
+    dispose?.();
+  });
 });

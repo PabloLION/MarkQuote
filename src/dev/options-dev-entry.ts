@@ -42,9 +42,11 @@ async function mountOptions() {
 
 void mountOptions();
 
-const hot = (import.meta as ImportMeta & {
-  hot?: ViteHotModule<{ initializeOptions: typeof InitializeOptions }>;
-}).hot;
+const hot = (
+  import.meta as ImportMeta & {
+    hot?: ViteHotModule<{ initializeOptions: typeof InitializeOptions }>;
+  }
+).hot;
 
 if (hot) {
   hot.accept('../options.js', (mod) => {

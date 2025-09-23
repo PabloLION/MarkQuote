@@ -1,23 +1,31 @@
-import { test, expect, chromium, type BrowserContext, type Page, type Worker } from '@playwright/test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  type BrowserContext,
+  chromium,
+  expect,
+  type Page,
+  test,
+  type Worker,
+} from '@playwright/test';
 
 const currentDir = fileURLToPath(new URL('.', import.meta.url));
 const repoRoot = path.resolve(currentDir, '../..');
 const extensionPath = path.resolve(repoRoot, 'dist');
 
-async function launchExtensionContext(): Promise<{ context: BrowserContext; background: Worker; cleanup: () => Promise<void> }> {
+async function launchExtensionContext(): Promise<{
+  context: BrowserContext;
+  background: Worker;
+  cleanup: () => Promise<void>;
+}> {
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'markquote-e2e-'));
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
     colorScheme: 'dark',
-    args: [
-      `--disable-extensions-except=${extensionPath}`,
-      `--load-extension=${extensionPath}`,
-    ],
+    args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
   });
 
   const cleanup = async () => {
@@ -128,24 +136,27 @@ test('copies highlighted text into the popup preview', async () => {
     });
   });
 
-  await background.evaluate(({ tabId }) => {
-    return new Promise<void>((resolve, reject) => {
-      chrome.scripting.executeScript(
-        {
-          target: { tabId },
-          files: ['selection.js'],
-        },
-        () => {
-          const error = chrome.runtime.lastError;
-          if (error) {
-            reject(new Error(error.message));
-          } else {
-            resolve();
-          }
-        },
-      );
-    });
-  }, { tabId });
+  await background.evaluate(
+    ({ tabId }) => {
+      return new Promise<void>((resolve, reject) => {
+        chrome.scripting.executeScript(
+          {
+            target: { tabId },
+            files: ['selection.js'],
+          },
+          () => {
+            const error = chrome.runtime.lastError;
+            if (error) {
+              reject(new Error(error.message));
+            } else {
+              resolve();
+            }
+          },
+        );
+      });
+    },
+    { tabId },
+  );
 
   await expect(messageLocator).toHaveText('Copied!');
 

@@ -14,20 +14,22 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-function triggerCopy(tab: chrome.tabs.Tab) {
-  if (tab.id) {
-    chrome.scripting.executeScript(
-      {
-        target: { tabId: tab.id },
-        files: ['selection.js'],
-      },
-      () => {
-        if (chrome.runtime.lastError) {
-          console.error(chrome.runtime.lastError.message);
-        }
-      },
-    );
+function triggerCopy(tab: chrome.tabs.Tab | undefined) {
+  if (!tab?.id) {
+    return;
   }
+
+  chrome.scripting.executeScript(
+    {
+      target: { tabId: tab.id },
+      files: ['selection.js'],
+    },
+    () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError.message);
+      }
+    },
+  );
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {

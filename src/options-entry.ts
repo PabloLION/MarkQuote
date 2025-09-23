@@ -1,11 +1,17 @@
-import { initializeOptions } from './options';
+import { initializeOptions } from './options.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const dispose = initializeOptions();
 
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => {
-      dispose?.();
-    });
-  }
+  const hot = (
+    import.meta as ImportMeta & {
+      hot?: {
+        dispose: (handler: () => void) => void;
+      };
+    }
+  ).hot;
+
+  hot?.dispose(() => {
+    dispose?.();
+  });
 });
