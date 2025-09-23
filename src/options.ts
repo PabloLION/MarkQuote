@@ -1,40 +1,63 @@
-export function initializeOptions() {
-  const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement;
-  const resetRulesButton = document.getElementById('reset-rules') as HTMLButtonElement;
-  const saveRulesButton = document.getElementById('save-rules') as HTMLButtonElement;
-  const urlMatchPatternInput = document.getElementById('url-match-pattern') as HTMLInputElement;
-  const titleMatchPatternInput = document.getElementById('title-match-pattern') as HTMLInputElement;
-  const titleReplacementInput = document.getElementById('title-replacement') as HTMLInputElement;
-  const rulesListDiv = document.getElementById('rules-list') as HTMLDivElement;
-  const statusParagraph = document.getElementById('status') as HTMLParagraphElement;
+type Rule = {
+  urlMatch: string;
+  titleMatch: string;
+  titleReplace: string;
+};
 
-  interface Rule {
-    urlMatch: string;
-    titleMatch: string;
-    titleReplace: string;
+export function initializeOptions(): () => void {
+  const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement | null;
+  const resetRulesButton = document.getElementById('reset-rules') as HTMLButtonElement | null;
+  const saveRulesButton = document.getElementById('save-rules') as HTMLButtonElement | null;
+  const urlMatchPatternInput = document.getElementById('url-match-pattern') as HTMLInputElement | null;
+  const titleMatchPatternInput = document.getElementById('title-match-pattern') as HTMLInputElement | null;
+  const titleReplacementInput = document.getElementById('title-replacement') as HTMLInputElement | null;
+  const rulesListDiv = document.getElementById('rules-list') as HTMLDivElement | null;
+  const statusParagraph = document.getElementById('status') as HTMLParagraphElement | null;
+
+  if (!addRuleButton || !resetRulesButton || !saveRulesButton || !urlMatchPatternInput || !titleMatchPatternInput || !titleReplacementInput || !rulesListDiv || !statusParagraph) {
+    console.warn('Options UI is missing expected elements; aborting initialization.');
+    return () => {};
+  }
+
+  const storageArea = chrome?.storage?.sync;
+
+  if (!storageArea) {
+    console.warn('chrome.storage.sync is not available; options page will not persist data.');
+    return () => {};
   }
 
   let rules: Rule[] = [];
+  const abortController = new AbortController();
+  const { signal } = abortController;
+  let statusResetTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  // Load rules from storage
-  function loadRules() {
-    chrome.storage.sync.get({ titleRules: [] }, (data) => {
-      rules = data.titleRules;
+  function clearStatusAfterDelay() {
+    if (statusResetTimeout) {
+      clearTimeout(statusResetTimeout);
+    }
+    statusResetTimeout = setTimeout(() => {
+      statusParagraph.textContent = '';
+    }, 2000);
+  }
+
+  async function loadRules() {
+    try {
+      const data = await storageArea.get({ titleRules: [] });
+      if (Array.isArray(data.titleRules)) {
+        rules = data.titleRules as Rule[];
+      } else {
+        rules = [];
+      }
       renderRules();
-    });
+    } catch (error) {
+      console.error('Failed to load rules from storage.', error);
+      rules = [];
+      renderRules();
+      statusParagraph.textContent = 'Failed to load existing rules.';
+      clearStatusAfterDelay();
+    }
   }
 
-  // Save rules to storage
-  function saveRules() {
-    chrome.storage.sync.set({ titleRules: rules }, () => {
-      statusParagraph.textContent = 'Rules Saved!';
-      setTimeout(() => {
-        statusParagraph.textContent = '';
-      }, 2000);
-    });
-  }
-
-  // Render rules in the UI
   function renderRules() {
     rulesListDiv.innerHTML = '';
     rules.forEach((rule, index) => {
@@ -49,20 +72,29 @@ export function initializeOptions() {
       rulesListDiv.appendChild(ruleDiv);
     });
 
-    // Add event listeners for remove buttons
     rulesListDiv.querySelectorAll('.remove-rule').forEach(button => {
       button.addEventListener('click', (event) => {
         const index = (event.target as HTMLElement).dataset.index;
         if (index !== undefined) {
           rules.splice(parseInt(index), 1);
           renderRules();
-          saveRules(); // Save after removing
+          void saveRules();
         }
-      });
+      }, { signal });
     });
   }
 
-  // Event Listeners
+  async function saveRules() {
+    try {
+      await storageArea.set({ titleRules: rules });
+      statusParagraph.textContent = 'Rules Saved!';
+    } catch (error) {
+      console.error('Failed to save rules to storage.', error);
+      statusParagraph.textContent = 'Failed to save rules.';
+    }
+    clearStatusAfterDelay();
+  }
+
   addRuleButton.addEventListener('click', () => {
     const newRule: Rule = {
       urlMatch: urlMatchPatternInput.value,
@@ -71,23 +103,29 @@ export function initializeOptions() {
     };
     rules.push(newRule);
     renderRules();
-    saveRules(); // Save after adding
-    // Clear inputs
+    void saveRules();
     urlMatchPatternInput.value = '';
     titleMatchPatternInput.value = '';
     titleReplacementInput.value = '';
-  });
+  }, { signal });
 
   resetRulesButton.addEventListener('click', () => {
     rules = [];
     renderRules();
-    saveRules(); // Save after resetting
-  });
+    void saveRules();
+  }, { signal });
 
-  saveRulesButton.addEventListener('click', saveRules);
+  saveRulesButton.addEventListener('click', () => {
+    void saveRules();
+  }, { signal });
 
-  // Initial load
-  loadRules();
+  void loadRules();
+
+  return () => {
+    abortController.abort();
+    rules = [];
+    if (statusResetTimeout) {
+      clearTimeout(statusResetTimeout);
+    }
+  };
 }
-
-document.addEventListener('DOMContentLoaded', initializeOptions);

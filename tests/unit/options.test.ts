@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import sinonChrome from 'sinon-chrome/extensions';
 import fs from 'fs';
 import path from 'path';
 
@@ -6,6 +7,8 @@ import path from 'path';
 const html = fs.readFileSync(path.resolve(__dirname, '../../public/options.html'), 'utf8');
 
 describe('Options Page', () => {
+  let disposeOptions: (() => void) | undefined;
+
   beforeEach(async () => {
     // Set up the DOM
     document.body.innerHTML = html;
@@ -14,12 +17,18 @@ describe('Options Page', () => {
     // We need to re-import it in each test to ensure it runs against the fresh DOM
     vi.resetModules();
     const { initializeOptions } = await import('../../src/options');
-    initializeOptions();
+    disposeOptions = initializeOptions();
 
     // Clear storage before each test
     // @ts-ignore
-    chrome.storage.sync.clear();
+    await chrome.storage.sync.clear();
     vi.clearAllMocks(); // Clear any previous mock calls
+
+    await Promise.resolve();
+  });
+
+  afterEach(() => {
+    disposeOptions?.();
   });
 
   it('should save a new title transformation rule to chrome.storage.sync', async () => {
@@ -34,27 +43,21 @@ describe('Options Page', () => {
     titleInput.value = 'Old Title';
     replacementInput.value = 'New Title';
 
-    // Spy on chrome.storage.sync.set
-    const storageSpy = vi.spyOn(chrome.storage.sync, 'set');
-
     // Simulate click
     addButton.click();
 
     // Assert that chrome.storage.sync.set was called
-    expect(storageSpy).toHaveBeenCalledTimes(1);
+    expect(sinonChrome.storage.sync.set.calledOnce).toBe(true);
 
-    // Assert that it was called with the correct rule structure and a callback function
-    expect(storageSpy).toHaveBeenCalledWith(
-      {
-        titleRules: [
-          {
-            urlMatch: 'example.com',
-            titleMatch: 'Old Title',
-            titleReplace: 'New Title',
-          },
-        ],
-      },
-      expect.any(Function) // Expect a function as the second argument
-    );
+    const [payload] = sinonChrome.storage.sync.set.firstCall.args;
+    expect(payload).toEqual({
+      titleRules: [
+        {
+          urlMatch: 'example.com',
+          titleMatch: 'Old Title',
+          titleReplace: 'New Title',
+        },
+      ],
+    });
   });
 });
