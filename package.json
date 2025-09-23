@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "vitest",
+    "test:e2e": "pnpm exec playwright test",
     "dev": "vite",
     "build": "vite build",
     "check": "biome check --write --unsafe",
@@ -20,6 +21,7 @@
   "type": "module",
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
+    "@playwright/test": "^1.55.0",
     "@types/chrome": "^0.1.12",
     "@types/sinon-chrome": "^2.2.16",
     "@types/turndown": "^5.0.5",
