@@ -28,14 +28,14 @@ MarkQuote solves this problem by providing a lightweight Chrome extension that a
 1. **FR1: Copy Selection as Markdown with Reference:** The extension must allow the user to select text on a webpage and copy it to the clipboard as a markdown blockquote with an embedded markdown link to the source.
 2. **FR2: Context Menu Integration:** The extension must add a new option to the browser's context menu (right-click menu) that triggers the copy action defined in FR1. This option should only appear when text is selected.
 3. **FR3 (Updated): Toolbar Icon Action:** The extension must have a toolbar icon that, when clicked, performs the same action as the context menu: copying the currently selected text on the page using the format defined in FR1.
-4. **FR4 (Updated): Default Keyboard Shortcut:** The extension must provide a default keyboard shortcut to trigger the copy action (FR1). The extension's help or settings documentation should guide users to Chrome's native extensions page (`chrome://extensions/shortcuts`) to customize it.
+4. **FR4 (Updated): Default Keyboard Shortcut:** The extension must provide a default keyboard shortcut to trigger the copy action (FR1). The extension's help or options documentation should guide users to Chrome's native extensions page (`chrome://extensions/shortcuts`) to customize it.
 5. **FR5: Rich Text to Markdown Conversion:** The extension must accurately convert common rich text formatting (e.g., bold, italics, lists, headers) within the selected text into their corresponding markdown syntax.
-6. **FR6: Customizable Source Link Formatting:** The extension must provide a settings page where users can define a custom template for the source link output. This template should support placeholders (e.g., `{{title}}`, `{{url}}`) and markdown formatting (e.g., italics, bold). The settings page must include interactive examples that allow the user to see the output of their custom format in real-time.
+6. **FR6: Customizable Source Link Formatting:** The extension must provide an options page where users can define a custom template for the source link output. This template should support placeholders (e.g., `{{title}}`, `{{url}}`) and markdown formatting (e.g., italics, bold). The options page must include interactive examples that allow the user to see the output of their custom format in real-time.
 
 ### Non-Functional
 
 1. **NFR1: Performance:** The extension must perform the copy operation quickly, without noticeable lag or freezing of the browser tab.
-2. **NFR2: Usability:** The user interface, including the context menu and any settings, must be intuitive and easy to use for a non-technical audience.
+2. **NFR2: Usability:** The user interface, including the context menu and any options surfaces, must be intuitive and easy to use for a non-technical audience.
 3. **NFR3: Browser Compatibility:** The extension must be compatible with the latest version of Google Chrome.
 4. **NFR4: Permissions:** The extension should request only the minimum necessary permissions to function correctly, such as `contextMenus` and `activeTab`.
 5. **NFR5: Error Handling:** The extension must gracefully handle cases where no text is selected or where webpage data (like the title) is unavailable.
@@ -51,7 +51,7 @@ The user experience should be minimalist, efficient, and nearly invisible. The e
 
 - **Context-Aware Actions:** The primary interaction is through the right-click context menu, which appears only when text is selected, providing the tool exactly when and where it is needed.
 - **Direct Action:** The toolbar icon provides a persistent, single-click entry point for the core functionality.
-- **Simple Configuration:** A dedicated settings page will allow for straightforward customization without overwhelming the user.
+- **Simple Configuration:** A dedicated options page will allow for straightforward customization without overwhelming the user.
 
 ### Core Screens and Views
 
@@ -59,7 +59,7 @@ From a product perspective, the only required view is the **Settings Page**. Thi
 
 ### Accessibility: WCAG AA
 
-The settings page and any notifications should meet WCAG 2.1 AA standards to be accessible to a wide range of users.
+The options page and any notifications should meet WCAG 2.1 AA standards to be accessible to a wide range of users.
 
 ### Branding
 
@@ -67,7 +67,7 @@ No specific branding guidelines have been provided. The UI should be clean, mode
 
 ### Target Device and Platforms: Web Responsive
 
-The extension will operate on web pages within the desktop Google Chrome browser. The settings page should be responsive and work well across all typical desktop screen sizes.
+The extension will operate on web pages within the desktop Google Chrome browser. The options page should be responsive and work well across all typical desktop screen sizes.
 
 ## Technical Assumptions
 
@@ -85,7 +85,7 @@ The project should include a testing suite. Unit tests should cover individual J
 
 ### Additional Technical Assumptions and Requests
 
-- **Technology Stack:** The extension will be built with standard, lightweight web technologies: HTML, CSS, and modern JavaScript (ES6+). No heavy frontend frameworks will be used in the core, content-script part of the extension. For the settings page UI, a lightweight library (e.g., Preact, Svelte) may be used to facilitate the development of the interactive examples.
+- **Technology Stack:** The extension will be built with standard, lightweight web technologies: HTML, CSS, and modern JavaScript (ES6+). No heavy frontend frameworks will be used in the core, content-script part of the extension. For the options page UI, a lightweight library (e.g., Preact, Svelte) may be used to facilitate the development of the interactive examples.
 - **Core APIs:** The implementation will rely on standard Chrome Extension APIs, specifically `contextMenus` and `activeTab`.
 - **Source Control:** The project will be hosted on GitHub to facilitate open-source collaboration.
 - **Deployment Target:** The extension will be packaged and deployed exclusively to the Google Chrome Web Store.
@@ -99,7 +99,7 @@ The project should include a testing suite. Unit tests should cover individual J
 ### Risk Mitigation Notes
 
 - **For Epic 1:** Development should prioritize creating a robust and well-tested rich-text-to-markdown conversion engine, as this is the highest technical risk. The project foundation should remain lean and focused on MVP requirements to avoid delays from over-engineering.
-- **For Epic 2:** The scope of the settings page (FR6) must be carefully managed to prevent unnecessary complexity. A simple, effective implementation should be favored initially. Clear state management for the different user interaction triggers is critical to prevent user confusion.
+- **For Epic 2:** The scope of the options page (FR6) must be carefully managed to prevent unnecessary complexity. A simple, effective implementation should be favored initially. Clear state management for the different user interaction triggers is critical to prevent user confusion.
 
 ## Epic Details
 
@@ -117,7 +117,7 @@ The project should include a testing suite. Unit tests should cover individual J
 
 ### Epic 2: Enhanced Interaction & Configuration (Updated)
 
-**Expanded Goal:** Building on the core functionality of Epic 1, this epic focuses on enhancing user interaction and providing powerful customization. It will introduce new ways to trigger the copy action (toolbar icon, keyboard shortcut) and implement the settings page for users to tailor the source link format to their specific needs.
+**Expanded Goal:** Building on the core functionality of Epic 1, this epic focuses on enhancing user interaction and providing powerful customization. It will introduce new ways to trigger the copy action (toolbar icon, keyboard shortcut) and implement the options page for users to tailor the source link format to their specific needs.
 
 **Stories:**
 
@@ -164,7 +164,7 @@ The MVP will be considered successful if it achieves the following targets withi
 
 ### UX Expert Prompt
 
-Please review this Product Requirements Document (PRD), specifically the 'User Interface Design Goals' section. Based on this, propose a high-level UX and UI design for the settings page, keeping in mind the principles of minimalism and browser-native aesthetics.
+Please review this Product Requirements Document (PRD), specifically the 'User Interface Design Goals' section. Based on this, propose a high-level UX and UI design for the options page, keeping in mind the principles of minimalism and browser-native aesthetics.
 
 ### Architect Prompt
 

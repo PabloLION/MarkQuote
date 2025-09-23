@@ -29,7 +29,7 @@ To establish a complete project structure with core development dependencies, a 
         *   `manifest_version: 3`
         *   `name`, `version`, `description`
         *   `permissions: ["contextMenus", "activeTab"]`
-        *   `action: { default_popup: "settings.html", default_icon: "icons/icon-48.png" }` (placeholder for settings page)
+        *   `action: { default_popup: "options.html", default_icon: "icons/icon-48.png" }` (placeholder for options page)
         *   `icons` pointing to placeholder icons.
     *   Create `src/background.ts` (empty for now).
     *   Create `src/content.ts` (empty for now).

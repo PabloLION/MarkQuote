@@ -68,7 +68,7 @@ The MVP will be considered successful if it is approved for the Chrome Web Store
 
 ### Phase 2 Features
 
-- Implement the features deferred from the MVP: a toolbar icon for full-page capture (FR3), a customizable keyboard shortcut (FR4), and a settings page for dynamic title formatting with regex (FR6).
+- Implement the features deferred from the MVP: a toolbar icon for full-page capture (FR3), a customizable keyboard shortcut (FR4), and an options page for dynamic title formatting with regex (FR6).
 
 ### Long-term Vision
 

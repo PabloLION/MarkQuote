@@ -12,7 +12,7 @@ Per the Product Requirements Document (PRD), this project will be built from scr
 
 This approach means all tooling for development, bundling (e.g., using a tool like `esbuild` or `webpack`), and configuration will need to be set up manually.
 
-The PRD allows for the potential use of a lightweight library (such as Preact or Svelte) specifically for the UI of the settings page, but this will not be used for the core extension runtime.
+The PRD allows for the potential use of a lightweight library (such as Preact or Svelte) specifically for the UI of the options page, but this will not be used for the core extension runtime.
 
 ## Frontend Tech Stack
 
@@ -21,9 +21,9 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 | Category | Technology | Purpose | Rationale |
 | :--- | :--- | :--- | :--- |
 | Language | TypeScript | Superset of JS | Provides type safety and better developer experience. |
-| Framework | **Vanilla TypeScript** | All UI | The settings page and all extension logic are built with plain TypeScript and standard browser APIs. |
+| Framework | **Vanilla TypeScript** | All UI | The options page and all extension logic are built with plain TypeScript and standard browser APIs. |
 | UI Library | None | N/A | No UI component libraries are currently in use. |
-| State Management | `chrome.storage` | Settings Persistence | Chrome's built-in storage is sufficient for storing user settings. |
+| State Management | `chrome.storage` | Options Persistence | Chrome's built-in storage is sufficient for storing user options. |
 | Build Tool | Vite | Compilation & Bundling | `Vite` is used for the final build and by the Vitest test runner. |
 | Styling | CSS | Native browser styling | Standard CSS files will be used. |
 | Testing | Vitest / JSDOM | Unit & Integration | Vitest for its modern features, with JSDOM to simulate a browser environment. |
@@ -35,7 +35,7 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 ├── public/                  # Static assets and manifest
 │   ├── manifest.json
 │   ├── offscreen.html
-│   ├── settings.html
+│   ├── options.html
 │   └── icons/
 ├── src/                     # TypeScript source code
 │   ├── background.ts        # Background service worker for the extension
@@ -44,7 +44,7 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 │   ├── converter.ts         # HTML to Markdown conversion logic
 │   ├── offscreen.ts         # Script for the offscreen document (clipboard access)
 │   ├── selection.ts         # Script to get the user's selection
-│   └── settings.ts          # Logic for the settings page
+│   └── options.ts           # Logic for the options page
 ├── tests/                   # Test files
 │   └── unit/
 ├── .gitignore
@@ -56,10 +56,10 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 
 ### Component Template
 
-Since we are not using a frontend framework, our "components" will primarily be either plain TypeScript functions that manipulate the DOM or small, self-contained TypeScript classes/functions for the settings page.
+Since we are not using a frontend framework, our "components" will primarily be either plain TypeScript functions that manipulate the DOM or small, self-contained TypeScript classes/functions for the options page.
 
 ```typescript
-// src/settings/components/MyComponent.ts
+// src/options/components/MyComponent.ts
 
 interface MyComponentProps {
   text: string;
@@ -82,7 +82,7 @@ export function createMyComponent(props: MyComponentProps): HTMLElement {
   return container;
 }
 
-// Usage example in settings.ts:
+// Usage example in options.ts:
 // import { createMyComponent } from './components/MyComponent';
 // const myElement = createMyComponent({
 //   text: 'Hello from component!',
@@ -92,7 +92,7 @@ export function createMyComponent(props: MyComponentProps): HTMLElement {
 
 ```
 
-For `shadcn-svelte` components, they will be copied into `src/settings/components/` and adapted to our vanilla TypeScript setup as necessary, following their own internal structure.
+For `shadcn-svelte` components, they will be copied into `src/options/components/` and adapted to our vanilla TypeScript setup as necessary, following their own internal structure.
 
 ### Naming Conventions
 
@@ -100,7 +100,7 @@ For `shadcn-svelte` components, they will be copied into `src/settings/component
 *   **TypeScript Functions/Variables:** `camelCase` (e.g., `createMyComponent`, `markdownConverter`).
 *   **TypeScript Classes:** `PascalCase` (e.g., `ClipboardManager`).
 *   **Interfaces/Types:** `PascalCase` (e.g., `MyComponentProps`, `MarkdownOptions`).
-*   **CSS Classes:** `kebab-case` (e.g., `my-component`, `settings-page`).
+*   **CSS Classes:** `kebab-case` (e.g., `my-component`, `options-page`).
 *   **Constants:** `SCREAMING_SNAKE_CASE` (e.g., `DEFAULT_FORMAT_STRING`).
 
 ## State Management
@@ -113,43 +113,43 @@ Since a dedicated state management library is not required, our "store structure
 src/
 ├── core/
 │   └── storage.ts # Utilities for chrome.storage interactions
-└── settings/
-    └── settings.ts # Local component state and interaction with global storage
+└── options/
+    └── options.ts # Local component state and interaction with global storage
 ```
 
 ### State Management Template
 
-Our global state will primarily reside in `chrome.storage.sync` (for user-specific settings that sync across browsers) or `chrome.storage.local` (for local-only data). Here's a template for interacting with it:
+Our global state will primarily reside in `chrome.storage.sync` (for user-specific options that sync across browsers) or `chrome.storage.local` (for local-only data). Here's a template for interacting with it:
 
 ```typescript
 // src/core/storage.ts
 
-interface AppSettings {
+interface AppOptions {
   customFormatString: string;
-  // Add other global settings here
+  // Add other global options here
 }
 
-const DEFAULT_SETTINGS: AppSettings = {
+const DEFAULT_OPTIONS: AppOptions = {
   customFormatString: '> {{text}}\n>\n> Source: [{{title}}]({{url}})',
 };
 
-export async function getSettings(): Promise<AppSettings> {
-  const storedSettings = await chrome.storage.sync.get(DEFAULT_SETTINGS);
-  return storedSettings as AppSettings;
+export async function getOptions(): Promise<AppOptions> {
+  const storedOptions = await chrome.storage.sync.get(DEFAULT_OPTIONS);
+  return storedOptions as AppOptions;
 }
 
-export async function setSettings(newSettings: Partial<AppSettings>): Promise<void> {
-  await chrome.storage.sync.set(newSettings);
+export async function setOptions(newOptions: Partial<AppOptions>): Promise<void> {
+  await chrome.storage.sync.set(newOptions);
 }
 
 // Example usage:
-// async function loadAndUseSettings() {
-//   const settings = await getSettings();
-//   console.log('Current custom format:', settings.customFormatString);
+// async function loadAndUseOptions() {
+//   const options = await getOptions();
+//   console.log('Current custom format:', options.customFormatString);
 // }
 
 // async function updateCustomFormat(format: string) {
-//   await setSettings({ customFormatString: format });
+//   await setOptions({ customFormatString: format });
 //   console.log('Custom format updated.');
 // }
 ```
@@ -194,11 +194,11 @@ As there is no external HTTP client or backend API, this section is not applicab
 
 ### Route Configuration
 
-Explicit client-side routing is not required for MarkQuote. The extension's user interface is limited to a single HTML page (`settings.html`) which serves as the configuration interface.
+Explicit client-side routing is not required for MarkQuote. The extension's user interface is limited to a single HTML page (`options.html`) which serves as the configuration interface.
 
 Access to this "route" is managed by the Chrome browser itself:
-*   Users can typically access the settings page by right-clicking the extension's toolbar icon and selecting "Options" or by navigating through Chrome's extension management page.
-*   There are no protected routes, lazy loading, or authentication guards needed, as the settings page is a local, single-page interface.
+*   Users can typically access the options page by right-clicking the extension's toolbar icon and selecting "Options" or by navigating through Chrome's extension management page.
+*   There are no protected routes, lazy loading, or authentication guards needed, as the options page is a local, single-page interface.
 
 ## Styling Guidelines
 
@@ -206,11 +206,11 @@ Access to this "route" is managed by the Chrome browser itself:
 
 For the core extension (background and content scripts), there is minimal to no UI, so explicit styling guidelines are not required. Any necessary styling will be minimal and directly applied.
 
-For the settings page, styling will be primarily handled by **`shadcn-svelte`**, which is built on **Tailwind CSS**. This means we will leverage Tailwind's utility-first classes and `shadcn-svelte`'s component styles. Custom CSS will be used only for very specific overrides or unique layouts not covered by Tailwind or `shadcn-svelte`.
+For the options page, styling will be primarily handled by **`shadcn-svelte`**, which is built on **Tailwind CSS**. This means we will leverage Tailwind's utility-first classes and `shadcn-svelte`'s component styles. Custom CSS will be used only for very specific overrides or unique layouts not covered by Tailwind or `shadcn-svelte`.
 
 ### Global Theme Variables
 
-A dedicated global theme system using CSS Custom Properties is not required. `shadcn-svelte` and Tailwind CSS provide their own theming and customization capabilities, which will be utilized for the settings page.
+A dedicated global theme system using CSS Custom Properties is not required. `shadcn-svelte` and Tailwind CSS provide their own theming and customization capabilities, which will be utilized for the options page.
 
 ## Testing Requirements
 
@@ -243,16 +243,16 @@ describe('convertHtmlToMarkdown', () => {
 });
 ```
 
-**Svelte Component Test Template (for Settings Page):**
+**Svelte Component Test Template (for Options Page):**
 
 ```typescript
-// tests/unit/settings/SettingsPage.test.ts
+// tests/unit/options/OptionsPage.test.ts
 
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import { describe, it, expect, vi } from 'vitest';
-import SettingsPage from '../../../src/settings/SettingsPage.svelte'; // Adjust path as needed
+import OptionsPage from '../../../src/options/OptionsPage.svelte'; // Adjust path as needed
 
-describe('SettingsPage', () => {
+describe('OptionsPage', () => {
   it('should render the custom format input', () => {
     render(SettingsPage);
     expect(screen.getByLabelText(/Custom Format/i)).toBeInTheDocument();
@@ -293,7 +293,7 @@ For the current scope of the MarkQuote extension, explicit environment variables
 Any configuration differences between development and production environments will primarily be managed through:
 *   **`tsconfig.json`**: For TypeScript compiler options.
 *   **`package.json` scripts**: For build commands that might include flags for different modes (e.g., `--watch` for development, `--prod` for production).
-*   **`manifest.json`**: The extension manifest itself can have different versions or settings for development vs. production.
+*   **`manifest.json`**: The extension manifest itself can have different versions or configuration options for development vs. production.
 
 Should the project expand to include external services (e.g., analytics, a backend API), then a more formal environment variable management system (e.g., using a `.env` file and a build-time replacement mechanism) would be introduced.
 
@@ -307,7 +307,7 @@ These rules are essential for maintaining code quality, preventing common errors
 *   **Immutability:** Favor immutable data structures where possible, especially when dealing with state.
 *   **Error Handling:** Implement robust error handling for all asynchronous operations and potential failure points. Log errors appropriately.
 *   **Side Effects:** Be mindful of side effects in functions. Pure functions are preferred where applicable.
-*   **DOM Manipulation:** For the settings page, minimize direct DOM manipulation outside of Svelte components. For content scripts, ensure DOM manipulation is targeted and does not interfere with the host page.
+*   **DOM Manipulation:** For the options page, minimize direct DOM manipulation outside of Svelte components. For content scripts, ensure DOM manipulation is targeted and does not interfere with the host page.
 *   **Chrome API Usage:** Always check `chrome.runtime.lastError` after Chrome API calls that might fail.
 *   **Svelte Reactivity:** Understand and correctly apply Svelte's reactivity rules (`$:`, `export let`, `bind:`) to ensure UI updates as expected.
 
@@ -324,7 +324,7 @@ These rules are essential for maintaining code quality, preventing common errors
 *   **File Naming Conventions:**
     *   `kebab-case` for filenames (e.g., `my-component.ts`, `service-worker.ts`).
 *   **Project-Specific Patterns and Utilities:**
-    *   **`chrome.storage`:** Use the `src/core/storage.ts` utilities for all global settings persistence.
+    *   **`chrome.storage`:** Use the `src/core/storage.ts` utilities for all global options persistence.
     *   **Markdown Conversion:** Utilize the integrated markdown conversion library (Story 1.2) for all HTML-to-markdown needs.
 
 ```

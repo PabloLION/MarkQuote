@@ -43,7 +43,7 @@ This document outlines the manual smoke test steps for the MarkQuote Chrome Exte
 - **Steps (Right-clicking for Options):**
   1. Right-click the MarkQuote extension icon in the Chrome toolbar.
   2. From the context menu, click "Options".
-- **Expected Result (Right-clicking for Options):** A new Chrome tab should open, displaying the MarkQuote extension's settings page (`chrome-extension://<extension-id>/settings.html`).
+- **Expected Result (Right-clicking for Options):** A new Chrome tab should open, displaying the MarkQuote extension's options page (`chrome-extension://<extension-id>/options.html`).
 
 ### 3. Verify Keyboard Shortcut
 
@@ -66,9 +66,9 @@ This document outlines the manual smoke test steps for the MarkQuote Chrome Exte
   2. Navigate to `chrome://extensions` and locate the MarkQuote extension card.
 - **Expected Result:** The icon should be the new solid MarkQuote logo (the one based on `icon-mark-solid.svg`), rendered clearly and correctly at all sizes (e.g., 16x16 in toolbar, 48x48 on extensions page).
 
-### 5. Verify Settings Page (Basic UI)
+### 5. Verify Options Page (Basic UI)
 
-- **Objective:** Ensure the basic settings page UI loads correctly.
+- **Objective:** Ensure the basic options page UI loads correctly.
 - **Steps:**
-  1. Open the settings page (via right-click on toolbar icon -> Options, as described in Test Case 2).
-- **Expected Result:** The page should display the title "MarkQuote Settings" and contain a text area labeled "Source Link Format".
+  1. Open the options page (via right-click on toolbar icon -> Options, as described in Test Case 2).
+- **Expected Result:** The page should display the title "MarkQuote Options" and contain a text area labeled "Source Link Format".
