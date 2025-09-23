@@ -1,5 +1,5 @@
-import { ensureChromeMock } from './chrome-dev-mock';
-import { mountDevNav } from './dev-nav';
+import { ensureChromeMock } from './chrome-dev-mock.js';
+import { mountDevNav } from './dev-nav.js';
 
 ensureChromeMock();
 mountDevNav('home');
