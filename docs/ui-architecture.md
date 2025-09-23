@@ -94,6 +94,13 @@ export function createMyComponent(props: MyComponentProps): HTMLElement {
 
 For `shadcn-svelte` components, they will be copied into `src/options/components/` and adapted to our vanilla TypeScript setup as necessary, following their own internal structure.
 
+### Options Page Layout
+
+- **Template Editor:** Multiline `<textarea>` bound to the markdown template (default `> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})`) with helper text explaining the three tokens (`{{TEXT}}`, `{{TITLE}}`, `{{LINK}}`) and a “Restore default template” button.
+- **Preview:** Read-only `<pre>` element showing the markdown source generated from sample text/title/link after applying the current template and rule transforms.
+- **Rules Table:** Inline-editable rows with columns for `URL Pattern`, `Title Search`, `Title Replace`, `Link Search`, `Link Replace`, plus a remove control. “Add rule” appends a blank row; validation highlights empty or invalid regex fields per column.
+- **Status Messaging:** A lightweight status paragraph communicates save success or validation errors without modal dialogs.
+
 ### Naming Conventions
 
 *   **Files:** `kebab-case` for filenames (e.g., `my-component.ts`, `service-worker.ts`).
@@ -124,33 +131,43 @@ Our global state will primarily reside in `chrome.storage.sync` (for user-specif
 ```typescript
 // src/core/storage.ts
 
+interface TitleLinkRule {
+  urlMatch: string;
+  titleMatch: string;
+  titleReplace: string;
+  linkMatch: string;
+  linkReplace: string;
+}
+
 interface AppOptions {
-  customFormatString: string;
-  // Add other global options here
+  version: number;
+  format: string;
+  rules: TitleLinkRule[];
 }
 
 const DEFAULT_OPTIONS: AppOptions = {
-  customFormatString: '> {{text}}\n>\n> Source: [{{title}}]({{url}})',
+  version: 1,
+  format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})',
+  rules: [],
 };
 
 export async function getOptions(): Promise<AppOptions> {
   const storedOptions = await chrome.storage.sync.get(DEFAULT_OPTIONS);
-  return storedOptions as AppOptions;
+  return { ...DEFAULT_OPTIONS, ...storedOptions } as AppOptions;
 }
 
 export async function setOptions(newOptions: Partial<AppOptions>): Promise<void> {
-  await chrome.storage.sync.set(newOptions);
+  await chrome.storage.sync.set({ ...newOptions, version: DEFAULT_OPTIONS.version });
 }
 
 // Example usage:
 // async function loadAndUseOptions() {
 //   const options = await getOptions();
-//   console.log('Current custom format:', options.customFormatString);
+//   console.log('Current template:', options.format);
 // }
 
-// async function updateCustomFormat(format: string) {
-//   await setOptions({ customFormatString: format });
-//   console.log('Custom format updated.');
+// async function updateTemplate(format: string) {
+//   await setOptions({ format });
 // }
 ```
 

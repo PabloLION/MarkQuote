@@ -30,7 +30,7 @@ MarkQuote solves this problem by providing a lightweight Chrome extension that a
 3. **FR3 (Updated): Toolbar Icon Action:** The extension must have a toolbar icon that, when clicked, performs the same action as the context menu: copying the currently selected text on the page using the format defined in FR1.
 4. **FR4 (Updated): Default Keyboard Shortcut:** The extension must provide a default keyboard shortcut to trigger the copy action (FR1). The extension's help or options documentation should guide users to Chrome's native extensions page (`chrome://extensions/shortcuts`) to customize it.
 5. **FR5: Rich Text to Markdown Conversion:** The extension must accurately convert common rich text formatting (e.g., bold, italics, lists, headers) within the selected text into their corresponding markdown syntax.
-6. **FR6: Customizable Source Link Formatting:** The extension must provide an options page where users can define a custom template for the source link output. This template should support placeholders (e.g., `{{title}}`, `{{url}}`) and markdown formatting (e.g., italics, bold). The options page must include interactive examples that allow the user to see the output of their custom format in real-time.
+6. **FR6: Customizable Source Link Formatting:** The extension must provide an options page where users can define a markdown template for the copied output using the tokens `{{TEXT}}`, `{{TITLE}}`, and `{{LINK}}`. Users must be able to configure regex-based search/replace rules for both title and link values (per URL match), restore the default template, and view a live preview of the resulting markdown source while editing.
 
 ### Non-Functional
 
@@ -51,11 +51,11 @@ The user experience should be minimalist, efficient, and nearly invisible. The e
 
 - **Context-Aware Actions:** The primary interaction is through the right-click context menu, which appears only when text is selected, providing the tool exactly when and where it is needed.
 - **Direct Action:** The toolbar icon provides a persistent, single-click entry point for the core functionality.
-- **Simple Configuration:** A dedicated options page will allow for straightforward customization without overwhelming the user.
+- **Simple Configuration:** A dedicated options page will let users adjust the markdown template, regex transforms, and preview the raw output without overwhelming them.
 
 ### Core Screens and Views
 
-From a product perspective, the only required view is the **Settings Page**. This page will host the configuration for the customizable source link format (FR6). All other interactions are integrated directly into the browser's existing UI (context menu, toolbar).
+From a product perspective, the only required view is the **Options Page**. This page will host the configuration for the customizable source link format (FR6). All other interactions are integrated directly into the browser's existing UI (context menu, toolbar).
 
 ### Accessibility: WCAG AA
 
@@ -85,7 +85,8 @@ The project should include a testing suite. Unit tests should cover individual J
 
 ### Additional Technical Assumptions and Requests
 
-- **Technology Stack:** The extension will be built with standard, lightweight web technologies: HTML, CSS, and modern JavaScript (ES6+). No heavy frontend frameworks will be used in the core, content-script part of the extension. For the options page UI, a lightweight library (e.g., Preact, Svelte) may be used to facilitate the development of the interactive examples.
+- **Technology Stack:** The extension will be built with standard, lightweight web technologies: HTML, CSS, and modern JavaScript (ES6+). No heavy frontend frameworks will be used in the core, content-script part of the extension. For the options page UI, a lightweight library (e.g., Preact, Svelte) may be used to facilitate interactive previews, though the current plan favors vanilla TypeScript/HTML.
+- **Data Versioning:** Persisted options data must include a schema version so future releases can migrate templates and rules without data loss.
 - **Core APIs:** The implementation will rely on standard Chrome Extension APIs, specifically `contextMenus` and `activeTab`.
 - **Source Control:** The project will be hosted on GitHub to facilitate open-source collaboration.
 - **Deployment Target:** The extension will be packaged and deployed exclusively to the Google Chrome Web Store.
@@ -99,7 +100,7 @@ The project should include a testing suite. Unit tests should cover individual J
 ### Risk Mitigation Notes
 
 - **For Epic 1:** Development should prioritize creating a robust and well-tested rich-text-to-markdown conversion engine, as this is the highest technical risk. The project foundation should remain lean and focused on MVP requirements to avoid delays from over-engineering.
-- **For Epic 2:** The scope of the options page (FR6) must be carefully managed to prevent unnecessary complexity. A simple, effective implementation should be favored initially. Clear state management for the different user interaction triggers is critical to prevent user confusion.
+- **For Epic 2:** The scope of the options page (FR6) must be carefully managed to prevent unnecessary complexity. A simple, effective implementation should be favored initially. Clear state management for template edits, preview updates, and regex rules is critical to prevent user confusion.
 
 ## Epic Details
 
