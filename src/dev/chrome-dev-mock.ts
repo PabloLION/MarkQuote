@@ -202,8 +202,10 @@ export function ensureChromeMock(options: EnsureChromeMockOptions = {}) {
     },
   });
 
-  type GlobalWithChrome = typeof globalThis & { chrome: typeof sinonChrome };
-  (globalThis as GlobalWithChrome).chrome = sinonChrome;
+  const globalWithChrome = globalThis as typeof globalThis & {
+    chrome?: typeof chrome;
+  };
+  globalWithChrome.chrome = sinonChrome as unknown as typeof chrome;
 
   if (hasWindow) {
     window.__MARKQUOTE_DEV__ = {
