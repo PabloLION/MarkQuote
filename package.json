@@ -10,6 +10,7 @@
     "test": "vitest",
     "dev": "vite",
     "build": "vite build",
+    "check": "biome check --write --unsafe",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
   },
   "keywords": [],
@@ -17,6 +18,7 @@
   "license": "ISC",
   "type": "module",
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
     "@types/chrome": "^0.1.12",
     "@types/sinon-chrome": "^2.2.16",
     "@types/turndown": "^5.0.5",
