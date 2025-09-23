@@ -1,12 +1,17 @@
-import type { initializeOptions as InitializeOptions } from '../options';
-import { ensureChromeMock } from './chrome-dev-mock';
-import { mountDevNav } from './dev-nav';
-import { injectPublicPageMarkup } from './load-static-page';
+import type { initializeOptions as InitializeOptions } from '../options.js';
+import { ensureChromeMock } from './chrome-dev-mock.js';
+import { mountDevNav } from './dev-nav.js';
+import { injectPublicPageMarkup } from './load-static-page.js';
+
+type ViteHotModule<TModule> = {
+  accept: (path: string, handler: (mod: TModule) => void) => void;
+  dispose: (handler: () => void) => void;
+};
 
 ensureChromeMock();
 mountDevNav('options');
 
-const mountPoint = document.getElementById('dev-root');
+const mountPoint = document.getElementById('dev-root') as HTMLElement | null;
 
 if (!mountPoint) {
   throw new Error('Unable to find #dev-root for options dev preview.');
@@ -22,7 +27,7 @@ async function mountOptions() {
   mountPoint.innerHTML = '';
   cleanupMarkup = await injectPublicPageMarkup(optionsMarkupUrl, mountPoint);
 
-  const { initializeOptions } = (await import('../options')) as {
+  const { initializeOptions } = (await import('../options.js')) as {
     initializeOptions: typeof InitializeOptions;
   };
   disposeOptions?.();
@@ -31,13 +36,17 @@ async function mountOptions() {
 
 void mountOptions();
 
-if (import.meta.hot) {
-  import.meta.hot.accept('../options', async (mod) => {
+const hot = (import.meta as ImportMeta & {
+  hot?: ViteHotModule<{ initializeOptions: typeof InitializeOptions }>;
+}).hot;
+
+if (hot) {
+  hot.accept('../options.js', (mod) => {
     disposeOptions?.();
     disposeOptions = mod.initializeOptions();
   });
 
-  import.meta.hot.dispose(() => {
+  hot.dispose(() => {
     disposeOptions?.();
     cleanupMarkup?.();
   });
