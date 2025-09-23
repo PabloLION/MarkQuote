@@ -4,11 +4,12 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 export default defineConfig(({ command }) => {
   if (command === 'serve') {
+    const shouldSuppressOpen = process.env.MQ_VITE_NO_OPEN === '1';
     return {
       root: '.',
       publicDir: resolve(__dirname, 'public'),
       server: {
-        open: '/dev/index.html',
+        open: shouldSuppressOpen ? false : '/dev/index.html',
         fs: {
           allow: [
             resolve(__dirname, 'dev'),
