@@ -1,19 +1,21 @@
+/// <reference types="node" />
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sinonChrome from 'sinon-chrome/extensions';
+import sinonChrome from 'sinon-chrome';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  DEFAULT_AMAZON_URL_REPLACE,
-  DEFAULT_AMAZON_URL_SEARCH,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_AMAZON_URL_PATTERN,
+  DEFAULT_AMAZON_URL_REPLACE,
+  DEFAULT_AMAZON_URL_SEARCH,
+  DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
   DEFAULT_CHATGPT_UTM_URL_PATTERN,
   DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
   DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
-  DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
-  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
   DEFAULT_TEMPLATE,
   DEFAULT_WIKI_TITLE_REPLACE,
   DEFAULT_WIKI_TITLE_SEARCH,
@@ -37,8 +39,7 @@ describe('Options Page', () => {
     vi.resetModules();
     sinonChrome.reset();
 
-    // @ts-expect-error - assign sinon chrome implementation for the module under test
-    globalThis.chrome = sinonChrome;
+    globalThis.chrome = sinonChrome as unknown as typeof chrome;
 
     sinonChrome.storage.sync.get.resolves({
       options: {
@@ -75,8 +76,12 @@ describe('Options Page', () => {
     await flushMicrotasks();
     await flushMicrotasks();
 
-    const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement | null;
-    const urlSamplePresetSelect = document.getElementById('url-sample-preset') as HTMLSelectElement | null;
+    const titleSamplePresetSelect = document.getElementById(
+      'title-sample-preset',
+    ) as HTMLSelectElement | null;
+    const urlSamplePresetSelect = document.getElementById(
+      'url-sample-preset',
+    ) as HTMLSelectElement | null;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
     const sampleOutputTitle = document.getElementById('sample-output-title');
@@ -96,10 +101,18 @@ describe('Options Page', () => {
       throw new Error('Expected default rule rows to be rendered.');
     }
 
-    const titlePatternInput = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
-    const titleSearchInput = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
-    const titleReplaceInput = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
-    const titleContinueToggle = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
+    const titlePatternInput = firstTitleRow.querySelector<HTMLInputElement>(
+      'input[data-field="urlPattern"]',
+    );
+    const titleSearchInput = firstTitleRow.querySelector<HTMLInputElement>(
+      'input[data-field="titleSearch"]',
+    );
+    const titleReplaceInput = firstTitleRow.querySelector<HTMLInputElement>(
+      'input[data-field="titleReplace"]',
+    );
+    const titleContinueToggle = firstTitleRow.querySelector<HTMLInputElement>(
+      'input[data-field="continueMatching"]',
+    );
 
     expect(titlePatternInput?.value).toBe(DEFAULT_WIKI_URL_PATTERN);
     expect(titleSearchInput?.value).toBe(DEFAULT_WIKI_TITLE_SEARCH);
@@ -117,7 +130,9 @@ describe('Options Page', () => {
       const pattern = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]')?.value;
       const search = row.querySelector<HTMLInputElement>('input[data-field="urlSearch"]')?.value;
       const replace = row.querySelector<HTMLInputElement>('input[data-field="urlReplace"]')?.value;
-      const breakAfter = row.querySelector<HTMLInputElement>('input[data-field="continueMatching"]')?.checked;
+      const breakAfter = row.querySelector<HTMLInputElement>(
+        'input[data-field="continueMatching"]',
+      )?.checked;
       return { pattern, search, replace, breakAfter };
     }
 
@@ -146,8 +161,12 @@ describe('Options Page', () => {
   it('loads the saved template and renders a preview', () => {
     const templateField = document.getElementById('format-template') as HTMLTextAreaElement | null;
     const previewElement = document.getElementById('format-preview');
-    const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement | null;
-    const urlSamplePresetSelect = document.getElementById('url-sample-preset') as HTMLSelectElement | null;
+    const titleSamplePresetSelect = document.getElementById(
+      'title-sample-preset',
+    ) as HTMLSelectElement | null;
+    const urlSamplePresetSelect = document.getElementById(
+      'url-sample-preset',
+    ) as HTMLSelectElement | null;
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
     const sampleOutputTitle = document.getElementById('sample-output-title');
@@ -170,7 +189,9 @@ describe('Options Page', () => {
     const previewElement = document.getElementById('format-preview');
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement;
-    const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement;
+    const titleSamplePresetSelect = document.getElementById(
+      'title-sample-preset',
+    ) as HTMLSelectElement;
     const urlSamplePresetSelect = document.getElementById('url-sample-preset') as HTMLSelectElement;
     const sampleOutputTitle = document.getElementById('sample-output-title');
     const sampleOutputUrl = document.getElementById('sample-output-url');
@@ -186,9 +207,8 @@ describe('Options Page', () => {
     expect(previewElement?.textContent).toContain('Dev Example Post');
     expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
 
-    const titlePresetOption = titleSamplePresetSelect.querySelector<HTMLOptionElement>(
-      'option[value="mdn"]',
-    );
+    const titlePresetOption =
+      titleSamplePresetSelect.querySelector<HTMLOptionElement>('option[value="mdn"]');
     if (!titlePresetOption) {
       throw new Error('Expected MDN title preset to exist.');
     }
@@ -235,19 +255,35 @@ describe('Options Page', () => {
       document.querySelectorAll<HTMLTableRowElement>('#title-rules-body tr'),
     );
     const titleLastRow = titleRows[titleRows.length - 1];
-    const titleUrlInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
-    const titleSearchInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
-    const titleReplaceInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
-    const titleContinueToggle = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
+    const titleUrlInput = titleLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="urlPattern"]',
+    );
+    const titleSearchInput = titleLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="titleSearch"]',
+    );
+    const titleReplaceInput = titleLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="titleReplace"]',
+    );
+    const titleContinueToggle = titleLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="continueMatching"]',
+    );
 
     const urlRows = Array.from(
       document.querySelectorAll<HTMLTableRowElement>('#url-rules-body tr'),
     );
     const urlLastRow = urlRows[urlRows.length - 1];
-    const urlRuleUrlInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
-    const urlSearchInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlSearch"]');
-    const urlReplaceInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlReplace"]');
-    const urlContinueToggle = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
+    const urlRuleUrlInput = urlLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="urlPattern"]',
+    );
+    const urlSearchInput = urlLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="urlSearch"]',
+    );
+    const urlReplaceInput = urlLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="urlReplace"]',
+    );
+    const urlContinueToggle = urlLastRow?.querySelector<HTMLInputElement>(
+      'input[data-field="continueMatching"]',
+    );
 
     const form = document.getElementById('options-form') as HTMLFormElement;
 
@@ -293,9 +329,24 @@ describe('Options Page', () => {
 
     expect(sinonChrome.storage.sync.set.calledOnce).toBe(true);
 
-    const [payload] = sinonChrome.storage.sync.set.firstCall.args as [{
-      options: {
-        version: number;
+    const [payload] = sinonChrome.storage.sync.set.firstCall.args as [
+      {
+        options: {
+          version: number;
+          format: string;
+          titleRules: Array<{
+            urlPattern: string;
+            titleSearch: string;
+            titleReplace: string;
+            continueMatching: boolean;
+          }>;
+          urlRules: Array<{
+            urlPattern: string;
+            urlSearch: string;
+            urlReplace: string;
+            continueMatching: boolean;
+          }>;
+        };
         format: string;
         titleRules: Array<{
           urlPattern: string;
@@ -309,21 +360,8 @@ describe('Options Page', () => {
           urlReplace: string;
           continueMatching: boolean;
         }>;
-      };
-      format: string;
-      titleRules: Array<{
-        urlPattern: string;
-        titleSearch: string;
-        titleReplace: string;
-        continueMatching: boolean;
-      }>;
-      urlRules: Array<{
-        urlPattern: string;
-        urlSearch: string;
-        urlReplace: string;
-        continueMatching: boolean;
-      }>;
-    }];
+      },
+    ];
 
     expect(payload.options.version).toBe(1);
     expect(payload.options.titleRules).toHaveLength(2);

@@ -11,7 +11,11 @@ interface RuleApplicationResult {
   matched: boolean;
 }
 
-function safeApplyRegex(source: string, pattern: string, replacement: string): RuleApplicationResult {
+function safeApplyRegex(
+  source: string,
+  pattern: string,
+  replacement: string,
+): RuleApplicationResult {
   try {
     const regex = new RegExp(pattern);
     const matched = regex.test(source);
@@ -105,9 +109,7 @@ function replaceToken(template: string, token: string, replacement: string): str
       return replacement;
     }
 
-    return lines
-      .map((line, index) => (index === 0 ? line : `${prefix}${line}`))
-      .join('\n');
+    return lines.map((line, index) => (index === 0 ? line : `${prefix}${line}`)).join('\n');
   });
 }
 

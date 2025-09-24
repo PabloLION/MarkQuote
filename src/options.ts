@@ -1,14 +1,14 @@
+import { applyTitleRules, applyUrlRules, formatWithOptions } from './formatting.js';
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_OPTIONS,
   DEFAULT_TEMPLATE,
   normalizeStoredOptions,
-  type UrlRule,
   type OptionsPayload,
   type TitleRule,
+  type UrlRule,
 } from './options-schema.js';
-import { applyUrlRules, applyTitleRules, formatWithOptions } from './formatting.js';
 
 const DEFAULT_PREVIEW_SAMPLE = {
   text: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor.',
@@ -64,7 +64,7 @@ function clearValidationState(container: HTMLElement): void {
   });
 }
 
-function markInvalidField(input: HTMLInputElement): void {
+function _markInvalidField(input: HTMLInputElement): void {
   input.setAttribute('aria-invalid', 'true');
 }
 
@@ -82,31 +82,41 @@ function validateRegex(pattern: string): boolean {
   }
 }
 
+function requireElement<T extends HTMLElement>(id: string): T {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new Error(`Options page is missing required element: #${id}`);
+  }
+  return element as T;
+}
+
 export function initializeOptions(): () => void {
-  const form = document.getElementById('options-form') as HTMLFormElement | null;
-  const templateField = document.getElementById('format-template') as HTMLTextAreaElement | null;
-  const restoreTemplateButton = document.getElementById('restore-template') as HTMLButtonElement | null;
-  const previewElement = document.getElementById('format-preview') as HTMLElement | null;
-  const statusElement = document.getElementById('status') as HTMLElement | null;
+  const form = requireElement<HTMLFormElement>('options-form');
+  const templateField = requireElement<HTMLTextAreaElement>('format-template');
+  const restoreTemplateButton = requireElement<HTMLButtonElement>('restore-template');
+  const previewElement = requireElement<HTMLElement>('format-preview');
+  const statusElement = requireElement<HTMLElement>('status');
 
-  const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement | null;
-  const urlSamplePresetSelect = document.getElementById('url-sample-preset') as HTMLSelectElement | null;
-  const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
-  const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
-  const sampleOutputTitle = document.getElementById('sample-output-title') as HTMLElement | null;
-  const sampleOutputUrl = document.getElementById('sample-output-url') as HTMLElement | null;
+  const titleSamplePresetSelect = requireElement<HTMLSelectElement>('title-sample-preset');
+  const urlSamplePresetSelect = requireElement<HTMLSelectElement>('url-sample-preset');
+  const sampleTitleInput = requireElement<HTMLInputElement>('sample-title');
+  const sampleUrlInput = requireElement<HTMLInputElement>('sample-url');
+  const sampleOutputTitle = requireElement<HTMLElement>('sample-output-title');
+  const sampleOutputUrl = requireElement<HTMLElement>('sample-output-url');
 
-  const titleRulesBody = document.getElementById('title-rules-body') as HTMLTableSectionElement | null;
-  const addTitleRuleButton = document.getElementById('add-title-rule') as HTMLButtonElement | null;
-  const clearTitleRulesButton = document.getElementById('clear-title-rules') as HTMLButtonElement | null;
-  const confirmClearTitleRulesButton = document.getElementById('confirm-clear-title-rules') as HTMLButtonElement | null;
-  const titleClearStatusElement = document.getElementById('title-clear-status') as HTMLElement | null;
+  const titleRulesBody = requireElement<HTMLTableSectionElement>('title-rules-body');
+  const addTitleRuleButton = requireElement<HTMLButtonElement>('add-title-rule');
+  const clearTitleRulesButton = requireElement<HTMLButtonElement>('clear-title-rules');
+  const confirmClearTitleRulesButton = requireElement<HTMLButtonElement>(
+    'confirm-clear-title-rules',
+  );
+  const titleClearStatusElement = requireElement<HTMLElement>('title-clear-status');
 
-  const urlRulesBody = document.getElementById('url-rules-body') as HTMLTableSectionElement | null;
-  const addUrlRuleButton = document.getElementById('add-url-rule') as HTMLButtonElement | null;
-  const clearUrlRulesButton = document.getElementById('clear-url-rules') as HTMLButtonElement | null;
-  const confirmClearUrlRulesButton = document.getElementById('confirm-clear-url-rules') as HTMLButtonElement | null;
-  const urlClearStatusElement = document.getElementById('url-clear-status') as HTMLElement | null;
+  const urlRulesBody = requireElement<HTMLTableSectionElement>('url-rules-body');
+  const addUrlRuleButton = requireElement<HTMLButtonElement>('add-url-rule');
+  const clearUrlRulesButton = requireElement<HTMLButtonElement>('clear-url-rules');
+  const confirmClearUrlRulesButton = requireElement<HTMLButtonElement>('confirm-clear-url-rules');
+  const urlClearStatusElement = requireElement<HTMLElement>('url-clear-status');
 
   if (
     !(form instanceof HTMLFormElement) ||
@@ -165,42 +175,42 @@ export function initializeOptions(): () => void {
       clearTimeout(statusTimeout);
     }
 
-    if (!statusElement!.textContent) {
+    if (!statusElement.textContent) {
       return;
     }
 
     statusTimeout = setTimeout(() => {
-      statusElement!.textContent = '';
-      statusElement!.removeAttribute('data-variant');
+      statusElement.textContent = '';
+      statusElement.removeAttribute('data-variant');
     }, STATUS_TIMEOUT_MS);
   }
 
   function setStatus(message: string, variant: 'success' | 'error' = 'success'): void {
-    statusElement!.textContent = message;
-    statusElement!.setAttribute('data-variant', variant);
+    statusElement.textContent = message;
+    statusElement.setAttribute('data-variant', variant);
     scheduleStatusClear();
   }
 
   function showTitleClearStatus(message: string): void {
     if (!message) {
-      titleClearStatusElement!.textContent = '';
-      titleClearStatusElement!.hidden = true;
+      titleClearStatusElement.textContent = '';
+      titleClearStatusElement.hidden = true;
       return;
     }
 
-    titleClearStatusElement!.textContent = message;
-    titleClearStatusElement!.hidden = false;
+    titleClearStatusElement.textContent = message;
+    titleClearStatusElement.hidden = false;
   }
 
   function showUrlClearStatus(message: string): void {
     if (!message) {
-      urlClearStatusElement!.textContent = '';
-      urlClearStatusElement!.hidden = true;
+      urlClearStatusElement.textContent = '';
+      urlClearStatusElement.hidden = true;
       return;
     }
 
-    urlClearStatusElement!.textContent = message;
-    urlClearStatusElement!.hidden = false;
+    urlClearStatusElement.textContent = message;
+    urlClearStatusElement.hidden = false;
   }
 
   function resetTitleClearConfirmation(): void {
@@ -209,8 +219,8 @@ export function initializeOptions(): () => void {
       titleClearTimeout = undefined;
     }
 
-    clearTitleRulesButton!.hidden = false;
-    confirmClearTitleRulesButton!.hidden = true;
+    clearTitleRulesButton.hidden = false;
+    confirmClearTitleRulesButton.hidden = true;
   }
 
   function resetUrlClearConfirmation(): void {
@@ -219,8 +229,8 @@ export function initializeOptions(): () => void {
       urlClearTimeout = undefined;
     }
 
-    clearUrlRulesButton!.hidden = false;
-    confirmClearUrlRulesButton!.hidden = true;
+    clearUrlRulesButton.hidden = false;
+    confirmClearUrlRulesButton.hidden = true;
   }
 
   function filteredTitleRules(): TitleRule[] {
@@ -241,12 +251,12 @@ export function initializeOptions(): () => void {
 
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
-      format: templateField!.value,
+      format: templateField?.value,
       titleRules,
       urlRules,
     };
 
-    previewElement!.textContent = formatWithOptions(options, {
+    previewElement.textContent = formatWithOptions(options, {
       text: DEFAULT_PREVIEW_SAMPLE.text,
       title: previewSample.title,
       url: previewSample.url,
@@ -255,8 +265,8 @@ export function initializeOptions(): () => void {
     const transformedTitle = applyTitleRules(titleRules, previewSample.title, previewSample.url);
     const transformedUrl = applyUrlRules(urlRules, previewSample.url);
 
-    sampleOutputTitle!.textContent = transformedTitle || '—';
-    sampleOutputUrl!.textContent = transformedUrl || '—';
+    sampleOutputTitle.textContent = transformedTitle || '—';
+    sampleOutputUrl.textContent = transformedUrl || '—';
   }
 
   function createInputCell(
@@ -296,7 +306,11 @@ export function initializeOptions(): () => void {
     return cell;
   }
 
-  function createToggleCell(field: string, index: number, shouldBreak: boolean): HTMLTableCellElement {
+  function createToggleCell(
+    field: string,
+    index: number,
+    shouldBreak: boolean,
+  ): HTMLTableCellElement {
     const cell = document.createElement('td');
     cell.classList.add('toggle-cell');
 
@@ -304,7 +318,7 @@ export function initializeOptions(): () => void {
 
     input.type = 'checkbox';
     input.dataset.index = String(index);
-   input.dataset.field = field;
+    input.dataset.field = field;
     input.checked = shouldBreak;
     input.setAttribute('aria-label', 'Break after match');
 
@@ -400,7 +414,9 @@ export function initializeOptions(): () => void {
           return;
         }
         event.preventDefault();
-        event.dataTransfer && (event.dataTransfer.dropEffect = 'move');
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = 'move';
+        }
       },
       { signal },
     );
@@ -446,7 +462,7 @@ export function initializeOptions(): () => void {
   }
 
   function renderTitleRules(): void {
-    titleRulesBody!.innerHTML = '';
+    titleRulesBody.innerHTML = '';
 
     draft.titleRules.forEach((rule, index) => {
       const row = document.createElement('tr');
@@ -457,15 +473,11 @@ export function initializeOptions(): () => void {
         createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
         createInputCell('titleSearch', index, rule.titleSearch, 'Title search'),
         createInputCell('titleReplace', index, rule.titleReplace, 'Title replace'),
-        createToggleCell(
-          'continueMatching',
-          index,
-          !Boolean(rule.continueMatching),
-        ),
+        createToggleCell('continueMatching', index, !rule.continueMatching),
         createRemoveCell(index, 'title'),
       );
 
-      titleRulesBody!.append(row);
+      titleRulesBody?.append(row);
       attachRowDragHandlers(row, 'title');
     });
 
@@ -475,7 +487,7 @@ export function initializeOptions(): () => void {
   }
 
   function renderUrlRules(): void {
-    urlRulesBody!.innerHTML = '';
+    urlRulesBody.innerHTML = '';
 
     draft.urlRules.forEach((rule, index) => {
       const row = document.createElement('tr');
@@ -486,15 +498,11 @@ export function initializeOptions(): () => void {
         createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
         createInputCell('urlSearch', index, rule.urlSearch, 'URL search'),
         createInputCell('urlReplace', index, rule.urlReplace, 'URL replace'),
-        createToggleCell(
-          'continueMatching',
-          index,
-          !Boolean(rule.continueMatching),
-        ),
+        createToggleCell('continueMatching', index, !rule.continueMatching),
         createRemoveCell(index, 'url'),
       );
 
-      urlRulesBody!.append(row);
+      urlRulesBody?.append(row);
       attachRowDragHandlers(row, 'url');
     });
 
@@ -512,7 +520,9 @@ export function initializeOptions(): () => void {
     });
     renderTitleRules();
 
-    const lastRowInput = titleRulesBody!.querySelector<HTMLInputElement>('tr:last-child input[data-field="urlPattern"]');
+    const lastRowInput = titleRulesBody?.querySelector<HTMLInputElement>(
+      'tr:last-child input[data-field="urlPattern"]',
+    );
     lastRowInput?.focus();
   }
 
@@ -525,7 +535,9 @@ export function initializeOptions(): () => void {
     });
     renderUrlRules();
 
-    const lastRowInput = urlRulesBody!.querySelector<HTMLInputElement>('tr:last-child input[data-field="urlPattern"]');
+    const lastRowInput = urlRulesBody?.querySelector<HTMLInputElement>(
+      'tr:last-child input[data-field="urlPattern"]',
+    );
     lastRowInput?.focus();
   }
 
@@ -582,19 +594,25 @@ export function initializeOptions(): () => void {
     let message: string | undefined;
 
     draft.titleRules.forEach((rule, index) => {
-      const row = titleRulesBody!.querySelector(`tr[data-index="${index}"]`);
+      const row = titleRulesBody?.querySelector(`tr[data-index="${index}"]`);
       if (!row) {
         return;
       }
 
       const urlInput = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
-      const titleSearchInput = row.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
-      const titleReplaceInput = row.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
+      const titleSearchInput = row.querySelector<HTMLInputElement>(
+        'input[data-field="titleSearch"]',
+      );
+      const titleReplaceInput = row.querySelector<HTMLInputElement>(
+        'input[data-field="titleReplace"]',
+      );
 
       const sanitized = sanitizeTitleRule(rule);
       draft.titleRules[index] = sanitized;
 
-      const hasRule = Boolean(sanitized.urlPattern || sanitized.titleSearch || sanitized.titleReplace);
+      const hasRule = Boolean(
+        sanitized.urlPattern || sanitized.titleSearch || sanitized.titleReplace,
+      );
       if (!hasRule) {
         return;
       }
@@ -611,7 +629,8 @@ export function initializeOptions(): () => void {
 
       if (sanitized.titleReplace && !sanitized.titleSearch) {
         valid = false;
-        message = message ?? 'Provide a title search pattern before specifying a title replacement.';
+        message =
+          message ?? 'Provide a title search pattern before specifying a title replacement.';
         titleSearchInput?.setAttribute('aria-invalid', 'true');
       }
 
@@ -632,7 +651,7 @@ export function initializeOptions(): () => void {
     let message: string | undefined;
 
     draft.urlRules.forEach((rule, index) => {
-      const row = urlRulesBody!.querySelector(`tr[data-index="${index}"]`);
+      const row = urlRulesBody?.querySelector(`tr[data-index="${index}"]`);
       if (!row) {
         return;
       }
@@ -683,7 +702,7 @@ export function initializeOptions(): () => void {
 
     return {
       version: CURRENT_OPTIONS_VERSION,
-      format: templateField!.value,
+      format: templateField?.value,
       titleRules,
       urlRules,
     };
@@ -692,13 +711,13 @@ export function initializeOptions(): () => void {
   async function saveOptions(event: SubmitEvent): Promise<void> {
     event.preventDefault();
 
-    clearValidationState(titleRulesBody!);
-    clearValidationState(urlRulesBody!);
-    templateField!.removeAttribute('aria-invalid');
+    clearValidationState(titleRulesBody);
+    clearValidationState(urlRulesBody);
+    templateField.removeAttribute('aria-invalid');
 
     const templateValidation = (() => {
-      if (!templateField!.value.trim()) {
-        templateField!.setAttribute('aria-invalid', 'true');
+      if (!templateField?.value.trim()) {
+        templateField?.setAttribute('aria-invalid', 'true');
         return { valid: false, message: 'Template cannot be empty.' } satisfies ValidationResult;
       }
       return { valid: true } satisfies ValidationResult;
@@ -749,7 +768,7 @@ export function initializeOptions(): () => void {
     if (!storageArea) {
       setStatus('Chrome storage is unavailable; using defaults.', 'error');
       draft = cloneOptions(DEFAULT_OPTIONS);
-      templateField!.value = draft.format;
+      templateField.value = draft.format;
       renderTitleRules();
       renderUrlRules();
       updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, 'wikipedia');
@@ -767,7 +786,7 @@ export function initializeOptions(): () => void {
         'rules',
       ]);
       draft = cloneOptions(normalizeStoredOptions(snapshot));
-      templateField!.value = draft.format;
+      templateField.value = draft.format;
       renderTitleRules();
       renderUrlRules();
       setStatus('Options loaded.', 'success');
@@ -776,7 +795,7 @@ export function initializeOptions(): () => void {
     } catch (error) {
       console.error('Failed to load options; fallback to defaults.', error);
       draft = cloneOptions(DEFAULT_OPTIONS);
-      templateField!.value = draft.format;
+      templateField.value = draft.format;
       renderTitleRules();
       renderUrlRules();
       setStatus('Failed to load saved options; defaults restored.', 'error');
@@ -787,32 +806,32 @@ export function initializeOptions(): () => void {
 
   function updateTitleSample(nextTitle: string, preset?: string): void {
     previewSample.title = nextTitle;
-    sampleTitleInput!.value = previewSample.title;
+    sampleTitleInput.value = previewSample.title;
     if (preset) {
-      titleSamplePresetSelect!.value = preset;
+      titleSamplePresetSelect.value = preset;
     }
     updatePreview();
   }
 
   function updateUrlSample(nextUrl: string, preset?: string): void {
     previewSample.url = nextUrl;
-    sampleUrlInput!.value = previewSample.url;
+    sampleUrlInput.value = previewSample.url;
     if (preset) {
-      urlSamplePresetSelect!.value = preset;
+      urlSamplePresetSelect.value = preset;
     }
     updatePreview();
   }
 
-  titleSamplePresetSelect!.addEventListener(
+  titleSamplePresetSelect?.addEventListener(
     'change',
     () => {
-      const selected = titleSamplePresetSelect!.selectedOptions[0];
+      const selected = titleSamplePresetSelect?.selectedOptions[0];
       if (!selected) {
         return;
       }
 
       if (selected.value === 'custom') {
-        updateTitleSample(sampleTitleInput!.value, 'custom');
+        updateTitleSample(sampleTitleInput?.value, 'custom');
         return;
       }
 
@@ -822,24 +841,24 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  sampleTitleInput!.addEventListener(
+  sampleTitleInput?.addEventListener(
     'input',
     () => {
-      updateTitleSample(sampleTitleInput!.value, 'custom');
+      updateTitleSample(sampleTitleInput?.value, 'custom');
     },
     { signal },
   );
 
-  urlSamplePresetSelect!.addEventListener(
+  urlSamplePresetSelect?.addEventListener(
     'change',
     () => {
-      const selected = urlSamplePresetSelect!.selectedOptions[0];
+      const selected = urlSamplePresetSelect?.selectedOptions[0];
       if (!selected) {
         return;
       }
 
       if (selected.value === 'custom') {
-        updateUrlSample(sampleUrlInput!.value.trim(), 'custom');
+        updateUrlSample(sampleUrlInput?.value.trim(), 'custom');
         return;
       }
 
@@ -849,15 +868,15 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  sampleUrlInput!.addEventListener(
+  sampleUrlInput?.addEventListener(
     'input',
     () => {
-      updateUrlSample(sampleUrlInput!.value.trim(), 'custom');
+      updateUrlSample(sampleUrlInput?.value.trim(), 'custom');
     },
     { signal },
   );
 
-  titleRulesBody!.addEventListener(
+  titleRulesBody?.addEventListener(
     'input',
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -867,7 +886,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  titleRulesBody!.addEventListener(
+  titleRulesBody?.addEventListener(
     'change',
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -877,7 +896,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  urlRulesBody!.addEventListener(
+  urlRulesBody?.addEventListener(
     'input',
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -887,7 +906,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  urlRulesBody!.addEventListener(
+  urlRulesBody?.addEventListener(
     'change',
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -897,7 +916,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  titleRulesBody!.addEventListener(
+  titleRulesBody?.addEventListener(
     'click',
     (event) => {
       const target = event.target;
@@ -917,7 +936,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  urlRulesBody!.addEventListener(
+  urlRulesBody?.addEventListener(
     'click',
     (event) => {
       const target = event.target;
@@ -940,7 +959,7 @@ export function initializeOptions(): () => void {
   addTitleRuleButton.addEventListener('click', addTitleRule, { signal });
   addUrlRuleButton.addEventListener('click', addUrlRule, { signal });
 
-  clearTitleRulesButton!.addEventListener(
+  clearTitleRulesButton?.addEventListener(
     'click',
     () => {
       showTitleClearStatus('');
@@ -949,9 +968,9 @@ export function initializeOptions(): () => void {
         titleClearTimeout = undefined;
       }
 
-      clearTitleRulesButton!.hidden = true;
-      confirmClearTitleRulesButton!.hidden = false;
-      confirmClearTitleRulesButton!.focus();
+      clearTitleRulesButton.hidden = true;
+      confirmClearTitleRulesButton.hidden = false;
+      confirmClearTitleRulesButton?.focus();
 
       titleClearTimeout = setTimeout(() => {
         resetTitleClearConfirmation();
@@ -960,7 +979,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  confirmClearTitleRulesButton!.addEventListener(
+  confirmClearTitleRulesButton?.addEventListener(
     'click',
     () => {
       resetTitleClearConfirmation();
@@ -972,7 +991,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  clearUrlRulesButton!.addEventListener(
+  clearUrlRulesButton?.addEventListener(
     'click',
     () => {
       showUrlClearStatus('');
@@ -981,9 +1000,9 @@ export function initializeOptions(): () => void {
         urlClearTimeout = undefined;
       }
 
-      clearUrlRulesButton!.hidden = true;
-      confirmClearUrlRulesButton!.hidden = false;
-      confirmClearUrlRulesButton!.focus();
+      clearUrlRulesButton.hidden = true;
+      confirmClearUrlRulesButton.hidden = false;
+      confirmClearUrlRulesButton?.focus();
 
       urlClearTimeout = setTimeout(() => {
         resetUrlClearConfirmation();
@@ -992,7 +1011,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  confirmClearUrlRulesButton!.addEventListener(
+  confirmClearUrlRulesButton?.addEventListener(
     'click',
     () => {
       resetUrlClearConfirmation();
@@ -1004,10 +1023,10 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  templateField!.addEventListener(
+  templateField?.addEventListener(
     'input',
     () => {
-      draft.format = templateField!.value;
+      draft.format = templateField?.value;
       updatePreview();
     },
     { signal },
@@ -1017,7 +1036,7 @@ export function initializeOptions(): () => void {
     'click',
     (event) => {
       event.preventDefault();
-      templateField!.value = DEFAULT_TEMPLATE;
+      templateField.value = DEFAULT_TEMPLATE;
       draft.format = DEFAULT_TEMPLATE;
       updatePreview();
       setStatus('Template restored to default.');

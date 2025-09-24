@@ -3,14 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { applyTitleRules, applyUrlRules, formatWithOptions } from '../../src/formatting.js';
 import {
   CURRENT_OPTIONS_VERSION,
-  type UrlRule,
+  DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+  DEFAULT_CHATGPT_UTM_URL_PATTERN,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
   type OptionsPayload,
   type TitleRule,
-  DEFAULT_CHATGPT_UTM_URL_PATTERN,
-  DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
-  DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
-  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
-  DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+  type UrlRule,
 } from '../../src/options-schema.js';
 
 describe('formatWithOptions', () => {
@@ -82,7 +82,11 @@ describe('formatWithOptions', () => {
       },
     ];
 
-    const transformedTitle = applyTitleRules(titleRules, 'Opinion Piece', 'http://nytimes.com/story');
+    const transformedTitle = applyTitleRules(
+      titleRules,
+      'Opinion Piece',
+      'http://nytimes.com/story',
+    );
     const transformedUrl = applyUrlRules(urlRules, 'http://nytimes.com/story');
     expect(transformedTitle).toBe('Column Piece');
     expect(transformedUrl).toBe('https://nytimes.com/story');

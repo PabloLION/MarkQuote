@@ -24,15 +24,19 @@ export interface OptionsPayload {
 export const DEFAULT_TEMPLATE = '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})';
 
 export const DEFAULT_WIKI_URL_PATTERN = String.raw`^https?://(?:[\w-]+\.)?en\.wikipedia\.org/`;
+// biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
 export const DEFAULT_WIKI_TITLE_SEARCH = String.raw`^(.+?) - Wikipedia$`;
+// biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
 export const DEFAULT_WIKI_TITLE_REPLACE = String.raw`Wiki:$1`;
 
 export const DEFAULT_AMAZON_URL_PATTERN = String.raw`^https?://(?:www\.)?amazon\.com/[^?]+/dp/([A-Z0-9]{10})`;
 export const DEFAULT_AMAZON_URL_SEARCH = String.raw`^(https?://(?:www\.)?amazon\.com/)[^?]+/dp/([A-Z0-9]{10}).*`;
+// biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
 export const DEFAULT_AMAZON_URL_REPLACE = String.raw`$1dp/$2`;
 export const DEFAULT_AMAZON_SAMPLE_URL =
   'https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&dib=eyJ2IjoiMSJ9.rick.roll.sample&dib_tag=se&keywords=rick+astley+album&qid=1700000000&sprefix=rick+astley+album%2Caps%2C200&sr=8-1';
 
+// biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
 export const DEFAULT_CHATGPT_UTM_URL_PATTERN = String.raw`^https?://`;
 export const DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH = String.raw`([?&])utm_source=chatgpt\.com&`;
 export const DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE = '$1';
@@ -316,7 +320,9 @@ function ensureUrlRules(rules: UrlRule[]): UrlRule[] {
 export function normalizeStoredOptions(snapshot: StoredOptionsSnapshot): OptionsPayload {
   if (isOptionsLike(snapshot.options)) {
     const directTitleRules = normalizeTitleRules(snapshot.options.titleRules);
-    const directUrlRules = normalizeUrlRules(snapshot.options.urlRules ?? snapshot.options.linkRules);
+    const directUrlRules = normalizeUrlRules(
+      snapshot.options.urlRules ?? snapshot.options.linkRules,
+    );
     const combined = normalizeCombinedRules(snapshot.options.rules);
 
     const titleRules = ensureTitleRules(

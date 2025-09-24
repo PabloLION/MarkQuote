@@ -1,4 +1,4 @@
-import sinonChrome from 'sinon-chrome/extensions';
+import sinonChrome from 'sinon-chrome';
 import { describe, expect, it } from 'vitest';
 import { formatForClipboard } from '../../src/clipboard.js';
 

@@ -1,5 +1,5 @@
-import { DEFAULT_OPTIONS, normalizeStoredOptions } from './options-schema.js';
 import { formatWithOptions } from './formatting.js';
+import { DEFAULT_OPTIONS, normalizeStoredOptions } from './options-schema.js';
 
 export async function formatForClipboard(
   markdown: string,
