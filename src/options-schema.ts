@@ -83,12 +83,6 @@ export function createDefaultTitleRules(): TitleRule[] {
 export function createDefaultUrlRules(): UrlRule[] {
   return [
     {
-      urlPattern: DEFAULT_AMAZON_URL_PATTERN,
-      urlSearch: DEFAULT_AMAZON_URL_SEARCH,
-      urlReplace: DEFAULT_AMAZON_URL_REPLACE,
-      continueMatching: true,
-    },
-    {
       urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       urlSearch: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
       urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
@@ -99,6 +93,12 @@ export function createDefaultUrlRules(): UrlRule[] {
       urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
       continueMatching: true,
+    },
+    {
+      urlPattern: DEFAULT_AMAZON_URL_PATTERN,
+      urlSearch: DEFAULT_AMAZON_URL_SEARCH,
+      urlReplace: DEFAULT_AMAZON_URL_REPLACE,
+      continueMatching: false,
     },
   ];
 }

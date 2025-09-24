@@ -124,7 +124,7 @@ describe('Options Page', () => {
     );
     expect(urlRows).toHaveLength(3);
 
-    const [amazonRow, withNextRow, trailingRow] = urlRows;
+    const [withNextRow, trailingRow, amazonRow] = urlRows;
 
     function readRow(row: HTMLTableRowElement) {
       const pattern = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]')?.value;
@@ -135,13 +135,6 @@ describe('Options Page', () => {
       )?.checked;
       return { pattern, search, replace, breakAfter };
     }
-
-    expect(readRow(amazonRow)).toEqual({
-      pattern: DEFAULT_AMAZON_URL_PATTERN,
-      search: DEFAULT_AMAZON_URL_SEARCH,
-      replace: DEFAULT_AMAZON_URL_REPLACE,
-      breakAfter: false,
-    });
 
     expect(readRow(withNextRow)).toEqual({
       pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
@@ -155,6 +148,13 @@ describe('Options Page', () => {
       search: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
       breakAfter: false,
+    });
+
+    expect(readRow(amazonRow)).toEqual({
+      pattern: DEFAULT_AMAZON_URL_PATTERN,
+      search: DEFAULT_AMAZON_URL_SEARCH,
+      replace: DEFAULT_AMAZON_URL_REPLACE,
+      breakAfter: true,
     });
   });
 
@@ -386,14 +386,7 @@ describe('Options Page', () => {
 
     expect(urlRulesPayload).toHaveLength(4);
 
-    const [amazonRule, withNextRule, trailingRule, customRule] = urlRulesPayload;
-
-    expect(amazonRule).toEqual({
-      urlPattern: DEFAULT_AMAZON_URL_PATTERN,
-      urlSearch: DEFAULT_AMAZON_URL_SEARCH,
-      urlReplace: DEFAULT_AMAZON_URL_REPLACE,
-      continueMatching: true,
-    });
+    const [withNextRule, trailingRule, amazonRule, customRule] = urlRulesPayload;
 
     expect(withNextRule).toEqual({
       urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
@@ -407,6 +400,13 @@ describe('Options Page', () => {
       urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
       continueMatching: true,
+    });
+
+    expect(amazonRule).toEqual({
+      urlPattern: DEFAULT_AMAZON_URL_PATTERN,
+      urlSearch: DEFAULT_AMAZON_URL_SEARCH,
+      urlReplace: DEFAULT_AMAZON_URL_REPLACE,
+      continueMatching: false,
     });
 
     expect(customRule).toEqual({
