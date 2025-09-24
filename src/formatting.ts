@@ -43,7 +43,11 @@ function applyRule(rule: TransformRule, title: string, link: string): { title: s
   return { title: nextTitle, link: nextLink };
 }
 
-function applyRules(rules: TransformRule[], startingTitle: string, startingLink: string): {
+export function applyTransformRules(
+  rules: TransformRule[],
+  startingTitle: string,
+  startingLink: string,
+): {
   title: string;
   link: string;
 } {
@@ -78,7 +82,7 @@ function replaceTokens(template: string, tokens: Record<string, string>): string
 }
 
 export function formatWithOptions(options: OptionsPayload, tokens: TemplateTokens): string {
-  const { title, link } = applyRules(options.rules, tokens.title, tokens.link);
+  const { title, link } = applyTransformRules(options.rules, tokens.title, tokens.link);
 
   return replaceTokens(options.format, {
     TEXT: tokens.text,

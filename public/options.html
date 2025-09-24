@@ -217,8 +217,36 @@
 
       .rules-footer {
         display: flex;
-        justify-content: flex-start;
-        gap: 12px;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .rules-footer button {
+        margin-left: auto;
+      }
+
+      .rules-output {
+        display: grid;
+        gap: 8px;
+        font-size: 0.9rem;
+      }
+
+      .rules-output div {
+        display: grid;
+        gap: 4px;
+      }
+
+      .rules-output-label {
+        font-weight: 600;
+      }
+
+      .rules-output code {
+        background: rgba(15, 23, 42, 0.08);
+        padding: 4px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
       }
 
       #status {
@@ -338,6 +366,16 @@
             <tbody id="rules-body"></tbody>
           </table>
           <div class="rules-footer">
+            <div class="rules-output" aria-live="polite">
+              <div>
+                <span class="rules-output-label">Output title</span>
+                <code id="sample-output-title"></code>
+              </div>
+              <div>
+                <span class="rules-output-label">Output URL</span>
+                <code id="sample-output-url"></code>
+              </div>
+            </div>
             <button type="button" class="secondary" id="add-rule">Add rule</button>
           </div>
         </section>

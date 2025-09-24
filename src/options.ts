@@ -6,7 +6,7 @@ import {
   type OptionsPayload,
   type TransformRule,
 } from './options-schema.js';
-import { formatWithOptions } from './formatting.js';
+import { applyTransformRules, formatWithOptions } from './formatting.js';
 
 const DEFAULT_PREVIEW_SAMPLE = {
   text: 'The important thing is not to stop questioning. Curiosity has its own reason for existing.',
@@ -80,6 +80,8 @@ export function initializeOptions(): () => void {
   const samplePresetSelect = document.getElementById('sample-preset');
   const sampleTitleInput = document.getElementById('sample-title');
   const sampleUrlInput = document.getElementById('sample-url');
+  const sampleOutputTitle = document.getElementById('sample-output-title');
+  const sampleOutputUrl = document.getElementById('sample-output-url');
 
   if (
     !(form instanceof HTMLFormElement) ||
@@ -91,7 +93,9 @@ export function initializeOptions(): () => void {
     !(statusElement instanceof HTMLElement) ||
     !(samplePresetSelect instanceof HTMLSelectElement) ||
     !(sampleTitleInput instanceof HTMLInputElement) ||
-    !(sampleUrlInput instanceof HTMLInputElement)
+    !(sampleUrlInput instanceof HTMLInputElement) ||
+    !(sampleOutputTitle instanceof HTMLElement) ||
+    !(sampleOutputUrl instanceof HTMLElement)
   ) {
     console.warn('Options UI is missing expected elements; aborting initialization.');
     return () => {};
@@ -150,16 +154,21 @@ export function initializeOptions(): () => void {
   }
 
   function updatePreview(): void {
+    const sanitizedRules = draft.rules.map((rule) => sanitizeRule(rule));
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
       format: templateField.value,
-      rules: draft.rules.map((rule) => sanitizeRule(rule)),
+      rules: sanitizedRules,
     };
     previewElement.textContent = formatWithOptions(options, {
       text: DEFAULT_PREVIEW_SAMPLE.text,
       title: previewSample.title,
       link: previewSample.link,
     });
+
+    const transformed = applyTransformRules(sanitizedRules, previewSample.title, previewSample.link);
+    sampleOutputTitle.textContent = transformed.title || '—';
+    sampleOutputUrl.textContent = transformed.link || '—';
   }
 
   function createInputCell(field: RuleField, index: number, value: string, label: string): HTMLTableCellElement {

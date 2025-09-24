@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatWithOptions } from '../../src/formatting.js';
+import { applyTransformRules, formatWithOptions } from '../../src/formatting.js';
 import { CURRENT_OPTIONS_VERSION, type OptionsPayload } from '../../src/options-schema.js';
 
 describe('formatWithOptions', () => {
@@ -43,5 +43,21 @@ describe('formatWithOptions', () => {
 
     expect(output).toContain('> First line');
     expect(output).toContain('\n> Second line');
+  });
+
+  it('returns transformed title and link independently of template', () => {
+    const rules: OptionsPayload['rules'] = [
+      {
+        urlPattern: 'nytimes',
+        titleSearch: 'Opinion',
+        titleReplace: 'Column',
+        linkSearch: 'http',
+        linkReplace: 'https',
+      },
+    ];
+
+    const transformed = applyTransformRules(rules, 'Opinion Piece', 'http://nytimes.com/story');
+    expect(transformed.title).toBe('Column Piece');
+    expect(transformed.link).toBe('https://nytimes.com/story');
   });
 });

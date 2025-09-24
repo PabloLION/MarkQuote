@@ -42,12 +42,16 @@ describe('Options Page', () => {
     const previewElement = document.getElementById('format-preview');
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
+    const sampleOutputTitle = document.getElementById('sample-output-title');
+    const sampleOutputUrl = document.getElementById('sample-output-url');
 
     expect(templateField?.value).toContain('{{TITLE}}');
     expect(previewElement?.textContent).toContain('Albert Einstein on Curiosity');
     expect(previewElement?.textContent).toContain('https://example.com/curiosity');
     expect(sampleUrlInput?.value).toBe('https://example.com/curiosity');
     expect(sampleTitleInput?.value).toBe('Albert Einstein on Curiosity');
+    expect(sampleOutputTitle?.textContent).toBe('Albert Einstein on Curiosity');
+    expect(sampleOutputUrl?.textContent).toBe('https://example.com/curiosity');
   });
 
   it('updates the preview when the sample inputs change', () => {
@@ -55,12 +59,15 @@ describe('Options Page', () => {
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement;
     const samplePresetSelect = document.getElementById('sample-preset') as HTMLSelectElement;
+    const sampleOutputTitle = document.getElementById('sample-output-title');
+    const sampleOutputUrl = document.getElementById('sample-output-url');
 
     sampleUrlInput.value = 'https://dev.to/example';
     sampleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     expect(samplePresetSelect.value).toBe('custom');
     expect(previewElement?.textContent).toContain('https://dev.to/example');
+    expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
 
     const targetOption = samplePresetSelect.querySelector('option[value="nytimes"]');
     if (!targetOption) {
@@ -74,6 +81,8 @@ describe('Options Page', () => {
     expect(sampleTitleInput.value).toBe(targetOption.dataset.title);
     expect(previewElement?.textContent).toContain(targetOption.dataset.url ?? '');
     expect(previewElement?.textContent).toContain(targetOption.dataset.title ?? '');
+    expect(sampleOutputUrl?.textContent).toBe(targetOption.dataset.url ?? '');
+    expect(sampleOutputTitle?.textContent).toBe(targetOption.dataset.title ?? '');
   });
 
   it('persists options with versioned payload and sanitized rules', async () => {
@@ -138,6 +147,32 @@ describe('Options Page', () => {
       titleMatch: 'Example',
       titleReplace: 'Sample',
     });
+  });
+
+  it('shows transformed sample outputs when rules match', () => {
+    const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement;
+    addRuleButton.click();
+
+    const urlInput = document.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+    const titleSearchInput = document.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
+    const titleReplaceInput = document.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
+    const sampleOutputTitle = document.getElementById('sample-output-title');
+    const sampleOutputUrl = document.getElementById('sample-output-url');
+
+    if (!urlInput || !titleSearchInput || !titleReplaceInput || !sampleOutputTitle || !sampleOutputUrl) {
+      throw new Error('Expected rule inputs or outputs not found.');
+    }
+
+    urlInput.value = 'example';
+    titleSearchInput.value = 'Albert';
+    titleReplaceInput.value = 'Dr.';
+
+    urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+    titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    titleReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(sampleOutputTitle.textContent).toBe('Dr. Einstein on Curiosity');
+    expect(sampleOutputUrl.textContent).toBe('https://example.com/curiosity');
   });
 
   it('rejects invalid regex patterns and keeps existing state', async () => {
