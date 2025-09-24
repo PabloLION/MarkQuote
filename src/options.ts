@@ -74,6 +74,8 @@ export function initializeOptions(): () => void {
   const templateField = document.getElementById('format-template');
   const restoreTemplateButton = document.getElementById('restore-template');
   const addRuleButton = document.getElementById('add-rule');
+  const clearRulesButton = document.getElementById('clear-rules');
+  const confirmClearButton = document.getElementById('confirm-clear-rules');
   const rulesBody = document.getElementById('rules-body');
   const previewElement = document.getElementById('format-preview');
   const statusElement = document.getElementById('status');
@@ -88,6 +90,8 @@ export function initializeOptions(): () => void {
     !(templateField instanceof HTMLTextAreaElement) ||
     !(restoreTemplateButton instanceof HTMLButtonElement) ||
     !(addRuleButton instanceof HTMLButtonElement) ||
+    !(clearRulesButton instanceof HTMLButtonElement) ||
+    !(confirmClearButton instanceof HTMLButtonElement) ||
     !(rulesBody instanceof HTMLTableSectionElement) ||
     !(previewElement instanceof HTMLElement) ||
     !(statusElement instanceof HTMLElement) ||
@@ -112,6 +116,7 @@ export function initializeOptions(): () => void {
     title: DEFAULT_PREVIEW_SAMPLE.title,
     link: DEFAULT_PREVIEW_SAMPLE.link,
   };
+  let clearConfirmationTimeout: ReturnType<typeof setTimeout> | undefined;
 
   function scheduleStatusClear(): void {
     if (statusTimeout) {
@@ -132,6 +137,16 @@ export function initializeOptions(): () => void {
     statusElement.textContent = message;
     statusElement.setAttribute('data-variant', variant);
     scheduleStatusClear();
+  }
+
+  function resetClearConfirmation(): void {
+    if (clearConfirmationTimeout) {
+      clearTimeout(clearConfirmationTimeout);
+      clearConfirmationTimeout = undefined;
+    }
+
+    confirmClearButton.hidden = true;
+    clearRulesButton.hidden = false;
   }
 
   function updateSample(partial: { title?: string; link?: string }, preset?: string): void {
@@ -214,6 +229,7 @@ export function initializeOptions(): () => void {
     });
 
     updatePreview();
+    resetClearConfirmation();
   }
 
   function applyInputChange(target: HTMLInputElement): void {
@@ -400,6 +416,7 @@ export function initializeOptions(): () => void {
       renderRules();
       setStatus('Options loaded.', 'success');
       updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
+      resetClearConfirmation();
     } catch (error) {
       console.error('Failed to load options; fallback to defaults.', error);
       draft = cloneOptions(DEFAULT_OPTIONS);
@@ -407,6 +424,7 @@ export function initializeOptions(): () => void {
       renderRules();
       setStatus('Failed to load saved options; defaults restored.', 'error');
       updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
+      resetClearConfirmation();
     }
   }
 
@@ -432,6 +450,47 @@ export function initializeOptions(): () => void {
   );
 
   addRuleButton.addEventListener('click', addRule, { signal });
+
+  clearRulesButton.addEventListener(
+    'click',
+    () => {
+      if (draft.rules.length === 0) {
+        setStatus('No rules to clear.', 'error');
+        return;
+      }
+
+      if (clearConfirmationTimeout) {
+        clearTimeout(clearConfirmationTimeout);
+        clearConfirmationTimeout = undefined;
+      }
+
+      clearRulesButton.hidden = true;
+      confirmClearButton.hidden = false;
+      confirmClearButton.focus();
+
+      clearConfirmationTimeout = setTimeout(() => {
+        resetClearConfirmation();
+      }, 5000);
+    },
+    { signal },
+  );
+
+  confirmClearButton.addEventListener(
+    'click',
+    () => {
+      if (draft.rules.length === 0) {
+        resetClearConfirmation();
+        setStatus('No rules to clear.', 'error');
+        return;
+      }
+
+      resetClearConfirmation();
+      draft.rules = [];
+      renderRules();
+      setStatus('All rules cleared.');
+    },
+    { signal },
+  );
 
   samplePresetSelect.addEventListener(
     'change',

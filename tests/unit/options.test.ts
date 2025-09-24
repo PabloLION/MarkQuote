@@ -149,6 +149,35 @@ describe('Options Page', () => {
     });
   });
 
+  it('requires confirmation before clearing all rules', () => {
+    const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement;
+    const clearButton = document.getElementById('clear-rules') as HTMLButtonElement;
+    const confirmButton = document.getElementById('confirm-clear-rules') as HTMLButtonElement;
+
+    addRuleButton.click();
+    const urlInput = document.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+
+    if (!urlInput) {
+      throw new Error('Expected rule input to exist after adding rule.');
+    }
+
+    urlInput.value = 'example';
+    urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(clearButton.hidden).toBe(false);
+    expect(confirmButton.hidden).toBe(true);
+
+    clearButton.click();
+    expect(clearButton.hidden).toBe(true);
+    expect(confirmButton.hidden).toBe(false);
+    expect(document.querySelectorAll('tbody#rules-body tr').length).toBe(1);
+
+    confirmButton.click();
+    expect(clearButton.hidden).toBe(false);
+    expect(confirmButton.hidden).toBe(true);
+    expect(document.querySelectorAll('tbody#rules-body tr').length).toBe(0);
+  });
+
   it('shows transformed sample outputs when rules match', () => {
     const addRuleButton = document.getElementById('add-rule') as HTMLButtonElement;
     addRuleButton.click();

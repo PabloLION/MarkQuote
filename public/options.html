@@ -223,8 +223,20 @@
         flex-wrap: wrap;
       }
 
-      .rules-footer button {
-        margin-left: auto;
+      .rules-footer .danger {
+        color: var(--danger-color);
+        background-color: transparent;
+        border-color: var(--danger-color);
+      }
+
+      .rules-footer .confirm-clear {
+        background-color: var(--danger-color);
+        color: #ffffff;
+      }
+
+      .rules-footer .danger.confirming {
+        background-color: var(--danger-color);
+        color: #ffffff;
       }
 
       .rules-output {
@@ -247,6 +259,14 @@
         padding: 4px 6px;
         border-radius: 6px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      }
+
+      .rules-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-left: auto;
+        width: min(200px, 100%);
       }
 
       #status {
@@ -376,7 +396,11 @@
                 <code id="sample-output-url"></code>
               </div>
             </div>
-            <button type="button" class="secondary" id="add-rule">Add rule</button>
+            <div class="rules-actions">
+              <button type="button" class="secondary" id="add-rule">Add rule</button>
+              <button type="button" class="secondary danger" id="clear-rules">Clear all</button>
+              <button type="button" class="confirm-clear" id="confirm-clear-rules" hidden>Confirm clear</button>
+            </div>
           </div>
         </section>
 
