@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyLinkRules, applyTitleRules, formatWithOptions } from '../../src/formatting.js';
+import { applyTitleRules, applyUrlRules, formatWithOptions } from '../../src/formatting.js';
 import {
   CURRENT_OPTIONS_VERSION,
-  type LinkRule,
+  type UrlRule,
   type OptionsPayload,
   type TitleRule,
 } from '../../src/options-schema.js';
 
 describe('formatWithOptions', () => {
-  it('applies title and link transforms when URL matches', () => {
+  it('applies title and URL transforms when URL matches', () => {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
-      format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})',
+      format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})',
       titleRules: [
         {
           urlPattern: 'example.com',
@@ -20,11 +20,11 @@ describe('formatWithOptions', () => {
           titleReplace: 'Sample',
         },
       ],
-      linkRules: [
+      urlRules: [
         {
           urlPattern: 'example.com',
-          linkSearch: 'http',
-          linkReplace: 'https',
+          urlSearch: 'http',
+          urlReplace: 'https',
         },
       ],
     };
@@ -32,7 +32,7 @@ describe('formatWithOptions', () => {
     const result = formatWithOptions(options, {
       text: 'Quote',
       title: 'Example Article',
-      link: 'http://example.com',
+      url: 'http://example.com',
     });
 
     expect(result).toContain('[Sample Article](https://example.com)');
@@ -41,22 +41,22 @@ describe('formatWithOptions', () => {
   it('preserves indentation for multiline text replacements', () => {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
-      format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})',
+      format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})',
       titleRules: [],
-      linkRules: [],
+      urlRules: [],
     };
 
     const output = formatWithOptions(options, {
       text: 'First line\nSecond line',
       title: 'Article',
-      link: 'https://example.com',
+      url: 'https://example.com',
     });
 
     expect(output).toContain('> First line');
     expect(output).toContain('\n> Second line');
   });
 
-  it('returns transformed title and link independently of template', () => {
+  it('returns transformed title and URL independently of template', () => {
     const titleRules: TitleRule[] = [
       {
         urlPattern: 'nytimes',
@@ -65,17 +65,17 @@ describe('formatWithOptions', () => {
       },
     ];
 
-    const linkRules: LinkRule[] = [
+    const urlRules: UrlRule[] = [
       {
         urlPattern: 'nytimes',
-        linkSearch: 'http',
-        linkReplace: 'https',
+        urlSearch: 'http',
+        urlReplace: 'https',
       },
     ];
 
     const transformedTitle = applyTitleRules(titleRules, 'Opinion Piece', 'http://nytimes.com/story');
-    const transformedLink = applyLinkRules(linkRules, 'http://nytimes.com/story');
+    const transformedUrl = applyUrlRules(urlRules, 'http://nytimes.com/story');
     expect(transformedTitle).toBe('Column Piece');
-    expect(transformedLink).toBe('https://nytimes.com/story');
+    expect(transformedUrl).toBe('https://nytimes.com/story');
   });
 });

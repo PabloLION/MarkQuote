@@ -96,9 +96,10 @@ For `shadcn-svelte` components, they will be copied into `src/options/components
 
 ### Options Page Layout
 
-- **Template Editor:** Multiline `<textarea>` bound to the markdown template (default `> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})`) with helper text explaining the three tokens (`{{TEXT}}`, `{{TITLE}}`, `{{LINK}}`) and a “Restore default template” button.
-- **Preview:** Read-only `<pre>` element showing the markdown source generated from sample text/title/link after applying the current template and rule transforms.
-- **Rules Table:** Inline-editable rows with columns for `URL Pattern`, `Title Search`, `Title Replace`, `Link Search`, `Link Replace`, plus a remove control. “Add rule” appends a blank row; validation highlights empty or invalid regex fields per column.
+- **Template Editor:** Multiline `<textarea>` bound to the markdown template (default `> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})`) with helper text explaining the three tokens (`{{TEXT}}`, `{{TITLE}}`, `{{URL}}`) and a “Restore default template” button.
+- **Preview:** Read-only `<pre>` element showing the markdown source generated from sample text/title/URL after applying the current template and rule transforms.
+- **Title Rules:** Inline-editable rows with columns for `URL Pattern`, `Title Search`, and `Title Replace`, plus a remove control. “Add title rule” appends a blank row; validation highlights empty or invalid regex fields per column.
+- **URL Rules:** Inline-editable rows with columns for `URL Pattern`, `URL Search`, and `URL Replace`, plus a remove control and clear-all workflow. “Add URL rule” appends a blank row; validation ensures patterns are present before replacements.
 - **Status Messaging:** A lightweight status paragraph communicates save success or validation errors without modal dialogs.
 
 ### Naming Conventions
@@ -131,24 +132,30 @@ Our global state will primarily reside in `chrome.storage.sync` (for user-specif
 ```typescript
 // src/core/storage.ts
 
-interface TitleLinkRule {
-  urlMatch: string;
-  titleMatch: string;
+interface TitleRule {
+  urlPattern: string;
+  titleSearch: string;
   titleReplace: string;
-  linkMatch: string;
-  linkReplace: string;
+}
+
+interface UrlRule {
+  urlPattern: string;
+  urlSearch: string;
+  urlReplace: string;
 }
 
 interface AppOptions {
   version: number;
   format: string;
-  rules: TitleLinkRule[];
+  titleRules: TitleRule[];
+  urlRules: UrlRule[];
 }
 
 const DEFAULT_OPTIONS: AppOptions = {
   version: 1,
-  format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})',
-  rules: [],
+  format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})',
+  titleRules: [],
+  urlRules: [],
 };
 
 export async function getOptions(): Promise<AppOptions> {

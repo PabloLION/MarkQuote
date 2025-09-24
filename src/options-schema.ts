@@ -6,28 +6,28 @@ export interface TitleRule {
   titleReplace: string;
 }
 
-export interface LinkRule {
+export interface UrlRule {
   urlPattern: string;
-  linkSearch: string;
-  linkReplace: string;
+  urlSearch: string;
+  urlReplace: string;
 }
 
 export interface OptionsPayload {
   version: number;
   format: string;
   titleRules: TitleRule[];
-  linkRules: LinkRule[];
+  urlRules: UrlRule[];
 }
 
-export const DEFAULT_TEMPLATE = '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})';
+export const DEFAULT_TEMPLATE = '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})';
 
 export const DEFAULT_WIKI_URL_PATTERN = String.raw`^https?://(?:[\w-]+\.)?en\.wikipedia\.org/`;
 export const DEFAULT_WIKI_TITLE_SEARCH = String.raw`^(.+?) - Wikipedia$`;
 export const DEFAULT_WIKI_TITLE_REPLACE = String.raw`Wiki:$1`;
 
 export const DEFAULT_AMAZON_URL_PATTERN = String.raw`^https?://(?:www\.)?amazon\.com/[^?]+/dp/([A-Z0-9]{10})`;
-export const DEFAULT_AMAZON_LINK_SEARCH = String.raw`^(https?://(?:www\.)?amazon\.com/)[^?]+/dp/([A-Z0-9]{10}).*`;
-export const DEFAULT_AMAZON_LINK_REPLACE = String.raw`$1dp/$2`;
+export const DEFAULT_AMAZON_URL_SEARCH = String.raw`^(https?://(?:www\.)?amazon\.com/)[^?]+/dp/([A-Z0-9]{10}).*`;
+export const DEFAULT_AMAZON_URL_REPLACE = String.raw`$1dp/$2`;
 export const DEFAULT_AMAZON_SAMPLE_URL =
   'https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&dib=eyJ2IjoiMSJ9.rick.roll.sample&dib_tag=se&keywords=rick+astley+album&qid=1700000000&sprefix=rick+astley+album%2Caps%2C200&sr=8-1';
 
@@ -45,12 +45,12 @@ export function createDefaultTitleRules(): TitleRule[] {
   ];
 }
 
-export function createDefaultLinkRules(): LinkRule[] {
+export function createDefaultUrlRules(): UrlRule[] {
   return [
     {
       urlPattern: DEFAULT_AMAZON_URL_PATTERN,
-      linkSearch: DEFAULT_AMAZON_LINK_SEARCH,
-      linkReplace: DEFAULT_AMAZON_LINK_REPLACE,
+      urlSearch: DEFAULT_AMAZON_URL_SEARCH,
+      urlReplace: DEFAULT_AMAZON_URL_REPLACE,
     },
   ];
 }
@@ -59,7 +59,7 @@ export const DEFAULT_OPTIONS: OptionsPayload = {
   version: CURRENT_OPTIONS_VERSION,
   format: DEFAULT_TEMPLATE,
   titleRules: createDefaultTitleRules(),
-  linkRules: createDefaultLinkRules(),
+  urlRules: createDefaultUrlRules(),
 };
 
 interface StoredOptionsSnapshot {
@@ -67,6 +67,7 @@ interface StoredOptionsSnapshot {
   format?: unknown;
   titleRules?: unknown;
   linkRules?: unknown;
+  urlRules?: unknown;
   rules?: unknown;
 }
 
@@ -78,13 +79,13 @@ interface RawTitleRuleShape {
   titleReplace?: unknown;
 }
 
-interface RawLinkRuleShape {
+interface RawUrlRuleShape {
   urlPattern?: unknown;
-  linkSearch?: unknown;
-  linkReplace?: unknown;
+  urlSearch?: unknown;
+  urlReplace?: unknown;
 }
 
-interface RawCombinedRuleShape extends RawTitleRuleShape, RawLinkRuleShape {}
+interface RawCombinedRuleShape extends RawTitleRuleShape, RawUrlRuleShape {}
 
 function isObject(candidate: unknown): candidate is Record<string, unknown> {
   return typeof candidate === 'object' && candidate !== null;
@@ -111,24 +112,24 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
   };
 }
 
-function normalizeLinkRule(rawRule: unknown): LinkRule | undefined {
+function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
   if (!isObject(rawRule)) {
     return undefined;
   }
 
-  const candidate = rawRule as RawLinkRuleShape;
+  const candidate = rawRule as RawUrlRuleShape;
   const urlPattern = sanitizeString(candidate.urlPattern);
-  const linkSearch = sanitizeString(candidate.linkSearch);
-  const linkReplace = sanitizeString(candidate.linkReplace);
+  const urlSearch = sanitizeString(candidate.urlSearch);
+  const urlReplace = sanitizeString(candidate.urlReplace);
 
-  if (!urlPattern && !linkSearch && !linkReplace) {
+  if (!urlPattern && !urlSearch && !urlReplace) {
     return undefined;
   }
 
   return {
     urlPattern,
-    linkSearch,
-    linkReplace,
+    urlSearch,
+    urlReplace,
   };
 }
 
@@ -142,22 +143,22 @@ function normalizeTitleRules(rawRules: unknown): TitleRule[] {
     .filter((rule): rule is TitleRule => Boolean(rule));
 }
 
-function normalizeLinkRules(rawRules: unknown): LinkRule[] {
+function normalizeUrlRules(rawRules: unknown): UrlRule[] {
   if (!Array.isArray(rawRules)) {
     return [];
   }
 
   return rawRules
-    .map((entry) => normalizeLinkRule(entry))
-    .filter((rule): rule is LinkRule => Boolean(rule));
+    .map((entry) => normalizeUrlRule(entry))
+    .filter((rule): rule is UrlRule => Boolean(rule));
 }
 
 interface CombinedRule {
   urlPattern: string;
   titleSearch: string;
   titleReplace: string;
-  linkSearch: string;
-  linkReplace: string;
+  urlSearch: string;
+  urlReplace: string;
 }
 
 function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
@@ -169,10 +170,10 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
   const urlPattern = sanitizeString(candidate.urlPattern ?? candidate.urlMatch);
   const titleSearch = sanitizeString(candidate.titleSearch ?? candidate.titleMatch);
   const titleReplace = sanitizeString(candidate.titleReplace);
-  const linkSearch = sanitizeString(candidate.linkSearch);
-  const linkReplace = sanitizeString(candidate.linkReplace);
+  const urlSearch = sanitizeString(candidate.urlSearch);
+  const urlReplace = sanitizeString(candidate.urlReplace);
 
-  if (!urlPattern && !titleSearch && !linkSearch && !linkReplace) {
+  if (!urlPattern && !titleSearch && !urlSearch && !urlReplace) {
     return undefined;
   }
 
@@ -180,8 +181,8 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
     urlPattern,
     titleSearch,
     titleReplace,
-    linkSearch,
-    linkReplace,
+    urlSearch,
+    urlReplace,
   };
 }
 
@@ -201,10 +202,10 @@ function combinedRulesToTitleRules(rules: CombinedRule[]): TitleRule[] {
     .filter((rule): rule is TitleRule => Boolean(rule));
 }
 
-function combinedRulesToLinkRules(rules: CombinedRule[]): LinkRule[] {
+function combinedRulesToUrlRules(rules: CombinedRule[]): UrlRule[] {
   return rules
-    .map((rule) => normalizeLinkRule(rule))
-    .filter((rule): rule is LinkRule => Boolean(rule));
+    .map((rule) => normalizeUrlRule(rule))
+    .filter((rule): rule is UrlRule => Boolean(rule));
 }
 
 function normalizeFormat(rawFormat: unknown, hadLegacyFormat: boolean): string {
@@ -215,9 +216,9 @@ function normalizeFormat(rawFormat: unknown, hadLegacyFormat: boolean): string {
   }
 
   format = format
-    .replaceAll('{{text}}', '{{TEXT}}')
-    .replaceAll('{{title}}', '{{TITLE}}')
-    .replaceAll('{{url}}', '{{LINK}}');
+    .replace(/\{\{\s*text\s*\}\}/gi, '{{TEXT}}')
+    .replace(/\{\{\s*title\s*\}\}/gi, '{{TITLE}}')
+    .replace(/\{\{\s*(link|url)\s*\}\}/gi, '{{URL}}');
 
   const hasTextToken = /\{\{\s*TEXT\s*\}\}/.test(format);
   if (!hasTextToken) {
@@ -233,6 +234,7 @@ interface OptionsLike {
   format?: unknown;
   titleRules?: unknown;
   linkRules?: unknown;
+  urlRules?: unknown;
   rules?: unknown;
 }
 
@@ -244,40 +246,47 @@ function ensureTitleRules(rules: TitleRule[]): TitleRule[] {
   return rules.length > 0 ? rules : createDefaultTitleRules();
 }
 
-function ensureLinkRules(rules: LinkRule[]): LinkRule[] {
-  return rules.length > 0 ? rules : createDefaultLinkRules();
+function ensureUrlRules(rules: UrlRule[]): UrlRule[] {
+  return rules.length > 0 ? rules : createDefaultUrlRules();
 }
 
 export function normalizeStoredOptions(snapshot: StoredOptionsSnapshot): OptionsPayload {
   if (isOptionsLike(snapshot.options)) {
     const directTitleRules = normalizeTitleRules(snapshot.options.titleRules);
-    const directLinkRules = normalizeLinkRules(snapshot.options.linkRules);
+    const directUrlRules = normalizeUrlRules(snapshot.options.urlRules ?? snapshot.options.linkRules);
     const combined = normalizeCombinedRules(snapshot.options.rules);
 
     const titleRules = ensureTitleRules(
       directTitleRules.length > 0 ? directTitleRules : combinedRulesToTitleRules(combined),
     );
-    const linkRules = ensureLinkRules(
-      directLinkRules.length > 0 ? directLinkRules : combinedRulesToLinkRules(combined),
+    const urlRules = ensureUrlRules(
+      directUrlRules.length > 0 ? directUrlRules : combinedRulesToUrlRules(combined),
     );
 
     return {
       version: CURRENT_OPTIONS_VERSION,
       format: normalizeFormat(snapshot.options.format, false),
       titleRules,
-      linkRules,
+      urlRules,
     };
   }
 
-  const legacyCombined = normalizeCombinedRules(snapshot.rules ?? snapshot.titleRules);
-  const legacyTitleRules = combinedRulesToTitleRules(legacyCombined);
-  const legacyLinkRules = combinedRulesToLinkRules(legacyCombined);
+  const legacyUrlRules = normalizeUrlRules(snapshot.urlRules ?? snapshot.linkRules);
+  const legacyTitleRules = normalizeTitleRules(snapshot.titleRules);
+  const legacyCombined = normalizeCombinedRules(snapshot.rules);
+
+  const resolvedTitleRules = ensureTitleRules(
+    legacyTitleRules.length > 0 ? legacyTitleRules : combinedRulesToTitleRules(legacyCombined),
+  );
+  const resolvedUrlRules = ensureUrlRules(
+    legacyUrlRules.length > 0 ? legacyUrlRules : combinedRulesToUrlRules(legacyCombined),
+  );
   const legacyFormat = normalizeFormat(snapshot.format, true);
 
   return {
     version: CURRENT_OPTIONS_VERSION,
     format: legacyFormat,
-    titleRules: ensureTitleRules(legacyTitleRules),
-    linkRules: ensureLinkRules(legacyLinkRules),
+    titleRules: resolvedTitleRules,
+    urlRules: resolvedUrlRules,
   };
 }

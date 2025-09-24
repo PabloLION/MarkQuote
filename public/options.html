@@ -326,8 +326,8 @@
         <h1>MarkQuote Options</h1>
         <p>
           Configure how MarkQuote formats copied selections. Templates support
-          <code>{{TEXT}}</code>, <code>{{TITLE}}</code>, and <code>{{LINK}}</code>
-          tokens, and rules let you refine titles or links for matching URLs.
+          <code>{{TEXT}}</code>, <code>{{TITLE}}</code>, and <code>{{URL}}</code>
+          tokens, and rules let you refine titles or URLs for matching pages.
         </p>
       </header>
       <form id="options-form">
@@ -400,17 +400,17 @@
           </div>
         </section>
 
-        <section aria-labelledby="link-rules-heading">
+        <section aria-labelledby="url-rules-heading">
           <div>
-            <h2 id="link-rules-heading">Link Rules</h2>
+            <h2 id="url-rules-heading">URL Rules</h2>
             <p class="token-help">
               Use these rules to rewrite the outgoing URL when the current page matches the pattern.
             </p>
           </div>
           <div class="preview-controls">
-            <label for="link-sample-preset">
+            <label for="url-sample-preset">
               Preview examples
-              <select id="link-sample-preset">
+              <select id="url-sample-preset">
                 <option value="custom">Custom URL…</option>
                 <option
                   value="amazon"
@@ -438,12 +438,12 @@
             <thead>
               <tr>
                 <th scope="col">URL pattern</th>
-                <th scope="col">Link search</th>
-                <th scope="col">Link replace</th>
+                <th scope="col">URL search</th>
+                <th scope="col">URL replace</th>
                 <th scope="col">Actions</th>
               </tr>
             </thead>
-            <tbody id="link-rules-body"></tbody>
+            <tbody id="url-rules-body"></tbody>
           </table>
           <div class="rules-footer">
             <div class="rules-output" aria-live="polite">
@@ -453,10 +453,10 @@
               </div>
             </div>
             <div class="rules-actions">
-              <button type="button" class="secondary" id="add-link-rule">Add link rule</button>
-              <button type="button" class="secondary danger" id="clear-link-rules">Clear all</button>
-              <button type="button" class="confirm-clear" id="confirm-clear-link-rules" hidden>Confirm clear</button>
-              <p id="link-clear-status" class="clear-status" hidden aria-live="polite"></p>
+              <button type="button" class="secondary" id="add-url-rule">Add URL rule</button>
+              <button type="button" class="secondary danger" id="clear-url-rules">Clear all</button>
+              <button type="button" class="confirm-clear" id="confirm-clear-url-rules" hidden>Confirm clear</button>
+              <p id="url-clear-status" class="clear-status" hidden aria-live="polite"></p>
             </div>
           </div>
         </section>
