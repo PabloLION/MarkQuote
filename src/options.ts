@@ -266,7 +266,7 @@ export function initializeOptions(): () => void {
     return cell;
   }
 
-  function createToggleCell(field: string, index: number, checked: boolean): HTMLTableCellElement {
+  function createToggleCell(field: string, index: number, shouldBreak: boolean): HTMLTableCellElement {
     const cell = document.createElement('td');
     cell.classList.add('toggle-cell');
 
@@ -275,7 +275,8 @@ export function initializeOptions(): () => void {
     input.type = 'checkbox';
     input.dataset.index = String(index);
     input.dataset.field = field;
-    input.checked = checked;
+    input.checked = shouldBreak;
+    input.setAttribute('aria-label', 'Break after match');
 
     cell.append(input);
 
@@ -307,7 +308,7 @@ export function initializeOptions(): () => void {
         createToggleCell(
           'continueMatching',
           index,
-          Boolean(rule.continueMatching),
+          !Boolean(rule.continueMatching),
         ),
         createRemoveCell(index, 'title'),
       );
@@ -334,7 +335,7 @@ export function initializeOptions(): () => void {
         createToggleCell(
           'continueMatching',
           index,
-          Boolean(rule.continueMatching),
+          !Boolean(rule.continueMatching),
         ),
         createRemoveCell(index, 'url'),
       );
@@ -387,7 +388,7 @@ export function initializeOptions(): () => void {
     }
 
     if (field === 'continueMatching') {
-      rule[field] = target.checked;
+      rule[field] = !target.checked;
     } else if (field === 'titleReplace') {
       rule[field] = target.value;
     } else {
@@ -411,7 +412,7 @@ export function initializeOptions(): () => void {
     }
 
     if (field === 'continueMatching') {
-      rule[field] = target.checked;
+      rule[field] = !target.checked;
     } else if (field === 'urlReplace') {
       rule[field] = target.value;
     } else {

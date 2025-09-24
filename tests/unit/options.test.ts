@@ -100,7 +100,7 @@ describe('Options Page', () => {
     expect(titlePatternInput?.value).toBe(DEFAULT_WIKI_URL_PATTERN);
     expect(titleSearchInput?.value).toBe(DEFAULT_WIKI_TITLE_SEARCH);
     expect(titleReplaceInput?.value).toBe(DEFAULT_WIKI_TITLE_REPLACE);
-    expect(titleContinueToggle?.checked).toBe(false);
+    expect(titleContinueToggle?.checked).toBe(true);
 
     const urlRows = Array.from(
       document.querySelectorAll<HTMLTableRowElement>('#url-rules-body tr'),
@@ -113,29 +113,29 @@ describe('Options Page', () => {
       const pattern = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]')?.value;
       const search = row.querySelector<HTMLInputElement>('input[data-field="urlSearch"]')?.value;
       const replace = row.querySelector<HTMLInputElement>('input[data-field="urlReplace"]')?.value;
-      const chained = row.querySelector<HTMLInputElement>('input[data-field="continueMatching"]')?.checked;
-      return { pattern, search, replace, chained };
+      const breakAfter = row.querySelector<HTMLInputElement>('input[data-field="continueMatching"]')?.checked;
+      return { pattern, search, replace, breakAfter };
     }
 
     expect(readRow(amazonRow)).toEqual({
       pattern: DEFAULT_AMAZON_URL_PATTERN,
       search: DEFAULT_AMAZON_URL_SEARCH,
       replace: DEFAULT_AMAZON_URL_REPLACE,
-      chained: true,
+      breakAfter: false,
     });
 
     expect(readRow(withNextRow)).toEqual({
       pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       search: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
-      chained: true,
+      breakAfter: false,
     });
 
     expect(readRow(trailingRow)).toEqual({
       pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       search: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
-      chained: true,
+      breakAfter: false,
     });
   });
 
@@ -256,11 +256,15 @@ describe('Options Page', () => {
     titleUrlInput.value = 'example.com';
     titleSearchInput.value = 'Example';
     titleReplaceInput.value = 'Sample';
-    titleContinueToggle.checked = true;
+    if (!titleContinueToggle || !urlContinueToggle) {
+      throw new Error('Expected continue toggles to exist.');
+    }
+
+    titleContinueToggle.checked = false;
     urlRuleUrlInput.value = 'example.com';
     urlSearchInput.value = 'http';
     urlReplaceInput.value = 'https';
-    urlContinueToggle.checked = true;
+    urlContinueToggle.checked = false;
 
     titleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
     titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
