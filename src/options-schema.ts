@@ -25,6 +25,12 @@ export const DEFAULT_WIKI_URL_PATTERN = String.raw`^https?://(?:[\w-]+\.)?en\.wi
 export const DEFAULT_WIKI_TITLE_SEARCH = String.raw`^(.+?) - Wikipedia$`;
 export const DEFAULT_WIKI_TITLE_REPLACE = String.raw`Wiki:$1`;
 
+export const DEFAULT_AMAZON_URL_PATTERN = String.raw`^https?://(?:www\.)?amazon\.com/[^?]+/dp/([A-Z0-9]{10})`;
+export const DEFAULT_AMAZON_LINK_SEARCH = String.raw`^(https?://(?:www\.)?amazon\.com/)[^?]+/dp/([A-Z0-9]{10}).*`;
+export const DEFAULT_AMAZON_LINK_REPLACE = String.raw`$1dp/$2`;
+export const DEFAULT_AMAZON_SAMPLE_URL =
+  'https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&dib=eyJ2IjoiMSJ9.rick.roll.sample&dib_tag=se&keywords=rick+astley+album&qid=1700000000&sprefix=rick+astley+album%2Caps%2C200&sr=8-1';
+
 function sanitizeString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
@@ -40,7 +46,13 @@ export function createDefaultTitleRules(): TitleRule[] {
 }
 
 export function createDefaultLinkRules(): LinkRule[] {
-  return [];
+  return [
+    {
+      urlPattern: DEFAULT_AMAZON_URL_PATTERN,
+      linkSearch: DEFAULT_AMAZON_LINK_SEARCH,
+      linkReplace: DEFAULT_AMAZON_LINK_REPLACE,
+    },
+  ];
 }
 
 export const DEFAULT_OPTIONS: OptionsPayload = {

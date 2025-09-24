@@ -1,5 +1,6 @@
 import {
   CURRENT_OPTIONS_VERSION,
+  DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_OPTIONS,
   DEFAULT_TEMPLATE,
   normalizeStoredOptions,
@@ -12,7 +13,7 @@ import { applyLinkRules, applyTitleRules, formatWithOptions } from './formatting
 const DEFAULT_PREVIEW_SAMPLE = {
   text: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor.',
   title: 'Markdown - Wikipedia',
-  link: 'https://en.wikipedia.org/wiki/Markdown',
+  link: DEFAULT_AMAZON_SAMPLE_URL,
 };
 
 const STATUS_TIMEOUT_MS = 3000;
@@ -86,7 +87,8 @@ export function initializeOptions(): () => void {
   const previewElement = document.getElementById('format-preview');
   const statusElement = document.getElementById('status');
 
-  const samplePresetSelect = document.getElementById('sample-preset');
+  const titleSamplePresetSelect = document.getElementById('title-sample-preset');
+  const linkSamplePresetSelect = document.getElementById('link-sample-preset');
   const sampleTitleInput = document.getElementById('sample-title');
   const sampleUrlInput = document.getElementById('sample-url');
   const sampleOutputTitle = document.getElementById('sample-output-title');
@@ -110,7 +112,8 @@ export function initializeOptions(): () => void {
     !(restoreTemplateButton instanceof HTMLButtonElement) ||
     !(previewElement instanceof HTMLElement) ||
     !(statusElement instanceof HTMLElement) ||
-    !(samplePresetSelect instanceof HTMLSelectElement) ||
+    !(titleSamplePresetSelect instanceof HTMLSelectElement) ||
+    !(linkSamplePresetSelect instanceof HTMLSelectElement) ||
     !(sampleTitleInput instanceof HTMLInputElement) ||
     !(sampleUrlInput instanceof HTMLInputElement) ||
     !(sampleOutputTitle instanceof HTMLElement) ||
@@ -559,7 +562,8 @@ export function initializeOptions(): () => void {
       templateField.value = draft.format;
       renderTitleRules();
       renderLinkRules();
-      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'wikipedia');
+      updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, 'wikipedia');
+      updateLinkSample(DEFAULT_PREVIEW_SAMPLE.link, 'amazon');
       return;
     }
 
@@ -570,7 +574,8 @@ export function initializeOptions(): () => void {
       renderTitleRules();
       renderLinkRules();
       setStatus('Options loaded.', 'success');
-      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'wikipedia');
+      updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, 'wikipedia');
+      updateLinkSample(DEFAULT_PREVIEW_SAMPLE.link, 'amazon');
     } catch (error) {
       console.error('Failed to load options; fallback to defaults.', error);
       draft = cloneOptions(DEFAULT_OPTIONS);
@@ -578,45 +583,44 @@ export function initializeOptions(): () => void {
       renderTitleRules();
       renderLinkRules();
       setStatus('Failed to load saved options; defaults restored.', 'error');
-      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'wikipedia');
+      updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, 'wikipedia');
+      updateLinkSample(DEFAULT_PREVIEW_SAMPLE.link, 'amazon');
     }
   }
 
-  function updateSample(partial: { title?: string; link?: string }, preset?: string): void {
-    if (partial.title !== undefined) {
-      previewSample.title = partial.title;
-    }
-
-    if (partial.link !== undefined) {
-      previewSample.link = partial.link;
-    }
-
+  function updateTitleSample(nextTitle: string, preset?: string): void {
+    previewSample.title = nextTitle;
     sampleTitleInput.value = previewSample.title;
-    sampleUrlInput.value = previewSample.link;
-
     if (preset) {
-      samplePresetSelect.value = preset;
+      titleSamplePresetSelect.value = preset;
     }
-
     updatePreview();
   }
 
-  samplePresetSelect.addEventListener(
+  function updateLinkSample(nextLink: string, preset?: string): void {
+    previewSample.link = nextLink;
+    sampleUrlInput.value = previewSample.link;
+    if (preset) {
+      linkSamplePresetSelect.value = preset;
+    }
+    updatePreview();
+  }
+
+  titleSamplePresetSelect.addEventListener(
     'change',
     () => {
-      const selected = samplePresetSelect.selectedOptions[0];
+      const selected = titleSamplePresetSelect.selectedOptions[0];
       if (!selected) {
         return;
       }
 
       if (selected.value === 'custom') {
-        updateSample({}, 'custom');
+        updateTitleSample(sampleTitleInput.value, 'custom');
         return;
       }
 
       const nextTitle = selected.dataset.title ?? DEFAULT_PREVIEW_SAMPLE.title;
-      const nextLink = selected.dataset.url ?? DEFAULT_PREVIEW_SAMPLE.link;
-      updateSample({ title: nextTitle, link: nextLink }, selected.value);
+      updateTitleSample(nextTitle, selected.value);
     },
     { signal },
   );
@@ -624,7 +628,26 @@ export function initializeOptions(): () => void {
   sampleTitleInput.addEventListener(
     'input',
     () => {
-      updateSample({ title: sampleTitleInput.value }, 'custom');
+      updateTitleSample(sampleTitleInput.value, 'custom');
+    },
+    { signal },
+  );
+
+  linkSamplePresetSelect.addEventListener(
+    'change',
+    () => {
+      const selected = linkSamplePresetSelect.selectedOptions[0];
+      if (!selected) {
+        return;
+      }
+
+      if (selected.value === 'custom') {
+        updateLinkSample(sampleUrlInput.value.trim(), 'custom');
+        return;
+      }
+
+      const nextLink = selected.dataset.url ?? DEFAULT_PREVIEW_SAMPLE.link;
+      updateLinkSample(nextLink, selected.value);
     },
     { signal },
   );
@@ -632,7 +655,7 @@ export function initializeOptions(): () => void {
   sampleUrlInput.addEventListener(
     'input',
     () => {
-      updateSample({ link: sampleUrlInput.value.trim() }, 'custom');
+      updateLinkSample(sampleUrlInput.value.trim(), 'custom');
     },
     { signal },
   );

@@ -353,17 +353,17 @@
             </p>
           </div>
           <div class="preview-controls">
-            <label for="sample-preset">
+            <label for="title-sample-preset">
               Preview examples
-              <select id="sample-preset">
+              <select id="title-sample-preset">
                 <option value="custom">Custom URL…</option>
-                <option value="wikipedia" data-title="Markdown - Wikipedia" data-url="https://en.wikipedia.org/wiki/Markdown">
+                <option value="wikipedia" data-title="Markdown - Wikipedia">
                   Wikipedia – Markdown
                 </option>
-                <option value="mdn" data-title="HTML: HyperText Markup Language | MDN" data-url="https://developer.mozilla.org/en-US/docs/Web/HTML">
+                <option value="mdn" data-title="HTML: HyperText Markup Language | MDN">
                   MDN – HTML: HyperText Markup Language
                 </option>
-                <option value="daring-fireball" data-title="Daring Fireball: Markdown" data-url="https://daringfireball.net/projects/markdown/">
+                <option value="daring-fireball" data-title="Daring Fireball: Markdown">
                   Daring Fireball – Markdown
                 </option>
               </select>
@@ -371,10 +371,6 @@
             <label for="sample-title">
               Sample title
               <input id="sample-title" type="text" placeholder="Preview title" />
-            </label>
-            <label for="sample-url">
-              Sample URL
-              <input id="sample-url" type="url" placeholder="https://example.com/article" />
             </label>
           </div>
           <table>
@@ -410,6 +406,33 @@
             <p class="token-help">
               Use these rules to rewrite the outgoing URL when the current page matches the pattern.
             </p>
+          </div>
+          <div class="preview-controls">
+            <label for="link-sample-preset">
+              Preview examples
+              <select id="link-sample-preset">
+                <option value="custom">Custom URL…</option>
+                <option
+                  value="amazon"
+                  data-url="https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&amp;dib=eyJ2IjoiMSJ9.rick.roll.sample&amp;dib_tag=se&amp;keywords=rick+astley+album&amp;qid=1700000000&amp;sprefix=rick+astley+album%2Caps%2C200&amp;sr=8-1"
+                >
+                  Amazon – Rick Astley Album
+                </option>
+                <option value="wikipedia" data-url="https://en.wikipedia.org/wiki/Markdown">
+                  Wikipedia – Markdown
+                </option>
+                <option value="mdn" data-url="https://developer.mozilla.org/en-US/docs/Web/HTML">
+                  MDN – HTML: HyperText Markup Language
+                </option>
+                <option value="daring-fireball" data-url="https://daringfireball.net/projects/markdown/">
+                  Daring Fireball – Markdown
+                </option>
+              </select>
+            </label>
+            <label for="sample-url">
+              Sample URL
+              <input id="sample-url" type="url" placeholder="https://example.com/article" />
+            </label>
           </div>
           <table>
             <thead>

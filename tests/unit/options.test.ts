@@ -4,6 +4,10 @@ import sinonChrome from 'sinon-chrome/extensions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  DEFAULT_AMAZON_LINK_REPLACE,
+  DEFAULT_AMAZON_LINK_SEARCH,
+  DEFAULT_AMAZON_SAMPLE_URL,
+  DEFAULT_AMAZON_URL_PATTERN,
   DEFAULT_TEMPLATE,
   DEFAULT_WIKI_TITLE_REPLACE,
   DEFAULT_WIKI_TITLE_SEARCH,
@@ -62,15 +66,19 @@ describe('Options Page', () => {
     await flushMicrotasks();
     await flushMicrotasks();
 
+    const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement | null;
+    const linkSamplePresetSelect = document.getElementById('link-sample-preset') as HTMLSelectElement | null;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
     const sampleOutputTitle = document.getElementById('sample-output-title');
     const sampleOutputUrl = document.getElementById('sample-output-url');
 
+    expect(titleSamplePresetSelect?.value).toBe('wikipedia');
+    expect(linkSamplePresetSelect?.value).toBe('amazon');
     expect(sampleTitleInput?.value).toBe('Markdown - Wikipedia');
-    expect(sampleUrlInput?.value).toBe('https://en.wikipedia.org/wiki/Markdown');
-    expect(sampleOutputTitle?.textContent).toBe(DEFAULT_WIKI_TITLE_REPLACE.replace('$1', 'Markdown'));
-    expect(sampleOutputUrl?.textContent).toBe('https://en.wikipedia.org/wiki/Markdown');
+    expect(sampleUrlInput?.value).toBe(DEFAULT_AMAZON_SAMPLE_URL);
+    expect(sampleOutputTitle?.textContent).toBe('Markdown - Wikipedia');
+    expect(sampleOutputUrl?.textContent).toBe('https://www.amazon.com/dp/B01KBIJ53I');
 
     const titleRuleInputs = Array.from(
       document.querySelectorAll<HTMLInputElement>('#title-rules-body input'),
@@ -84,14 +92,19 @@ describe('Options Page', () => {
 
     const linkRuleInputs = Array.from(
       document.querySelectorAll<HTMLInputElement>('#link-rules-body input'),
-    );
-    expect(linkRuleInputs.length).toBe(0);
+    ).map((input) => input.value);
+    expect(linkRuleInputs).toEqual([
+      DEFAULT_AMAZON_URL_PATTERN,
+      DEFAULT_AMAZON_LINK_SEARCH,
+      DEFAULT_AMAZON_LINK_REPLACE,
+    ]);
   });
 
   it('loads the saved template and renders a preview', () => {
     const templateField = document.getElementById('format-template') as HTMLTextAreaElement | null;
     const previewElement = document.getElementById('format-preview');
-    const samplePresetSelect = document.getElementById('sample-preset') as HTMLSelectElement | null;
+    const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement | null;
+    const linkSamplePresetSelect = document.getElementById('link-sample-preset') as HTMLSelectElement | null;
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
     const sampleOutputTitle = document.getElementById('sample-output-title');
@@ -99,13 +112,14 @@ describe('Options Page', () => {
     const titleClearStatus = document.getElementById('title-clear-status');
 
     expect(templateField?.value).toContain('{{TITLE}}');
-    expect(previewElement?.textContent).toContain('Wiki:Markdown');
-    expect(previewElement?.textContent).toContain('https://en.wikipedia.org/wiki/Markdown');
-    expect(samplePresetSelect?.value).toBe('wikipedia');
-    expect(sampleUrlInput?.value).toBe('https://en.wikipedia.org/wiki/Markdown');
+    expect(previewElement?.textContent).toContain('Markdown - Wikipedia');
+    expect(previewElement?.textContent).toContain('https://www.amazon.com/dp/B01KBIJ53I');
+    expect(titleSamplePresetSelect?.value).toBe('wikipedia');
+    expect(linkSamplePresetSelect?.value).toBe('amazon');
+    expect(sampleUrlInput?.value).toBe(DEFAULT_AMAZON_SAMPLE_URL);
     expect(sampleTitleInput?.value).toBe('Markdown - Wikipedia');
-    expect(sampleOutputTitle?.textContent).toBe(DEFAULT_WIKI_TITLE_REPLACE.replace('$1', 'Markdown'));
-    expect(sampleOutputUrl?.textContent).toBe('https://en.wikipedia.org/wiki/Markdown');
+    expect(sampleOutputTitle?.textContent).toBe('Markdown - Wikipedia');
+    expect(sampleOutputUrl?.textContent).toBe('https://www.amazon.com/dp/B01KBIJ53I');
     expect(titleClearStatus?.hidden).toBe(true);
   });
 
@@ -113,7 +127,8 @@ describe('Options Page', () => {
     const previewElement = document.getElementById('format-preview');
     const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
     const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement;
-    const samplePresetSelect = document.getElementById('sample-preset') as HTMLSelectElement;
+    const titleSamplePresetSelect = document.getElementById('title-sample-preset') as HTMLSelectElement;
+    const linkSamplePresetSelect = document.getElementById('link-sample-preset') as HTMLSelectElement;
     const sampleOutputTitle = document.getElementById('sample-output-title');
     const sampleOutputUrl = document.getElementById('sample-output-url');
 
@@ -122,24 +137,45 @@ describe('Options Page', () => {
     sampleTitleInput.value = 'Dev Example Post';
     sampleTitleInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    expect(samplePresetSelect.value).toBe('custom');
+    expect(linkSamplePresetSelect.value).toBe('custom');
+    expect(titleSamplePresetSelect.value).toBe('custom');
     expect(previewElement?.textContent).toContain('https://dev.to/example');
+    expect(previewElement?.textContent).toContain('Dev Example Post');
     expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
 
-    const targetOption = samplePresetSelect.querySelector('option[value="mdn"]');
-    if (!targetOption) {
-      throw new Error('Expected MDN preset to exist.');
+    const titlePresetOption = titleSamplePresetSelect.querySelector('option[value="mdn"]');
+    if (!titlePresetOption) {
+      throw new Error('Expected MDN title preset to exist.');
     }
 
-    samplePresetSelect.value = 'mdn';
-    samplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    titleSamplePresetSelect.value = 'mdn';
+    titleSamplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-    expect(sampleUrlInput.value).toBe(targetOption.dataset.url);
-    expect(sampleTitleInput.value).toBe(targetOption.dataset.title);
-    expect(previewElement?.textContent).toContain(targetOption.dataset.url ?? '');
-    expect(previewElement?.textContent).toContain(targetOption.dataset.title ?? '');
-    expect(sampleOutputUrl?.textContent).toBe(targetOption.dataset.url ?? '');
-    expect(sampleOutputTitle?.textContent).toBe(targetOption.dataset.title ?? '');
+    expect(sampleTitleInput.value).toBe(titlePresetOption.dataset.title);
+    expect(sampleUrlInput.value).toBe('https://dev.to/example');
+    expect(linkSamplePresetSelect.value).toBe('custom');
+    expect(titleSamplePresetSelect.value).toBe('mdn');
+    expect(previewElement?.textContent).toContain('https://dev.to/example');
+    expect(previewElement?.textContent).toContain(titlePresetOption.dataset.title ?? '');
+    expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? '');
+    expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
+
+    const linkPresetOption = linkSamplePresetSelect.querySelector('option[value="daring-fireball"]');
+    if (!linkPresetOption) {
+      throw new Error('Expected Daring Fireball link preset to exist.');
+    }
+
+    linkSamplePresetSelect.value = 'daring-fireball';
+    linkSamplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(sampleUrlInput.value).toBe(linkPresetOption.dataset.url);
+    expect(sampleTitleInput.value).toBe(titlePresetOption.dataset.title);
+    expect(titleSamplePresetSelect.value).toBe('mdn');
+    expect(linkSamplePresetSelect.value).toBe('daring-fireball');
+    expect(previewElement?.textContent).toContain(linkPresetOption.dataset.url ?? '');
+    expect(previewElement?.textContent).toContain(titlePresetOption.dataset.title ?? '');
+    expect(sampleOutputUrl?.textContent).toBe(linkPresetOption.dataset.url ?? '');
+    expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? '');
   });
 
   it('persists title and link rules with versioned payload', async () => {
@@ -294,7 +330,7 @@ describe('Options Page', () => {
     clearButton.click();
     expect(clearButton.hidden).toBe(true);
     expect(confirmButton.hidden).toBe(false);
-    expect(document.querySelectorAll('#link-rules-body tr').length).toBe(1);
+    expect(document.querySelectorAll('#link-rules-body tr').length).toBe(2);
     expect(clearStatus.hidden).toBe(true);
 
     confirmButton.click();
