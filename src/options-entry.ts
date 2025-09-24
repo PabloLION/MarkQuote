@@ -1,6 +1,6 @@
 import { initializeOptions } from './options.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+function boot(): void {
   const dispose = initializeOptions();
 
   const hot = (
@@ -14,4 +14,10 @@ document.addEventListener('DOMContentLoaded', () => {
   hot?.dispose(() => {
     dispose?.();
   });
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', boot);
+} else {
+  boot();
+}

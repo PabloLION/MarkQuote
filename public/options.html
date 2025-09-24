@@ -1,102 +1,319 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8" />
     <title>MarkQuote Options</title>
     <style>
-      body {
-        font-family: sans-serif;
-        padding: 20px;
-        width: 600px; /* Wider frame */
-        margin: 20px auto; /* Center the page */
-        max-width: 800px; /* Prevent too wide on large screens */
-        background-color: #fff; /* Consistent background for the frame */
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        color: #333;
-      }
-      label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-      }
-      textarea {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-      }
-      button:hover {
-        background-color: #45a049;
-      }
-      #status {
-        margin-top: 10px;
-        font-weight: bold;
-        color: green;
+      :root {
+        color-scheme: light dark;
+        --surface-background: #ffffff;
+        --surface-foreground: #1e1e1e;
+        --panel-background: #f4f4f5;
+        --border-color: #d4d4d8;
+        --accent-color: #2563eb;
+        --accent-foreground: #ffffff;
+        --danger-color: #dc2626;
+        --status-success: #047857;
       }
 
       @media (prefers-color-scheme: dark) {
+        :root {
+          --surface-background: #111827;
+          --surface-foreground: #e5e7eb;
+          --panel-background: #1f2937;
+          --border-color: #374151;
+          --accent-color: #3b82f6;
+          --accent-foreground: #0b1120;
+          --danger-color: #f87171;
+          --status-success: #34d399;
+        }
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: var(--surface-background);
+        color: var(--surface-foreground);
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+
+      header h1 {
+        margin-bottom: 8px;
+        font-size: 1.75rem;
+      }
+
+      header p {
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      form {
+        display: grid;
+        gap: 24px;
+      }
+
+      section {
+        background-color: var(--panel-background);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      section h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      label {
+        font-weight: 600;
+        display: block;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 140px;
+        padding: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--surface-background);
+        color: inherit;
+      }
+
+      textarea[aria-invalid='true'],
+      input[aria-invalid='true'] {
+        border-color: var(--danger-color);
+      }
+
+      textarea:focus,
+      input:focus,
+      button:focus {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
+      .token-help {
+        margin: 0;
+        font-size: 0.875rem;
+        color: inherit;
+      }
+
+      .token-help code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        background: rgba(15, 23, 42, 0.08);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+
+      .template-actions,
+      .form-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      button {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 8px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        background-color: var(--accent-color);
+        color: var(--accent-foreground);
+        transition: filter 160ms ease;
+      }
+
+      button.secondary {
+        background-color: transparent;
+        color: inherit;
+        border-color: var(--border-color);
+      }
+
+      button.danger {
+        background-color: var(--danger-color);
+        color: #fff;
+      }
+
+      button:hover {
+        filter: brightness(1.05);
+      }
+
+      pre {
+        background-color: var(--surface-background);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        padding: 16px;
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        text-align: left;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+      }
+
+      tbody td {
+        padding: 8px 8px 0 0;
+      }
+
+      tbody td:last-child {
+        padding-right: 0;
+      }
+
+      tbody input {
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--surface-background);
+        color: inherit;
+      }
+
+      .rules-footer {
+        display: flex;
+        justify-content: flex-start;
+        gap: 12px;
+      }
+
+      #status {
+        min-height: 1.25rem;
+        font-size: 0.95rem;
+      }
+
+      #status[data-variant='success'] {
+        color: var(--status-success);
+      }
+
+      #status[data-variant='error'] {
+        color: var(--danger-color);
+      }
+
+      @media (max-width: 720px) {
         body {
-          background-color: #333; /* Darker background for the frame in dark mode */
-          color: #eee;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          padding: 16px;
         }
-        h1 {
-          color: #eee;
+
+        section {
+          padding: 16px;
         }
-        textarea {
-          background-color: #444;
-          border-color: #666;
-          color: #eee;
+
+        thead {
+          display: none;
         }
-        button {
-          background-color: #666;
+
+        tbody tr {
+          display: grid;
+          gap: 8px;
+          border-bottom: 1px solid var(--border-color);
+          padding-bottom: 12px;
         }
-        button:hover {
-          background-color: #888;
+
+        tbody td {
+          padding: 0;
         }
-        #status {
-          color: #90ee90; /* Light green for status in dark mode */
+
+        tbody td:last-child {
+          justify-self: flex-start;
         }
       }
     </style>
   </head>
   <body>
-    <h1>MarkQuote Options</h1>
-    <p>By default, the title remains the title of the website, but you can customize per website some regex to transform the title of the markdown link.</p>
-    <p>If some URL (regex) pattern matches, the page title will go through the replacing process with the corresponding match pattern and replacement config.</p>
-    <p>For how to use the title replace feature, search "String.prototype.replace" document for more details.</p>
+    <main>
+      <header>
+        <h1>MarkQuote Options</h1>
+        <p>
+          Configure how MarkQuote formats copied selections. Templates support
+          <code>{{TEXT}}</code>, <code>{{TITLE}}</code>, and <code>{{LINK}}</code>
+          tokens, and rules let you refine titles or links for matching URLs.
+        </p>
+      </header>
+      <form id="options-form">
+        <section aria-labelledby="template-heading">
+          <div>
+            <h2 id="template-heading">Template</h2>
+            <p class="token-help">
+              Use multi-line markdown. Tokens expand to the copied text, page title, and page URL.
+            </p>
+          </div>
+          <label for="format-template">Markdown template</label>
+          <textarea id="format-template" spellcheck="false"></textarea>
+          <div class="template-actions">
+            <button type="button" class="secondary" id="restore-template">Restore default template</button>
+          </div>
+        </section>
 
-    <div class="controls">
-      <button id="add-rule">Add</button>
-      <button id="reset-rules">Reset</button>
-      <button id="save-rules">Save</button>
-    </div>
+        <section aria-labelledby="preview-heading">
+          <div>
+            <h2 id="preview-heading">Live preview</h2>
+            <p class="token-help">Based on sample data and the rules below.</p>
+          </div>
+          <pre id="format-preview" aria-live="polite"></pre>
+        </section>
 
-    <div class="rule-inputs">
-      <input type="text" id="url-match-pattern" placeholder="URL Match Pattern">
-      <input type="text" id="title-match-pattern" placeholder="Title Match Pattern">
-      <input type="text" id="title-replacement" placeholder="Title Replacement">
-    </div>
+        <section aria-labelledby="rules-heading">
+          <div>
+            <h2 id="rules-heading">Transformation rules</h2>
+            <p class="token-help">
+              Rules apply when the current page URL matches the pattern. Leave search fields empty to skip a transform.
+            </p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">URL pattern</th>
+                <th scope="col">Title search</th>
+                <th scope="col">Title replace</th>
+                <th scope="col">Link search</th>
+                <th scope="col">Link replace</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rules-body"></tbody>
+          </table>
+          <div class="rules-footer">
+            <button type="button" class="secondary" id="add-rule">Add rule</button>
+          </div>
+        </section>
 
-    <div id="rules-list">
-      <!-- Dynamic rule rows will be added here -->
-    </div>
+        <div class="form-actions">
+          <button type="submit" id="save-options">Save changes</button>
+        </div>
+        <p id="status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+    <script type="module">
+      (async () => {
+        const isExtensionContext = Boolean(globalThis.chrome?.runtime?.id);
 
-    <p id="status"></p>
+        if (isExtensionContext) {
+          await import('./options.js');
+          return;
+        }
 
-    <script src="options.js"></script>
+        await import('/src/options-entry.ts');
+      })().catch((error) => {
+        console.error('Failed to boot options page.', error);
+      });
+    </script>
   </body>
 </html>

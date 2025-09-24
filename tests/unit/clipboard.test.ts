@@ -12,7 +12,11 @@ describe('formatForClipboard', () => {
     const result = await formatForClipboard(markdown, title, url);
     expect(result).toBe(expected);
     expect(sinonChrome.storage.sync.get.calledOnce).toBe(true);
-    expect(sinonChrome.storage.sync.get.firstCall.args[0]).toEqual(['format', 'titleRules']);
+    expect(sinonChrome.storage.sync.get.firstCall.args[0]).toEqual([
+      'options',
+      'format',
+      'titleRules',
+    ]);
   });
 
   it('should use the custom format from storage when it exists', async () => {
