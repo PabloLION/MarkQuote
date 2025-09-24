@@ -13,7 +13,7 @@
     "build": "vite build",
     "check": "biome check --write --unsafe",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png",
-    "dev:playwright": "node scripts/dev/playwright-dev.js"
+    "dev:playwright": "tsx scripts/dev/playwright-dev.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,6 +30,7 @@
     "playwright": "^1.55.0",
     "sinon-chrome": "^3.0.1",
     "svg2png": "^4.1.1",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vite": "^7.1.6",
     "vite-plugin-static-copy": "^3.1.2",
