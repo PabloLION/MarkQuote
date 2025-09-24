@@ -40,10 +40,40 @@ describe('Options Page', () => {
   it('loads the saved template and renders a preview', () => {
     const templateField = document.getElementById('format-template') as HTMLTextAreaElement | null;
     const previewElement = document.getElementById('format-preview');
+    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
+    const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
 
     expect(templateField?.value).toContain('{{TITLE}}');
     expect(previewElement?.textContent).toContain('Albert Einstein on Curiosity');
     expect(previewElement?.textContent).toContain('https://example.com/curiosity');
+    expect(sampleUrlInput?.value).toBe('https://example.com/curiosity');
+    expect(sampleTitleInput?.value).toBe('Albert Einstein on Curiosity');
+  });
+
+  it('updates the preview when the sample inputs change', () => {
+    const previewElement = document.getElementById('format-preview');
+    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
+    const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement;
+    const samplePresetSelect = document.getElementById('sample-preset') as HTMLSelectElement;
+
+    sampleUrlInput.value = 'https://dev.to/example';
+    sampleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(samplePresetSelect.value).toBe('custom');
+    expect(previewElement?.textContent).toContain('https://dev.to/example');
+
+    const targetOption = samplePresetSelect.querySelector('option[value="nytimes"]');
+    if (!targetOption) {
+      throw new Error('Expected NYTimes preset to exist.');
+    }
+
+    samplePresetSelect.value = 'nytimes';
+    samplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(sampleUrlInput.value).toBe(targetOption.dataset.url);
+    expect(sampleTitleInput.value).toBe(targetOption.dataset.title);
+    expect(previewElement?.textContent).toContain(targetOption.dataset.url ?? '');
+    expect(previewElement?.textContent).toContain(targetOption.dataset.title ?? '');
   });
 
   it('persists options with versioned payload and sanitized rules', async () => {

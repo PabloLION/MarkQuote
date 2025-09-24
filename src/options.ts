@@ -8,7 +8,7 @@ import {
 } from './options-schema.js';
 import { formatWithOptions } from './formatting.js';
 
-const PREVIEW_SAMPLE = {
+const DEFAULT_PREVIEW_SAMPLE = {
   text: 'The important thing is not to stop questioning. Curiosity has its own reason for existing.',
   title: 'Albert Einstein on Curiosity',
   link: 'https://example.com/curiosity',
@@ -77,6 +77,9 @@ export function initializeOptions(): () => void {
   const rulesBody = document.getElementById('rules-body');
   const previewElement = document.getElementById('format-preview');
   const statusElement = document.getElementById('status');
+  const samplePresetSelect = document.getElementById('sample-preset');
+  const sampleTitleInput = document.getElementById('sample-title');
+  const sampleUrlInput = document.getElementById('sample-url');
 
   if (
     !(form instanceof HTMLFormElement) ||
@@ -85,7 +88,10 @@ export function initializeOptions(): () => void {
     !(addRuleButton instanceof HTMLButtonElement) ||
     !(rulesBody instanceof HTMLTableSectionElement) ||
     !(previewElement instanceof HTMLElement) ||
-    !(statusElement instanceof HTMLElement)
+    !(statusElement instanceof HTMLElement) ||
+    !(samplePresetSelect instanceof HTMLSelectElement) ||
+    !(sampleTitleInput instanceof HTMLInputElement) ||
+    !(sampleUrlInput instanceof HTMLInputElement)
   ) {
     console.warn('Options UI is missing expected elements; aborting initialization.');
     return () => {};
@@ -98,6 +104,10 @@ export function initializeOptions(): () => void {
 
   let statusTimeout: ReturnType<typeof setTimeout> | undefined;
   let draft: OptionsPayload = cloneOptions(DEFAULT_OPTIONS);
+  const previewSample = {
+    title: DEFAULT_PREVIEW_SAMPLE.title,
+    link: DEFAULT_PREVIEW_SAMPLE.link,
+  };
 
   function scheduleStatusClear(): void {
     if (statusTimeout) {
@@ -120,13 +130,36 @@ export function initializeOptions(): () => void {
     scheduleStatusClear();
   }
 
+  function updateSample(partial: { title?: string; link?: string }, preset?: string): void {
+    if (partial.title !== undefined) {
+      previewSample.title = partial.title;
+    }
+
+    if (partial.link !== undefined) {
+      previewSample.link = partial.link;
+    }
+
+    sampleTitleInput.value = previewSample.title;
+    sampleUrlInput.value = previewSample.link;
+
+    if (preset) {
+      samplePresetSelect.value = preset;
+    }
+
+    updatePreview();
+  }
+
   function updatePreview(): void {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
       format: templateField.value,
       rules: draft.rules.map((rule) => sanitizeRule(rule)),
     };
-    previewElement.textContent = formatWithOptions(options, PREVIEW_SAMPLE);
+    previewElement.textContent = formatWithOptions(options, {
+      text: DEFAULT_PREVIEW_SAMPLE.text,
+      title: previewSample.title,
+      link: previewSample.link,
+    });
   }
 
   function createInputCell(field: RuleField, index: number, value: string, label: string): HTMLTableCellElement {
@@ -347,6 +380,7 @@ export function initializeOptions(): () => void {
       draft = cloneOptions(DEFAULT_OPTIONS);
       templateField.value = draft.format;
       renderRules();
+      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
       return;
     }
 
@@ -356,12 +390,14 @@ export function initializeOptions(): () => void {
       templateField.value = draft.format;
       renderRules();
       setStatus('Options loaded.', 'success');
+      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
     } catch (error) {
       console.error('Failed to load options; fallback to defaults.', error);
       draft = cloneOptions(DEFAULT_OPTIONS);
       templateField.value = draft.format;
       renderRules();
       setStatus('Failed to load saved options; defaults restored.', 'error');
+      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
     }
   }
 
@@ -387,6 +423,42 @@ export function initializeOptions(): () => void {
   );
 
   addRuleButton.addEventListener('click', addRule, { signal });
+
+  samplePresetSelect.addEventListener(
+    'change',
+    () => {
+      const selected = samplePresetSelect.selectedOptions[0];
+      if (!selected) {
+        return;
+      }
+
+      if (selected.value === 'custom') {
+        updateSample({}, 'custom');
+        return;
+      }
+
+      const nextTitle = selected.dataset.title ?? DEFAULT_PREVIEW_SAMPLE.title;
+      const nextLink = selected.dataset.url ?? DEFAULT_PREVIEW_SAMPLE.link;
+      updateSample({ title: nextTitle, link: nextLink }, selected.value);
+    },
+    { signal },
+  );
+
+  sampleTitleInput.addEventListener(
+    'input',
+    () => {
+      updateSample({ title: sampleTitleInput.value }, 'custom');
+    },
+    { signal },
+  );
+
+  sampleUrlInput.addEventListener(
+    'input',
+    () => {
+      updateSample({ link: sampleUrlInput.value.trim() }, 'custom');
+    },
+    { signal },
+  );
 
   rulesBody.addEventListener(
     'input',

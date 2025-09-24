@@ -115,6 +115,33 @@
         border-radius: 6px;
       }
 
+      .preview-controls {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .preview-controls label {
+        display: grid;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      .preview-controls select,
+      .preview-controls input {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px;
+        background: var(--surface-background);
+        color: inherit;
+      }
+
+      .preview-controls select:focus,
+      .preview-controls input:focus {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
       .template-actions,
       .form-actions {
         display: flex;
@@ -262,20 +289,40 @@
           </div>
         </section>
 
-        <section aria-labelledby="preview-heading">
-          <div>
-            <h2 id="preview-heading">Live preview</h2>
-            <p class="token-help">Based on sample data and the rules below.</p>
-          </div>
-          <pre id="format-preview" aria-live="polite"></pre>
-        </section>
-
         <section aria-labelledby="rules-heading">
           <div>
-            <h2 id="rules-heading">Transformation rules</h2>
+            <h2 id="rules-heading">Title &amp; URL Rules</h2>
             <p class="token-help">
-              Rules apply when the current page URL matches the pattern. Leave search fields empty to skip a transform.
+              Rules apply when the current page URL matches the pattern. Use the samples to preview how titles and links shift.
             </p>
+          </div>
+          <div class="preview-controls">
+            <label for="sample-preset">
+              Preview examples
+              <select id="sample-preset">
+                <option value="custom">Custom URL…</option>
+                <option value="example" data-title="Albert Einstein on Curiosity" data-url="https://example.com/curiosity">
+                  Example.com – Curiosity Essay
+                </option>
+                <option value="nytimes" data-title="Opinion | What the Webb Telescope Saw" data-url="https://www.nytimes.com/2024/08/10/opinion/webb-telescope.html">
+                  The New York Times – Opinion
+                </option>
+                <option value="devto" data-title="Level Up Your Markdown" data-url="https://dev.to/markquote/level-up-your-markdown-2f9l">
+                  DEV Community – Markdown Tips
+                </option>
+                <option value="wikipedia" data-title="Markdown" data-url="https://en.wikipedia.org/wiki/Markdown">
+                  Wikipedia – Markdown
+                </option>
+              </select>
+            </label>
+            <label for="sample-title">
+              Sample title
+              <input id="sample-title" type="text" placeholder="Preview title" />
+            </label>
+            <label for="sample-url">
+              Sample URL
+              <input id="sample-url" type="url" placeholder="https://example.com/article" />
+            </label>
           </div>
           <table>
             <thead>
@@ -293,6 +340,14 @@
           <div class="rules-footer">
             <button type="button" class="secondary" id="add-rule">Add rule</button>
           </div>
+        </section>
+
+        <section aria-labelledby="preview-heading">
+          <div>
+            <h2 id="preview-heading">Live preview</h2>
+            <p class="token-help">Final markdown output using the current template, sample, and rules.</p>
+          </div>
+          <pre id="format-preview" aria-live="polite"></pre>
         </section>
 
         <div class="form-actions">
