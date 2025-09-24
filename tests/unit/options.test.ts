@@ -46,12 +46,12 @@ describe('Options Page', () => {
     const sampleOutputUrl = document.getElementById('sample-output-url');
 
     expect(templateField?.value).toContain('{{TITLE}}');
-    expect(previewElement?.textContent).toContain('Albert Einstein on Curiosity');
-    expect(previewElement?.textContent).toContain('https://example.com/curiosity');
-    expect(sampleUrlInput?.value).toBe('https://example.com/curiosity');
-    expect(sampleTitleInput?.value).toBe('Albert Einstein on Curiosity');
-    expect(sampleOutputTitle?.textContent).toBe('Albert Einstein on Curiosity');
-    expect(sampleOutputUrl?.textContent).toBe('https://example.com/curiosity');
+    expect(previewElement?.textContent).toContain('Example Domain');
+    expect(previewElement?.textContent).toContain('https://example.com/');
+    expect(sampleUrlInput?.value).toBe('https://example.com/');
+    expect(sampleTitleInput?.value).toBe('Example Domain');
+    expect(sampleOutputTitle?.textContent).toBe('Example Domain');
+    expect(sampleOutputUrl?.textContent).toBe('https://example.com/');
   });
 
   it('updates the preview when the sample inputs change', () => {
@@ -69,12 +69,12 @@ describe('Options Page', () => {
     expect(previewElement?.textContent).toContain('https://dev.to/example');
     expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
 
-    const targetOption = samplePresetSelect.querySelector('option[value="nytimes"]');
+    const targetOption = samplePresetSelect.querySelector('option[value="mdn"]');
     if (!targetOption) {
-      throw new Error('Expected NYTimes preset to exist.');
+      throw new Error('Expected MDN preset to exist.');
     }
 
-    samplePresetSelect.value = 'nytimes';
+    samplePresetSelect.value = 'mdn';
     samplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     expect(sampleUrlInput.value).toBe(targetOption.dataset.url);
@@ -164,15 +164,15 @@ describe('Options Page', () => {
     }
 
     urlInput.value = 'example';
-    titleSearchInput.value = 'Albert';
-    titleReplaceInput.value = 'Dr.';
+    titleSearchInput.value = 'Example';
+    titleReplaceInput.value = 'Sample';
 
     urlInput.dispatchEvent(new Event('input', { bubbles: true }));
     titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
     titleReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    expect(sampleOutputTitle.textContent).toBe('Dr. Einstein on Curiosity');
-    expect(sampleOutputUrl.textContent).toBe('https://example.com/curiosity');
+    expect(sampleOutputTitle.textContent).toBe('Sample Domain');
+    expect(sampleOutputUrl.textContent).toBe('https://example.com/');
   });
 
   it('rejects invalid regex patterns and keeps existing state', async () => {

@@ -9,9 +9,9 @@ import {
 import { applyTransformRules, formatWithOptions } from './formatting.js';
 
 const DEFAULT_PREVIEW_SAMPLE = {
-  text: 'The important thing is not to stop questioning. Curiosity has its own reason for existing.',
-  title: 'Albert Einstein on Curiosity',
-  link: 'https://example.com/curiosity',
+  text: 'This domain is established to be used for illustrative examples in documents.',
+  title: 'Example Domain',
+  link: 'https://example.com/',
 };
 
 const STATUS_TIMEOUT_MS = 3000;
