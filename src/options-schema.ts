@@ -69,6 +69,47 @@ function sanitizeBoolean(value: unknown): boolean {
   return false;
 }
 
+type StringFieldKey = string;
+
+function readStringField(
+  record: Record<string, unknown>,
+  keys: StringFieldKey[] | StringFieldKey,
+): string {
+  const aliases = Array.isArray(keys) ? keys : [keys];
+  for (const key of aliases) {
+    if (Object.hasOwn(record, key) && record[key] !== undefined) {
+      return sanitizeString(record[key]);
+    }
+  }
+  return '';
+}
+
+function readBooleanField(
+  record: Record<string, unknown>,
+  keys: StringFieldKey[] | StringFieldKey,
+): boolean {
+  const aliases = Array.isArray(keys) ? keys : [keys];
+  for (const key of aliases) {
+    if (Object.hasOwn(record, key) && record[key] !== undefined) {
+      return sanitizeBoolean(record[key]);
+    }
+  }
+  return false;
+}
+
+type RuleNormalizer<TRule> = (rawRule: unknown) => TRule | undefined;
+
+function normalizeRuleCollection<TRule>(
+  rawRules: unknown,
+  normalizer: RuleNormalizer<TRule>,
+): TRule[] {
+  if (!Array.isArray(rawRules)) {
+    return [];
+  }
+
+  return rawRules.map((entry) => normalizer(entry)).filter((rule): rule is TRule => Boolean(rule));
+}
+
 export function createDefaultTitleRules(): TitleRule[] {
   return [
     {
@@ -151,12 +192,15 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
   }
 
   const candidate = rawRule as RawTitleRuleShape;
-  const urlPattern = sanitizeString(candidate.urlPattern ?? candidate.urlMatch);
-  const titleSearch = sanitizeString(candidate.titleSearch ?? candidate.titleMatch);
-  const titleReplace = sanitizeString(candidate.titleReplace);
-  const continueMatching = sanitizeBoolean(
-    candidate.continueMatching ?? candidate.continue ?? candidate.fallthrough,
-  );
+  const record = candidate as Record<string, unknown>;
+  const urlPattern = readStringField(record, ['urlPattern', 'urlMatch']);
+  const titleSearch = readStringField(record, ['titleSearch', 'titleMatch']);
+  const titleReplace = readStringField(record, 'titleReplace');
+  const continueMatching = readBooleanField(record, [
+    'continueMatching',
+    'continue',
+    'fallthrough',
+  ]);
 
   if (!urlPattern && !titleSearch && !titleReplace) {
     return undefined;
@@ -176,12 +220,15 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
   }
 
   const candidate = rawRule as RawUrlRuleShape;
-  const urlPattern = sanitizeString(candidate.urlPattern);
-  const urlSearch = sanitizeString(candidate.urlSearch);
-  const urlReplace = sanitizeString(candidate.urlReplace);
-  const continueMatching = sanitizeBoolean(
-    candidate.continueMatching ?? candidate.continue ?? candidate.fallthrough,
-  );
+  const record = candidate as Record<string, unknown>;
+  const urlPattern = readStringField(record, 'urlPattern');
+  const urlSearch = readStringField(record, 'urlSearch');
+  const urlReplace = readStringField(record, 'urlReplace');
+  const continueMatching = readBooleanField(record, [
+    'continueMatching',
+    'continue',
+    'fallthrough',
+  ]);
 
   if (!urlPattern && !urlSearch && !urlReplace) {
     return undefined;
@@ -196,23 +243,11 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
 }
 
 function normalizeTitleRules(rawRules: unknown): TitleRule[] {
-  if (!Array.isArray(rawRules)) {
-    return [];
-  }
-
-  return rawRules
-    .map((entry) => normalizeTitleRule(entry))
-    .filter((rule): rule is TitleRule => Boolean(rule));
+  return normalizeRuleCollection(rawRules, normalizeTitleRule);
 }
 
 function normalizeUrlRules(rawRules: unknown): UrlRule[] {
-  if (!Array.isArray(rawRules)) {
-    return [];
-  }
-
-  return rawRules
-    .map((entry) => normalizeUrlRule(entry))
-    .filter((rule): rule is UrlRule => Boolean(rule));
+  return normalizeRuleCollection(rawRules, normalizeUrlRule);
 }
 
 interface CombinedRule {
@@ -230,14 +265,17 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
   }
 
   const candidate = rawRule as RawCombinedRuleShape;
-  const urlPattern = sanitizeString(candidate.urlPattern ?? candidate.urlMatch);
-  const titleSearch = sanitizeString(candidate.titleSearch ?? candidate.titleMatch);
-  const titleReplace = sanitizeString(candidate.titleReplace);
-  const urlSearch = sanitizeString(candidate.urlSearch);
-  const urlReplace = sanitizeString(candidate.urlReplace);
-  const continueMatching = sanitizeBoolean(
-    candidate.continueMatching ?? candidate.continue ?? candidate.fallthrough,
-  );
+  const record = candidate as Record<string, unknown>;
+  const urlPattern = readStringField(record, ['urlPattern', 'urlMatch']);
+  const titleSearch = readStringField(record, ['titleSearch', 'titleMatch']);
+  const titleReplace = readStringField(record, 'titleReplace');
+  const urlSearch = readStringField(record, 'urlSearch');
+  const urlReplace = readStringField(record, 'urlReplace');
+  const continueMatching = readBooleanField(record, [
+    'continueMatching',
+    'continue',
+    'fallthrough',
+  ]);
 
   if (!urlPattern && !titleSearch && !urlSearch && !urlReplace) {
     return undefined;
@@ -254,25 +292,15 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
 }
 
 function normalizeCombinedRules(rawRules: unknown): CombinedRule[] {
-  if (!Array.isArray(rawRules)) {
-    return [];
-  }
-
-  return rawRules
-    .map((entry) => normalizeCombinedRule(entry))
-    .filter((rule): rule is CombinedRule => Boolean(rule));
+  return normalizeRuleCollection(rawRules, normalizeCombinedRule);
 }
 
 function combinedRulesToTitleRules(rules: CombinedRule[]): TitleRule[] {
-  return rules
-    .map((rule) => normalizeTitleRule(rule))
-    .filter((rule): rule is TitleRule => Boolean(rule));
+  return normalizeRuleCollection(rules, normalizeTitleRule);
 }
 
 function combinedRulesToUrlRules(rules: CombinedRule[]): UrlRule[] {
-  return rules
-    .map((rule) => normalizeUrlRule(rule))
-    .filter((rule): rule is UrlRule => Boolean(rule));
+  return normalizeRuleCollection(rules, normalizeUrlRule);
 }
 
 function normalizeFormat(rawFormat: unknown, hadLegacyFormat: boolean): string {
