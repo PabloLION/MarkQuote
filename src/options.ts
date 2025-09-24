@@ -45,6 +45,7 @@ function sanitizeTitleRule(rule: TitleRule): TitleRule {
     urlPattern: rule.urlPattern.trim(),
     titleSearch: rule.titleSearch.trim(),
     titleReplace: rule.titleReplace,
+    continueMatching: Boolean(rule.continueMatching),
   };
 }
 
@@ -53,6 +54,7 @@ function sanitizeUrlRule(rule: UrlRule): UrlRule {
     urlPattern: rule.urlPattern.trim(),
     urlSearch: rule.urlSearch.trim(),
     urlReplace: rule.urlReplace,
+    continueMatching: Boolean(rule.continueMatching),
   };
 }
 
@@ -264,6 +266,22 @@ export function initializeOptions(): () => void {
     return cell;
   }
 
+  function createToggleCell(field: string, index: number, checked: boolean): HTMLTableCellElement {
+    const cell = document.createElement('td');
+    cell.classList.add('toggle-cell');
+
+    const input = document.createElement('input');
+
+    input.type = 'checkbox';
+    input.dataset.index = String(index);
+    input.dataset.field = field;
+    input.checked = checked;
+
+    cell.append(input);
+
+    return cell;
+  }
+
   function createRemoveCell(index: number, scope: 'title' | 'url'): HTMLTableCellElement {
     const cell = document.createElement('td');
     const button = document.createElement('button');
@@ -286,6 +304,11 @@ export function initializeOptions(): () => void {
         createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
         createInputCell('titleSearch', index, rule.titleSearch, 'Title search'),
         createInputCell('titleReplace', index, rule.titleReplace, 'Title replace'),
+        createToggleCell(
+          'continueMatching',
+          index,
+          Boolean(rule.continueMatching),
+        ),
         createRemoveCell(index, 'title'),
       );
 
@@ -308,6 +331,11 @@ export function initializeOptions(): () => void {
         createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
         createInputCell('urlSearch', index, rule.urlSearch, 'URL search'),
         createInputCell('urlReplace', index, rule.urlReplace, 'URL replace'),
+        createToggleCell(
+          'continueMatching',
+          index,
+          Boolean(rule.continueMatching),
+        ),
         createRemoveCell(index, 'url'),
       );
 
@@ -324,6 +352,7 @@ export function initializeOptions(): () => void {
       urlPattern: '',
       titleSearch: '',
       titleReplace: '',
+      continueMatching: false,
     });
     renderTitleRules();
 
@@ -336,6 +365,7 @@ export function initializeOptions(): () => void {
       urlPattern: '',
       urlSearch: '',
       urlReplace: '',
+      continueMatching: false,
     });
     renderUrlRules();
 
@@ -356,7 +386,9 @@ export function initializeOptions(): () => void {
       return;
     }
 
-    if (field === 'titleReplace') {
+    if (field === 'continueMatching') {
+      rule[field] = target.checked;
+    } else if (field === 'titleReplace') {
       rule[field] = target.value;
     } else {
       rule[field] = target.value.trimStart();
@@ -378,7 +410,9 @@ export function initializeOptions(): () => void {
       return;
     }
 
-    if (field === 'urlReplace') {
+    if (field === 'continueMatching') {
+      rule[field] = target.checked;
+    } else if (field === 'urlReplace') {
       rule[field] = target.value;
     } else {
       rule[field] = target.value.trimStart();
@@ -677,8 +711,28 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
+  titleRulesBody!.addEventListener(
+    'change',
+    (event) => {
+      if (event.target instanceof HTMLInputElement) {
+        applyTitleInputChange(event.target);
+      }
+    },
+    { signal },
+  );
+
   urlRulesBody!.addEventListener(
     'input',
+    (event) => {
+      if (event.target instanceof HTMLInputElement) {
+        applyUrlInputChange(event.target);
+      }
+    },
+    { signal },
+  );
+
+  urlRulesBody!.addEventListener(
+    'change',
     (event) => {
       if (event.target instanceof HTMLInputElement) {
         applyUrlInputChange(event.target);

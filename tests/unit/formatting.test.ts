@@ -18,6 +18,7 @@ describe('formatWithOptions', () => {
           urlPattern: 'example.com',
           titleSearch: 'Example',
           titleReplace: 'Sample',
+          continueMatching: false,
         },
       ],
       urlRules: [
@@ -25,6 +26,7 @@ describe('formatWithOptions', () => {
           urlPattern: 'example.com',
           urlSearch: 'http',
           urlReplace: 'https',
+          continueMatching: false,
         },
       ],
     };
@@ -62,6 +64,7 @@ describe('formatWithOptions', () => {
         urlPattern: 'nytimes',
         titleSearch: 'Opinion',
         titleReplace: 'Column',
+        continueMatching: false,
       },
     ];
 
@@ -70,6 +73,7 @@ describe('formatWithOptions', () => {
         urlPattern: 'nytimes',
         urlSearch: 'http',
         urlReplace: 'https',
+        continueMatching: false,
       },
     ];
 
@@ -77,5 +81,65 @@ describe('formatWithOptions', () => {
     const transformedUrl = applyUrlRules(urlRules, 'http://nytimes.com/story');
     expect(transformedTitle).toBe('Column Piece');
     expect(transformedUrl).toBe('https://nytimes.com/story');
+  });
+
+  it('stops applying subsequent title rules when continueMatching is false', () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: '',
+        titleSearch: 'First',
+        titleReplace: 'Second',
+        continueMatching: false,
+      },
+      {
+        urlPattern: '',
+        titleSearch: 'Second',
+        titleReplace: 'Third',
+        continueMatching: true,
+      },
+    ];
+
+    const result = applyTitleRules(rules, 'First Article', 'https://example.com');
+    expect(result).toBe('Second Article');
+  });
+
+  it('continues applying URL rules when continueMatching is true', () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: '',
+        urlSearch: '^http://',
+        urlReplace: 'https://',
+        continueMatching: true,
+      },
+      {
+        urlPattern: '',
+        urlSearch: 'example',
+        urlReplace: 'sample',
+        continueMatching: false,
+      },
+    ];
+
+    const result = applyUrlRules(rules, 'http://example.com/article');
+    expect(result).toBe('https://sample.com/article');
+  });
+
+  it('continues applying title rules when continueMatching is true', () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: '',
+        titleSearch: 'First',
+        titleReplace: 'Second',
+        continueMatching: true,
+      },
+      {
+        urlPattern: '',
+        titleSearch: 'Second',
+        titleReplace: 'Third',
+        continueMatching: false,
+      },
+    ];
+
+    const result = applyTitleRules(rules, 'First Article', 'https://example.com');
+    expect(result).toBe('Third Article');
   });
 });

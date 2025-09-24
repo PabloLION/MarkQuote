@@ -80,24 +80,32 @@ describe('Options Page', () => {
     expect(sampleOutputTitle?.textContent).toBe('Markdown - Wikipedia');
     expect(sampleOutputUrl?.textContent).toBe('https://www.amazon.com/dp/B01KBIJ53I');
 
-    const titleRuleInputs = Array.from(
-      document.querySelectorAll<HTMLInputElement>('#title-rules-body input'),
-    ).map((input) => input.value);
+    const firstTitleRow = document.querySelector<HTMLTableRowElement>('#title-rules-body tr');
+    const firstUrlRow = document.querySelector<HTMLTableRowElement>('#url-rules-body tr');
 
-    expect(titleRuleInputs).toEqual([
-      DEFAULT_WIKI_URL_PATTERN,
-      DEFAULT_WIKI_TITLE_SEARCH,
-      DEFAULT_WIKI_TITLE_REPLACE,
-    ]);
+    if (!firstTitleRow || !firstUrlRow) {
+      throw new Error('Expected default rule rows to be rendered.');
+    }
 
-    const urlRuleInputs = Array.from(
-      document.querySelectorAll<HTMLInputElement>('#url-rules-body input'),
-    ).map((input) => input.value);
-    expect(urlRuleInputs).toEqual([
-      DEFAULT_AMAZON_URL_PATTERN,
-      DEFAULT_AMAZON_URL_SEARCH,
-      DEFAULT_AMAZON_URL_REPLACE,
-    ]);
+    const titlePatternInput = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+    const titleSearchInput = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
+    const titleReplaceInput = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
+    const titleContinueToggle = firstTitleRow.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
+
+    expect(titlePatternInput?.value).toBe(DEFAULT_WIKI_URL_PATTERN);
+    expect(titleSearchInput?.value).toBe(DEFAULT_WIKI_TITLE_SEARCH);
+    expect(titleReplaceInput?.value).toBe(DEFAULT_WIKI_TITLE_REPLACE);
+    expect(titleContinueToggle?.checked).toBe(false);
+
+    const urlPatternInput = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+    const urlSearchInput = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="urlSearch"]');
+    const urlReplaceInput = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="urlReplace"]');
+    const urlContinueToggle = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
+
+    expect(urlPatternInput?.value).toBe(DEFAULT_AMAZON_URL_PATTERN);
+    expect(urlSearchInput?.value).toBe(DEFAULT_AMAZON_URL_SEARCH);
+    expect(urlReplaceInput?.value).toBe(DEFAULT_AMAZON_URL_REPLACE);
+    expect(urlContinueToggle?.checked).toBe(false);
   });
 
   it('loads the saved template and renders a preview', () => {
@@ -193,6 +201,9 @@ describe('Options Page', () => {
     const titleReplaceInput = document.querySelector<HTMLInputElement>(
       '#title-rules-body input[data-field="titleReplace"]',
     );
+    const titleContinueToggle = document.querySelector<HTMLInputElement>(
+      '#title-rules-body input[data-field="continueMatching"]',
+    );
 
     const urlRuleUrlInput = document.querySelector<HTMLInputElement>(
       '#url-rules-body input[data-field="urlPattern"]',
@@ -203,6 +214,9 @@ describe('Options Page', () => {
     const urlReplaceInput = document.querySelector<HTMLInputElement>(
       '#url-rules-body input[data-field="urlReplace"]',
     );
+    const urlContinueToggle = document.querySelector<HTMLInputElement>(
+      '#url-rules-body input[data-field="continueMatching"]',
+    );
 
     const form = document.getElementById('options-form') as HTMLFormElement;
 
@@ -210,9 +224,11 @@ describe('Options Page', () => {
       !titleUrlInput ||
       !titleSearchInput ||
       !titleReplaceInput ||
+      !titleContinueToggle ||
       !urlRuleUrlInput ||
       !urlSearchInput ||
       !urlReplaceInput ||
+      !urlContinueToggle ||
       !form
     ) {
       throw new Error('Expected inputs were not present.');
@@ -221,16 +237,20 @@ describe('Options Page', () => {
     titleUrlInput.value = 'example.com';
     titleSearchInput.value = 'Example';
     titleReplaceInput.value = 'Sample';
+    titleContinueToggle.checked = true;
     urlRuleUrlInput.value = 'example.com';
     urlSearchInput.value = 'http';
     urlReplaceInput.value = 'https';
+    urlContinueToggle.checked = true;
 
     titleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
     titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
     titleReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
+    titleContinueToggle.dispatchEvent(new Event('change', { bubbles: true }));
     urlRuleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
     urlSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
     urlReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
+    urlContinueToggle.dispatchEvent(new Event('change', { bubbles: true }));
 
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await flushMicrotasks();
@@ -242,12 +262,32 @@ describe('Options Page', () => {
       options: {
         version: number;
         format: string;
-        titleRules: Array<Record<string, string>>;
-        urlRules: Array<Record<string, string>>;
+        titleRules: Array<{
+          urlPattern: string;
+          titleSearch: string;
+          titleReplace: string;
+          continueMatching: boolean;
+        }>;
+        urlRules: Array<{
+          urlPattern: string;
+          urlSearch: string;
+          urlReplace: string;
+          continueMatching: boolean;
+        }>;
       };
       format: string;
-      titleRules: Array<Record<string, string>>;
-      urlRules: Array<Record<string, string>>;
+      titleRules: Array<{
+        urlPattern: string;
+        titleSearch: string;
+        titleReplace: string;
+        continueMatching: boolean;
+      }>;
+      urlRules: Array<{
+        urlPattern: string;
+        urlSearch: string;
+        urlReplace: string;
+        continueMatching: boolean;
+      }>;
     }];
 
     expect(payload.options.version).toBe(1);
@@ -256,6 +296,7 @@ describe('Options Page', () => {
         urlPattern: 'example.com',
         titleSearch: 'Example',
         titleReplace: 'Sample',
+        continueMatching: true,
       },
     ]);
     expect(payload.options.urlRules).toEqual([
@@ -263,6 +304,7 @@ describe('Options Page', () => {
         urlPattern: 'example.com',
         urlSearch: 'http',
         urlReplace: 'https',
+        continueMatching: true,
       },
     ]);
     expect(payload.titleRules).toEqual(payload.options.titleRules);

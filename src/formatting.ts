@@ -6,13 +6,24 @@ export interface TemplateTokens {
   url: string;
 }
 
-function safeApplyRegex(source: string, pattern: string, replacement: string): string {
+interface RuleApplicationResult {
+  value: string;
+  matched: boolean;
+}
+
+function safeApplyRegex(source: string, pattern: string, replacement: string): RuleApplicationResult {
   try {
     const regex = new RegExp(pattern);
-    return source.replace(regex, replacement);
+    const matched = regex.test(source);
+    if (!matched) {
+      return { value: source, matched: false };
+    }
+
+    const replaced = source.replace(new RegExp(pattern), replacement);
+    return { value: replaced, matched: true };
   } catch (error) {
     console.error('Failed to apply regex replacement.', { pattern, replacement, error });
-    return source;
+    return { value: source, matched: false };
   }
 }
 
@@ -29,36 +40,58 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
   }
 }
 
-function applyTitleRule(rule: TitleRule, title: string, url: string): string {
+function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplicationResult {
   if (!matchesUrlPattern(rule.urlPattern, url)) {
-    return title;
+    return { value: title, matched: false };
   }
 
   if (!rule.titleSearch) {
-    return title;
+    return { value: title, matched: true };
   }
 
   return safeApplyRegex(title, rule.titleSearch, rule.titleReplace);
 }
 
 export function applyTitleRules(rules: TitleRule[], startingTitle: string, url: string): string {
-  return rules.reduce((currentTitle, rule) => applyTitleRule(rule, currentTitle, url), startingTitle);
+  let currentTitle = startingTitle;
+
+  for (const rule of rules) {
+    const result = applyTitleRule(rule, currentTitle, url);
+    currentTitle = result.value;
+
+    if (result.matched && !rule.continueMatching) {
+      break;
+    }
+  }
+
+  return currentTitle;
 }
 
-function applyUrlRule(rule: UrlRule, url: string): string {
+function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
   if (!matchesUrlPattern(rule.urlPattern, url)) {
-    return url;
+    return { value: url, matched: false };
   }
 
   if (!rule.urlSearch) {
-    return url;
+    return { value: url, matched: true };
   }
 
   return safeApplyRegex(url, rule.urlSearch, rule.urlReplace);
 }
 
 export function applyUrlRules(rules: UrlRule[], startingUrl: string): string {
-  return rules.reduce((currentUrl, rule) => applyUrlRule(rule, currentUrl), startingUrl);
+  let currentUrl = startingUrl;
+
+  for (const rule of rules) {
+    const result = applyUrlRule(rule, currentUrl);
+    currentUrl = result.value;
+
+    if (result.matched && !rule.continueMatching) {
+      break;
+    }
+  }
+
+  return currentUrl;
 }
 
 function replaceToken(template: string, token: string, replacement: string): string {

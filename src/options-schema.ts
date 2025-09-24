@@ -4,12 +4,14 @@ export interface TitleRule {
   urlPattern: string;
   titleSearch: string;
   titleReplace: string;
+  continueMatching: boolean;
 }
 
 export interface UrlRule {
   urlPattern: string;
   urlSearch: string;
   urlReplace: string;
+  continueMatching: boolean;
 }
 
 export interface OptionsPayload {
@@ -35,12 +37,35 @@ function sanitizeString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
+function sanitizeBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') {
+      return true;
+    }
+    if (normalized === 'false') {
+      return false;
+    }
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  return false;
+}
+
 export function createDefaultTitleRules(): TitleRule[] {
   return [
     {
       urlPattern: DEFAULT_WIKI_URL_PATTERN,
       titleSearch: DEFAULT_WIKI_TITLE_SEARCH,
       titleReplace: DEFAULT_WIKI_TITLE_REPLACE,
+      continueMatching: false,
     },
   ];
 }
@@ -51,6 +76,7 @@ export function createDefaultUrlRules(): UrlRule[] {
       urlPattern: DEFAULT_AMAZON_URL_PATTERN,
       urlSearch: DEFAULT_AMAZON_URL_SEARCH,
       urlReplace: DEFAULT_AMAZON_URL_REPLACE,
+      continueMatching: false,
     },
   ];
 }
@@ -77,12 +103,18 @@ interface RawTitleRuleShape {
   titleSearch?: unknown;
   titleMatch?: unknown;
   titleReplace?: unknown;
+  continueMatching?: unknown;
+  continue?: unknown;
+  fallthrough?: unknown;
 }
 
 interface RawUrlRuleShape {
   urlPattern?: unknown;
   urlSearch?: unknown;
   urlReplace?: unknown;
+  continueMatching?: unknown;
+  continue?: unknown;
+  fallthrough?: unknown;
 }
 
 interface RawCombinedRuleShape extends RawTitleRuleShape, RawUrlRuleShape {}
@@ -100,6 +132,9 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
   const urlPattern = sanitizeString(candidate.urlPattern ?? candidate.urlMatch);
   const titleSearch = sanitizeString(candidate.titleSearch ?? candidate.titleMatch);
   const titleReplace = sanitizeString(candidate.titleReplace);
+  const continueMatching = sanitizeBoolean(
+    candidate.continueMatching ?? candidate.continue ?? candidate.fallthrough,
+  );
 
   if (!urlPattern && !titleSearch && !titleReplace) {
     return undefined;
@@ -109,6 +144,7 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
     urlPattern,
     titleSearch,
     titleReplace,
+    continueMatching,
   };
 }
 
@@ -121,6 +157,9 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
   const urlPattern = sanitizeString(candidate.urlPattern);
   const urlSearch = sanitizeString(candidate.urlSearch);
   const urlReplace = sanitizeString(candidate.urlReplace);
+  const continueMatching = sanitizeBoolean(
+    candidate.continueMatching ?? candidate.continue ?? candidate.fallthrough,
+  );
 
   if (!urlPattern && !urlSearch && !urlReplace) {
     return undefined;
@@ -130,6 +169,7 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
     urlPattern,
     urlSearch,
     urlReplace,
+    continueMatching,
   };
 }
 
@@ -159,6 +199,7 @@ interface CombinedRule {
   titleReplace: string;
   urlSearch: string;
   urlReplace: string;
+  continueMatching: boolean;
 }
 
 function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
@@ -172,6 +213,9 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
   const titleReplace = sanitizeString(candidate.titleReplace);
   const urlSearch = sanitizeString(candidate.urlSearch);
   const urlReplace = sanitizeString(candidate.urlReplace);
+  const continueMatching = sanitizeBoolean(
+    candidate.continueMatching ?? candidate.continue ?? candidate.fallthrough,
+  );
 
   if (!urlPattern && !titleSearch && !urlSearch && !urlReplace) {
     return undefined;
@@ -183,6 +227,7 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
     titleReplace,
     urlSearch,
     urlReplace,
+    continueMatching,
   };
 }
 
