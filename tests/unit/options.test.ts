@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import sinonChrome from 'sinon-chrome/extensions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,6 +19,9 @@ import {
   DEFAULT_WIKI_TITLE_SEARCH,
   DEFAULT_WIKI_URL_PATTERN,
 } from '../../src/options-schema';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const html = fs.readFileSync(path.resolve(__dirname, '../../public/options.html'), 'utf8');
 
@@ -182,7 +186,9 @@ describe('Options Page', () => {
     expect(previewElement?.textContent).toContain('Dev Example Post');
     expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
 
-    const titlePresetOption = titleSamplePresetSelect.querySelector('option[value="mdn"]');
+    const titlePresetOption = titleSamplePresetSelect.querySelector<HTMLOptionElement>(
+      'option[value="mdn"]',
+    );
     if (!titlePresetOption) {
       throw new Error('Expected MDN title preset to exist.');
     }
@@ -199,7 +205,9 @@ describe('Options Page', () => {
     expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? '');
     expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
 
-    const urlPresetOption = urlSamplePresetSelect.querySelector('option[value="daring-fireball"]');
+    const urlPresetOption = urlSamplePresetSelect.querySelector<HTMLOptionElement>(
+      'option[value="daring-fireball"]',
+    );
     if (!urlPresetOption) {
       throw new Error('Expected Daring Fireball URL preset to exist.');
     }
@@ -223,14 +231,18 @@ describe('Options Page', () => {
     addTitleRuleButton.click();
     addUrlRuleButton.click();
 
-    const titleRows = Array.from(document.querySelectorAll('#title-rules-body tr'));
+    const titleRows = Array.from(
+      document.querySelectorAll<HTMLTableRowElement>('#title-rules-body tr'),
+    );
     const titleLastRow = titleRows[titleRows.length - 1];
     const titleUrlInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
     const titleSearchInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
     const titleReplaceInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
     const titleContinueToggle = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
 
-    const urlRows = Array.from(document.querySelectorAll('#url-rules-body tr'));
+    const urlRows = Array.from(
+      document.querySelectorAll<HTMLTableRowElement>('#url-rules-body tr'),
+    );
     const urlLastRow = urlRows[urlRows.length - 1];
     const urlRuleUrlInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
     const urlSearchInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlSearch"]');
