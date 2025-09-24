@@ -150,6 +150,16 @@ export function initializeOptions(): () => void {
     url: DEFAULT_PREVIEW_SAMPLE.url,
   };
 
+  type DragScope = 'title' | 'url';
+
+  let draggingState:
+    | {
+        scope: DragScope;
+        fromIndex: number;
+        row: HTMLTableRowElement;
+      }
+    | undefined;
+
   function scheduleStatusClear(): void {
     if (statusTimeout) {
       clearTimeout(statusTimeout);
@@ -266,6 +276,26 @@ export function initializeOptions(): () => void {
     return cell;
   }
 
+  function createHandleCell(scope: 'title' | 'url', index: number): HTMLTableCellElement {
+    const cell = document.createElement('td');
+    cell.classList.add('reorder-cell');
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.classList.add('drag-handle');
+    button.draggable = true;
+    button.setAttribute(
+      'aria-label',
+      scope === 'title' ? 'Drag to reorder title rule' : 'Drag to reorder URL rule',
+    );
+    button.innerHTML = '<span aria-hidden="true">⋮⋮</span>';
+
+    button.dataset.index = String(index);
+
+    cell.append(button);
+    return cell;
+  }
+
   function createToggleCell(field: string, index: number, shouldBreak: boolean): HTMLTableCellElement {
     const cell = document.createElement('td');
     cell.classList.add('toggle-cell');
@@ -274,7 +304,7 @@ export function initializeOptions(): () => void {
 
     input.type = 'checkbox';
     input.dataset.index = String(index);
-    input.dataset.field = field;
+   input.dataset.field = field;
     input.checked = shouldBreak;
     input.setAttribute('aria-label', 'Break after match');
 
@@ -294,6 +324,127 @@ export function initializeOptions(): () => void {
     return cell;
   }
 
+  function moveRule<T>(list: T[], fromIndex: number, toIndex: number): void {
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= list.length ||
+      toIndex >= list.length
+    ) {
+      return;
+    }
+
+    const [item] = list.splice(fromIndex, 1);
+    let insertIndex = toIndex;
+    if (fromIndex < toIndex) {
+      insertIndex = Math.min(insertIndex, list.length);
+    }
+    if (insertIndex > list.length) {
+      insertIndex = list.length;
+    }
+    list.splice(insertIndex, 0, item);
+  }
+
+  function attachRowDragHandlers(row: HTMLTableRowElement, scope: DragScope): void {
+    const handle = row.querySelector<HTMLButtonElement>('.drag-handle');
+    if (!handle) {
+      return;
+    }
+
+    handle.addEventListener(
+      'dragstart',
+      (event) => {
+        const index = Number.parseInt(row.dataset.index ?? '', 10);
+        if (Number.isNaN(index)) {
+          event.preventDefault();
+          return;
+        }
+
+        draggingState = { scope, fromIndex: index, row };
+        if (event.dataTransfer) {
+          event.dataTransfer.setData('text/plain', String(index));
+          event.dataTransfer.setDragImage(row, 0, 0);
+          event.dataTransfer.effectAllowed = 'move';
+        }
+        row.classList.add('dragging');
+      },
+      { signal },
+    );
+
+    handle.addEventListener(
+      'dragend',
+      () => {
+        row.classList.remove('dragging');
+        draggingState = undefined;
+      },
+      { signal },
+    );
+
+    row.addEventListener(
+      'dragenter',
+      (event) => {
+        if (!draggingState || draggingState.scope !== scope) {
+          return;
+        }
+        event.preventDefault();
+        row.classList.add('drag-over');
+      },
+      { signal },
+    );
+
+    row.addEventListener(
+      'dragover',
+      (event) => {
+        if (!draggingState || draggingState.scope !== scope) {
+          return;
+        }
+        event.preventDefault();
+        event.dataTransfer && (event.dataTransfer.dropEffect = 'move');
+      },
+      { signal },
+    );
+
+    row.addEventListener(
+      'dragleave',
+      () => {
+        row.classList.remove('drag-over');
+      },
+      { signal },
+    );
+
+    row.addEventListener(
+      'drop',
+      (event) => {
+        if (!draggingState || draggingState.scope !== scope) {
+          return;
+        }
+        event.preventDefault();
+
+        const targetIndex = Number.parseInt(row.dataset.index ?? '', 10);
+        if (Number.isNaN(targetIndex)) {
+          row.classList.remove('drag-over');
+          return;
+        }
+
+        const fromIndex = draggingState.fromIndex;
+        row.classList.remove('drag-over');
+        draggingState.row.classList.remove('dragging');
+
+        if (scope === 'title') {
+          moveRule(draft.titleRules, fromIndex, targetIndex);
+          draggingState = undefined;
+          renderTitleRules();
+        } else {
+          moveRule(draft.urlRules, fromIndex, targetIndex);
+          draggingState = undefined;
+          renderUrlRules();
+        }
+      },
+      { signal },
+    );
+  }
+
   function renderTitleRules(): void {
     titleRulesBody!.innerHTML = '';
 
@@ -302,6 +453,7 @@ export function initializeOptions(): () => void {
       row.dataset.index = String(index);
 
       row.append(
+        createHandleCell('title', index),
         createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
         createInputCell('titleSearch', index, rule.titleSearch, 'Title search'),
         createInputCell('titleReplace', index, rule.titleReplace, 'Title replace'),
@@ -314,6 +466,7 @@ export function initializeOptions(): () => void {
       );
 
       titleRulesBody!.append(row);
+      attachRowDragHandlers(row, 'title');
     });
 
     resetTitleClearConfirmation();
@@ -329,6 +482,7 @@ export function initializeOptions(): () => void {
       row.dataset.index = String(index);
 
       row.append(
+        createHandleCell('url', index),
         createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
         createInputCell('urlSearch', index, rule.urlSearch, 'URL search'),
         createInputCell('urlReplace', index, rule.urlReplace, 'URL replace'),
@@ -341,6 +495,7 @@ export function initializeOptions(): () => void {
       );
 
       urlRulesBody!.append(row);
+      attachRowDragHandlers(row, 'url');
     });
 
     resetUrlClearConfirmation();

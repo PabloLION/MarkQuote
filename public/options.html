@@ -206,6 +206,47 @@
         padding-right: 0;
       }
 
+      .reorder-column {
+        width: 32px;
+      }
+
+      .reorder-cell {
+        padding-right: 8px;
+      }
+
+      .drag-handle {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+
+      .drag-handle:focus-visible {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
+      .drag-handle span {
+        pointer-events: none;
+        font-size: 1rem;
+        letter-spacing: -1px;
+      }
+
+      tr.dragging {
+        opacity: 0.6;
+      }
+
+      tr.drag-over {
+        outline: 2px dashed var(--accent-color);
+        outline-offset: -1px;
+      }
+
       .toggle-cell {
         text-align: center;
       }
@@ -328,6 +369,11 @@
         tbody td:last-child {
           justify-self: flex-start;
         }
+
+        .reorder-cell {
+          order: -1;
+          padding-right: 0;
+        }
       }
     </style>
   </head>
@@ -387,6 +433,7 @@
           <table>
             <thead>
               <tr>
+                <th scope="col" class="reorder-column" aria-label="Reorder"></th>
                 <th scope="col">URL pattern</th>
                 <th scope="col">Title search</th>
                 <th scope="col">Title replace</th>
@@ -449,6 +496,7 @@
           <table>
             <thead>
               <tr>
+                <th scope="col" class="reorder-column" aria-label="Reorder"></th>
                 <th scope="col">URL pattern</th>
                 <th scope="col">URL search</th>
                 <th scope="col">URL replace</th>
