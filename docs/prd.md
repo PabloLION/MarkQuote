@@ -30,7 +30,7 @@ MarkQuote solves this problem by providing a lightweight Chrome extension that a
 3. **FR3 (Updated): Toolbar Icon Action:** The extension must have a toolbar icon that, when clicked, performs the same action as the context menu: copying the currently selected text on the page using the format defined in FR1.
 4. **FR4 (Updated): Default Keyboard Shortcut:** The extension must provide a default keyboard shortcut to trigger the copy action (FR1). The extension's help or options documentation should guide users to Chrome's native extensions page (`chrome://extensions/shortcuts`) to customize it.
 5. **FR5: Rich Text to Markdown Conversion:** The extension must accurately convert common rich text formatting (e.g., bold, italics, lists, headers) within the selected text into their corresponding markdown syntax.
-6. **FR6: Customizable Source Link Formatting:** The extension must provide an options page where users can define a markdown template for the copied output using the tokens `{{TEXT}}`, `{{TITLE}}`, and `{{LINK}}`. Users must be able to configure regex-based search/replace rules for both title and link values (per URL match), restore the default template, and view a live preview of the resulting markdown source while editing.
+6. **FR6: Customizable Source URL Formatting:** The extension must provide an options page where users can define a markdown template for the copied output using the tokens `{{TEXT}}`, `{{TITLE}}`, and `{{URL}}`. Users must be able to configure regex-based search/replace rules for both title and URL values (per URL match), restore the default template, and view a live preview of the resulting markdown source while editing.
 
 ### Non-Functional
 
@@ -55,7 +55,7 @@ The user experience should be minimalist, efficient, and nearly invisible. The e
 
 ### Core Screens and Views
 
-From a product perspective, the only required view is the **Options Page**. This page will host the configuration for the customizable source link format (FR6). All other interactions are integrated directly into the browser's existing UI (context menu, toolbar).
+From a product perspective, the only required view is the **Options Page**. This page will host the configuration for the customizable source URL format (FR6). All other interactions are integrated directly into the browser's existing UI (context menu, toolbar).
 
 ### Accessibility: WCAG AA
 
@@ -138,7 +138,7 @@ The project should include a testing suite. Unit tests should cover individual J
 ### Future Stories
 
 - **Story: Post-Copy Feedback Popup:** As a user, I want an optional popup to appear after a copy action, confirming the success and showing a preview of the copied content, so I have immediate feedback on the operation.
-- **Story: Per-Site Formatting Rules:** As a user, I want to define different source link formats for different websites (e.g., by domain), so that I can have tailored outputs for my most-used sources.
+- **Story: Per-Site Formatting Rules:** As a user, I want to define different source URL formats for different websites (e.g., by domain), so that I can have tailored outputs for my most-used sources.
 - **Story: Selection-Activated Tooltip:** As a user, I want a small tooltip/button to appear near my selected text, so that I have a very fast, contextual way to trigger the copy action. (Includes a "diminishing" dismiss button).
 
 ## MVP Validation Strategy

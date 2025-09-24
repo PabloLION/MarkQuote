@@ -1,5 +1,5 @@
 import './polyfills';
-import sinonChrome from 'sinon-chrome/extensions/index.js';
+import sinonChrome from 'sinon-chrome';
 
 const STORAGE_KEY = 'markquote-dev-storage';
 

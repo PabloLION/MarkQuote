@@ -1,102 +1,555 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="utf-8" />
     <title>MarkQuote Options</title>
     <style>
-      body {
-        font-family: sans-serif;
-        padding: 20px;
-        width: 600px; /* Wider frame */
-        margin: 20px auto; /* Center the page */
-        max-width: 800px; /* Prevent too wide on large screens */
-        background-color: #fff; /* Consistent background for the frame */
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        color: #333;
-      }
-      label {
-        display: block;
-        margin-bottom: 8px;
-        font-weight: bold;
-      }
-      textarea {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        box-sizing: border-box;
-      }
-      button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 10px 15px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 16px;
-      }
-      button:hover {
-        background-color: #45a049;
-      }
-      #status {
-        margin-top: 10px;
-        font-weight: bold;
-        color: green;
+      :root {
+        color-scheme: light dark;
+        --surface-background: #ffffff;
+        --surface-foreground: #1e1e1e;
+        --panel-background: #f4f4f5;
+        --border-color: #d4d4d8;
+        --accent-color: #2563eb;
+        --accent-foreground: #ffffff;
+        --danger-color: #dc2626;
+        --status-success: #047857;
       }
 
       @media (prefers-color-scheme: dark) {
+        :root {
+          --surface-background: #111827;
+          --surface-foreground: #e5e7eb;
+          --panel-background: #1f2937;
+          --border-color: #374151;
+          --accent-color: #3b82f6;
+          --accent-foreground: #0b1120;
+          --danger-color: #f87171;
+          --status-success: #34d399;
+        }
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: var(--surface-background);
+        color: var(--surface-foreground);
+        margin: 0;
+        padding: 32px;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        display: grid;
+        gap: 24px;
+      }
+
+      header h1 {
+        margin-bottom: 8px;
+        font-size: 1.75rem;
+      }
+
+      header p {
+        margin: 0;
+        line-height: 1.5;
+      }
+
+      form {
+        display: grid;
+        gap: 24px;
+      }
+
+      section {
+        background-color: var(--panel-background);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+        display: grid;
+        gap: 16px;
+      }
+
+      section h2 {
+        margin: 0;
+        font-size: 1.25rem;
+      }
+
+      label {
+        font-weight: 600;
+        display: block;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 140px;
+        padding: 12px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--surface-background);
+        color: inherit;
+      }
+
+      textarea[aria-invalid='true'],
+      input[aria-invalid='true'] {
+        border-color: var(--danger-color);
+      }
+
+      textarea:focus,
+      input:focus,
+      button:focus {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
+      .token-help {
+        margin: 0;
+        font-size: 0.875rem;
+        color: inherit;
+      }
+
+      .token-help code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        background: rgba(15, 23, 42, 0.08);
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+
+      .preview-controls {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .preview-controls label {
+        display: grid;
+        gap: 6px;
+        font-weight: 500;
+      }
+
+      .preview-controls select,
+      .preview-controls input {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 8px;
+        background: var(--surface-background);
+        color: inherit;
+      }
+
+      .preview-controls select:focus,
+      .preview-controls input:focus {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
+      .template-actions,
+      .form-actions {
+        display: flex;
+        gap: 12px;
+      }
+
+      button {
+        border-radius: 999px;
+        border: 1px solid transparent;
+        padding: 8px 16px;
+        font-weight: 600;
+        cursor: pointer;
+        background-color: var(--accent-color);
+        color: var(--accent-foreground);
+        transition: filter 160ms ease;
+      }
+
+      button.secondary {
+        background-color: transparent;
+        color: inherit;
+        border-color: var(--border-color);
+      }
+
+      button.danger {
+        background-color: var(--danger-color);
+        color: #fff;
+      }
+
+      button:hover {
+        filter: brightness(1.05);
+      }
+
+      pre {
+        background-color: var(--surface-background);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        padding: 16px;
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead th {
+        text-align: left;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+      }
+
+      tbody td {
+        padding: 8px 8px 0 0;
+      }
+
+      tbody td:last-child {
+        padding-right: 0;
+      }
+
+      .reorder-column {
+        width: 32px;
+      }
+
+      .reorder-cell {
+        padding-right: 8px;
+      }
+
+      .drag-handle {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 0;
+      }
+
+      .drag-handle:focus-visible {
+        outline: 2px solid var(--accent-color);
+        outline-offset: 2px;
+      }
+
+      .drag-handle span {
+        pointer-events: none;
+        font-size: 1rem;
+        letter-spacing: -1px;
+      }
+
+      tr.dragging {
+        opacity: 0.6;
+      }
+
+      tr.drag-over {
+        outline: 2px dashed var(--accent-color);
+        outline-offset: -1px;
+      }
+
+      .toggle-cell {
+        text-align: center;
+      }
+
+      .toggle-cell input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--accent-color);
+        cursor: pointer;
+      }
+
+      tbody input {
+        width: 100%;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: var(--surface-background);
+        color: inherit;
+        box-sizing: border-box;
+      }
+
+      .rules-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+        border-top: 1px solid var(--border-color);
+        padding-top: 16px;
+      }
+
+      .rules-footer .danger {
+        color: var(--danger-color);
+        background-color: transparent;
+        border-color: var(--danger-color);
+      }
+
+      .rules-footer .confirm-clear {
+        background-color: var(--danger-color);
+        color: #ffffff;
+      }
+
+      .rules-footer .danger.confirming {
+        background-color: var(--danger-color);
+        color: #ffffff;
+      }
+
+      .rules-output {
+        display: grid;
+        gap: 8px;
+        font-size: 0.9rem;
+      }
+
+      .rules-output div {
+        display: grid;
+        gap: 4px;
+      }
+
+      .rules-output-label {
+        font-weight: 600;
+      }
+
+      .rules-output code {
+        background: rgba(15, 23, 42, 0.08);
+        padding: 4px 6px;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      }
+
+      .rules-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-left: auto;
+        width: min(200px, 100%);
+      }
+
+      .clear-status {
+        font-size: 0.875rem;
+        color: var(--danger-color);
+        margin: 0;
+      }
+
+      #status {
+        min-height: 1.25rem;
+        font-size: 0.95rem;
+      }
+
+      #status[data-variant='success'] {
+        color: var(--status-success);
+      }
+
+      #status[data-variant='error'] {
+        color: var(--danger-color);
+      }
+
+      @media (max-width: 720px) {
         body {
-          background-color: #333; /* Darker background for the frame in dark mode */
-          color: #eee;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+          padding: 16px;
         }
-        h1 {
-          color: #eee;
+
+        section {
+          padding: 16px;
         }
-        textarea {
-          background-color: #444;
-          border-color: #666;
-          color: #eee;
+
+        thead {
+          display: none;
         }
-        button {
-          background-color: #666;
+
+        tbody tr {
+          display: grid;
+          gap: 8px;
+          border-bottom: 1px solid var(--border-color);
+          padding-bottom: 12px;
         }
-        button:hover {
-          background-color: #888;
+
+        tbody td {
+          padding: 0;
         }
-        #status {
-          color: #90ee90; /* Light green for status in dark mode */
+
+        tbody td:last-child {
+          justify-self: flex-start;
+        }
+
+        .reorder-cell {
+          order: -1;
+          padding-right: 0;
         }
       }
     </style>
   </head>
   <body>
-    <h1>MarkQuote Options</h1>
-    <p>By default, the title remains the title of the website, but you can customize per website some regex to transform the title of the markdown link.</p>
-    <p>If some URL (regex) pattern matches, the page title will go through the replacing process with the corresponding match pattern and replacement config.</p>
-    <p>For how to use the title replace feature, search "String.prototype.replace" document for more details.</p>
+    <main>
+      <header>
+        <h1>MarkQuote Options</h1>
+        <p>
+          Configure how MarkQuote formats copied selections. Templates support
+          <code>{{TEXT}}</code>, <code>{{TITLE}}</code>, and <code>{{URL}}</code>
+          tokens, and rules let you refine titles or URLs for matching pages.
+        </p>
+      </header>
+      <form id="options-form">
+        <section aria-labelledby="template-heading">
+          <div>
+            <h2 id="template-heading">Template</h2>
+            <p class="token-help">
+              Use multi-line markdown. Tokens expand to the copied text, page title, and page URL.
+            </p>
+          </div>
+          <label for="format-template">Markdown template</label>
+          <textarea id="format-template" spellcheck="false"></textarea>
+          <div class="template-actions">
+            <button type="button" class="secondary" id="restore-template">Restore default template</button>
+          </div>
+        </section>
 
-    <div class="controls">
-      <button id="add-rule">Add</button>
-      <button id="reset-rules">Reset</button>
-      <button id="save-rules">Save</button>
-    </div>
+        <section aria-labelledby="title-rules-heading">
+          <div>
+            <h2 id="title-rules-heading">Title Rules</h2>
+            <p class="token-help">
+              When the current page URL matches the pattern, apply the search and replace to the page title.
+            </p>
+          </div>
+          <div class="preview-controls">
+            <label for="title-sample-preset">
+              Preview examples
+              <select id="title-sample-preset">
+                <option value="custom">Custom URL…</option>
+                <option value="wikipedia" data-title="Markdown - Wikipedia">
+                  Wikipedia – Markdown
+                </option>
+                <option value="mdn" data-title="HTML: HyperText Markup Language | MDN">
+                  MDN – HTML: HyperText Markup Language
+                </option>
+                <option value="daring-fireball" data-title="Daring Fireball: Markdown">
+                  Daring Fireball – Markdown
+                </option>
+              </select>
+            </label>
+            <label for="sample-title">
+              Sample title
+              <input id="sample-title" type="text" placeholder="Preview title" />
+            </label>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="reorder-column" aria-label="Reorder"></th>
+                <th scope="col">URL pattern</th>
+                <th scope="col">Title search</th>
+                <th scope="col">Title replace</th>
+                <th scope="col">Break</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="title-rules-body"></tbody>
+          </table>
+          <div class="rules-footer">
+            <div class="rules-output" aria-live="polite">
+              <div>
+                <span class="rules-output-label">Output title</span>
+                <code id="sample-output-title"></code>
+              </div>
+            </div>
+            <div class="rules-actions">
+              <button type="button" class="secondary" id="add-title-rule">Add title rule</button>
+              <button type="button" class="secondary danger" id="clear-title-rules">Clear all</button>
+              <button type="button" class="confirm-clear" id="confirm-clear-title-rules" hidden>Confirm clear</button>
+              <p id="title-clear-status" class="clear-status" hidden aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
 
-    <div class="rule-inputs">
-      <input type="text" id="url-match-pattern" placeholder="URL Match Pattern">
-      <input type="text" id="title-match-pattern" placeholder="Title Match Pattern">
-      <input type="text" id="title-replacement" placeholder="Title Replacement">
-    </div>
+        <section aria-labelledby="url-rules-heading">
+          <div>
+            <h2 id="url-rules-heading">URL Rules</h2>
+            <p class="token-help">
+              Use these rules to rewrite the outgoing URL when the current page matches the pattern.
+            </p>
+          </div>
+          <div class="preview-controls">
+            <label for="url-sample-preset">
+              Preview examples
+              <select id="url-sample-preset">
+                <option value="custom">Custom URL…</option>
+                <option
+                  value="amazon"
+                  data-url="https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&amp;dib=eyJ2IjoiMSJ9.rick.roll.sample&amp;dib_tag=se&amp;keywords=rick+astley+album&amp;qid=1700000000&amp;sprefix=rick+astley+album%2Caps%2C200&amp;sr=8-1"
+                >
+                  Amazon – Rick Astley Album
+                </option>
+                <option value="wikipedia" data-url="https://en.wikipedia.org/wiki/Markdown">
+                  Wikipedia – Markdown
+                </option>
+                <option value="mdn" data-url="https://developer.mozilla.org/en-US/docs/Web/HTML">
+                  MDN – HTML: HyperText Markup Language
+                </option>
+                <option value="daring-fireball" data-url="https://daringfireball.net/projects/markdown/">
+                  Daring Fireball – Markdown
+                </option>
+              </select>
+            </label>
+            <label for="sample-url">
+              Sample URL
+              <input id="sample-url" type="url" placeholder="https://example.com/article" />
+            </label>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col" class="reorder-column" aria-label="Reorder"></th>
+                <th scope="col">URL pattern</th>
+                <th scope="col">URL search</th>
+                <th scope="col">URL replace</th>
+                <th scope="col">Break</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="url-rules-body"></tbody>
+          </table>
+          <div class="rules-footer">
+            <div class="rules-output" aria-live="polite">
+              <div>
+                <span class="rules-output-label">Output URL</span>
+                <code id="sample-output-url"></code>
+              </div>
+            </div>
+            <div class="rules-actions">
+              <button type="button" class="secondary" id="add-url-rule">Add URL rule</button>
+              <button type="button" class="secondary danger" id="clear-url-rules">Clear all</button>
+              <button type="button" class="confirm-clear" id="confirm-clear-url-rules" hidden>Confirm clear</button>
+              <p id="url-clear-status" class="clear-status" hidden aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
 
-    <div id="rules-list">
-      <!-- Dynamic rule rows will be added here -->
-    </div>
+        <section aria-labelledby="preview-heading">
+          <div>
+            <h2 id="preview-heading">Live preview</h2>
+            <p class="token-help">Final markdown output using the current template, sample, and rules.</p>
+          </div>
+          <pre id="format-preview" aria-live="polite"></pre>
+        </section>
 
-    <p id="status"></p>
+        <div class="form-actions">
+          <button type="submit" id="save-options">Save changes</button>
+        </div>
+        <p id="status" role="status" aria-live="polite"></p>
+      </form>
+    </main>
+    <script type="module">
+      (async () => {
+        const isExtensionContext = Boolean(globalThis.chrome?.runtime?.id);
 
-    <script src="options.js"></script>
+        if (isExtensionContext) {
+          await import('./options.js');
+          return;
+        }
+
+        await import('/src/options-entry.ts');
+      })().catch((error) => {
+        console.error('Failed to boot options page.', error);
+      });
+    </script>
   </body>
 </html>
