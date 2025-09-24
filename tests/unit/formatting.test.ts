@@ -1,18 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyTransformRules, formatWithOptions } from '../../src/formatting.js';
-import { CURRENT_OPTIONS_VERSION, type OptionsPayload } from '../../src/options-schema.js';
+import { applyLinkRules, applyTitleRules, formatWithOptions } from '../../src/formatting.js';
+import {
+  CURRENT_OPTIONS_VERSION,
+  type LinkRule,
+  type OptionsPayload,
+  type TitleRule,
+} from '../../src/options-schema.js';
 
 describe('formatWithOptions', () => {
   it('applies title and link transforms when URL matches', () => {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
       format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})',
-      rules: [
+      titleRules: [
         {
           urlPattern: 'example.com',
           titleSearch: 'Example',
           titleReplace: 'Sample',
+        },
+      ],
+      linkRules: [
+        {
+          urlPattern: 'example.com',
           linkSearch: 'http',
           linkReplace: 'https',
         },
@@ -32,7 +42,8 @@ describe('formatWithOptions', () => {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
       format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{LINK}})',
-      rules: [],
+      titleRules: [],
+      linkRules: [],
     };
 
     const output = formatWithOptions(options, {
@@ -46,18 +57,25 @@ describe('formatWithOptions', () => {
   });
 
   it('returns transformed title and link independently of template', () => {
-    const rules: OptionsPayload['rules'] = [
+    const titleRules: TitleRule[] = [
       {
         urlPattern: 'nytimes',
         titleSearch: 'Opinion',
         titleReplace: 'Column',
+      },
+    ];
+
+    const linkRules: LinkRule[] = [
+      {
+        urlPattern: 'nytimes',
         linkSearch: 'http',
         linkReplace: 'https',
       },
     ];
 
-    const transformed = applyTransformRules(rules, 'Opinion Piece', 'http://nytimes.com/story');
-    expect(transformed.title).toBe('Column Piece');
-    expect(transformed.link).toBe('https://nytimes.com/story');
+    const transformedTitle = applyTitleRules(titleRules, 'Opinion Piece', 'http://nytimes.com/story');
+    const transformedLink = applyLinkRules(linkRules, 'http://nytimes.com/story');
+    expect(transformedTitle).toBe('Column Piece');
+    expect(transformedLink).toBe('https://nytimes.com/story');
   });
 });

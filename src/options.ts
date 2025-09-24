@@ -3,27 +3,30 @@ import {
   DEFAULT_OPTIONS,
   DEFAULT_TEMPLATE,
   normalizeStoredOptions,
+  type LinkRule,
   type OptionsPayload,
-  type TransformRule,
+  type TitleRule,
 } from './options-schema.js';
-import { applyTransformRules, formatWithOptions } from './formatting.js';
+import { applyLinkRules, applyTitleRules, formatWithOptions } from './formatting.js';
 
 const DEFAULT_PREVIEW_SAMPLE = {
-  text: 'This domain is established to be used for illustrative examples in documents.',
-  title: 'Example Domain',
-  link: 'https://example.com/',
+  text: 'Markdown is a lightweight markup language for creating formatted text using a plain-text editor.',
+  title: 'Markdown - Wikipedia',
+  link: 'https://en.wikipedia.org/wiki/Markdown',
 };
 
 const STATUS_TIMEOUT_MS = 3000;
 
-type RuleField = keyof TransformRule;
-
-type ValidationResult = {
+interface ValidationResult {
   valid: boolean;
   message?: string;
-};
+}
 
-function cloneRule(rule: TransformRule): TransformRule {
+function cloneTitleRule(rule: TitleRule): TitleRule {
+  return { ...rule };
+}
+
+function cloneLinkRule(rule: LinkRule): LinkRule {
   return { ...rule };
 }
 
@@ -31,15 +34,22 @@ function cloneOptions(options: OptionsPayload): OptionsPayload {
   return {
     version: CURRENT_OPTIONS_VERSION,
     format: options.format,
-    rules: options.rules.map((rule) => cloneRule(rule)),
+    titleRules: options.titleRules.map((rule) => cloneTitleRule(rule)),
+    linkRules: options.linkRules.map((rule) => cloneLinkRule(rule)),
   };
 }
 
-function sanitizeRule(rule: TransformRule): TransformRule {
+function sanitizeTitleRule(rule: TitleRule): TitleRule {
   return {
     urlPattern: rule.urlPattern.trim(),
     titleSearch: rule.titleSearch.trim(),
     titleReplace: rule.titleReplace,
+  };
+}
+
+function sanitizeLinkRule(rule: LinkRule): LinkRule {
+  return {
+    urlPattern: rule.urlPattern.trim(),
     linkSearch: rule.linkSearch.trim(),
     linkReplace: rule.linkReplace,
   };
@@ -73,33 +83,48 @@ export function initializeOptions(): () => void {
   const form = document.getElementById('options-form');
   const templateField = document.getElementById('format-template');
   const restoreTemplateButton = document.getElementById('restore-template');
-  const addRuleButton = document.getElementById('add-rule');
-  const clearRulesButton = document.getElementById('clear-rules');
-  const confirmClearButton = document.getElementById('confirm-clear-rules');
-  const rulesBody = document.getElementById('rules-body');
   const previewElement = document.getElementById('format-preview');
   const statusElement = document.getElementById('status');
+
   const samplePresetSelect = document.getElementById('sample-preset');
   const sampleTitleInput = document.getElementById('sample-title');
   const sampleUrlInput = document.getElementById('sample-url');
   const sampleOutputTitle = document.getElementById('sample-output-title');
   const sampleOutputUrl = document.getElementById('sample-output-url');
 
+  const titleRulesBody = document.getElementById('title-rules-body');
+  const addTitleRuleButton = document.getElementById('add-title-rule');
+  const clearTitleRulesButton = document.getElementById('clear-title-rules');
+  const confirmClearTitleRulesButton = document.getElementById('confirm-clear-title-rules');
+  const titleClearStatusElement = document.getElementById('title-clear-status');
+
+  const linkRulesBody = document.getElementById('link-rules-body');
+  const addLinkRuleButton = document.getElementById('add-link-rule');
+  const clearLinkRulesButton = document.getElementById('clear-link-rules');
+  const confirmClearLinkRulesButton = document.getElementById('confirm-clear-link-rules');
+  const linkClearStatusElement = document.getElementById('link-clear-status');
+
   if (
     !(form instanceof HTMLFormElement) ||
     !(templateField instanceof HTMLTextAreaElement) ||
     !(restoreTemplateButton instanceof HTMLButtonElement) ||
-    !(addRuleButton instanceof HTMLButtonElement) ||
-    !(clearRulesButton instanceof HTMLButtonElement) ||
-    !(confirmClearButton instanceof HTMLButtonElement) ||
-    !(rulesBody instanceof HTMLTableSectionElement) ||
     !(previewElement instanceof HTMLElement) ||
     !(statusElement instanceof HTMLElement) ||
     !(samplePresetSelect instanceof HTMLSelectElement) ||
     !(sampleTitleInput instanceof HTMLInputElement) ||
     !(sampleUrlInput instanceof HTMLInputElement) ||
     !(sampleOutputTitle instanceof HTMLElement) ||
-    !(sampleOutputUrl instanceof HTMLElement)
+    !(sampleOutputUrl instanceof HTMLElement) ||
+    !(titleRulesBody instanceof HTMLTableSectionElement) ||
+    !(addTitleRuleButton instanceof HTMLButtonElement) ||
+    !(clearTitleRulesButton instanceof HTMLButtonElement) ||
+    !(confirmClearTitleRulesButton instanceof HTMLButtonElement) ||
+    !(titleClearStatusElement instanceof HTMLElement) ||
+    !(linkRulesBody instanceof HTMLTableSectionElement) ||
+    !(addLinkRuleButton instanceof HTMLButtonElement) ||
+    !(clearLinkRulesButton instanceof HTMLButtonElement) ||
+    !(confirmClearLinkRulesButton instanceof HTMLButtonElement) ||
+    !(linkClearStatusElement instanceof HTMLElement)
   ) {
     console.warn('Options UI is missing expected elements; aborting initialization.');
     return () => {};
@@ -111,12 +136,14 @@ export function initializeOptions(): () => void {
   const { signal } = abortController;
 
   let statusTimeout: ReturnType<typeof setTimeout> | undefined;
+  let titleClearTimeout: ReturnType<typeof setTimeout> | undefined;
+  let linkClearTimeout: ReturnType<typeof setTimeout> | undefined;
+
   let draft: OptionsPayload = cloneOptions(DEFAULT_OPTIONS);
   const previewSample = {
     title: DEFAULT_PREVIEW_SAMPLE.title,
     link: DEFAULT_PREVIEW_SAMPLE.link,
   };
-  let clearConfirmationTimeout: ReturnType<typeof setTimeout> | undefined;
 
   function scheduleStatusClear(): void {
     if (statusTimeout) {
@@ -139,14 +166,420 @@ export function initializeOptions(): () => void {
     scheduleStatusClear();
   }
 
-  function resetClearConfirmation(): void {
-    if (clearConfirmationTimeout) {
-      clearTimeout(clearConfirmationTimeout);
-      clearConfirmationTimeout = undefined;
+  function showTitleClearStatus(message: string): void {
+    if (!message) {
+      titleClearStatusElement.textContent = '';
+      titleClearStatusElement.hidden = true;
+      return;
     }
 
-    confirmClearButton.hidden = true;
-    clearRulesButton.hidden = false;
+    titleClearStatusElement.textContent = message;
+    titleClearStatusElement.hidden = false;
+  }
+
+  function showLinkClearStatus(message: string): void {
+    if (!message) {
+      linkClearStatusElement.textContent = '';
+      linkClearStatusElement.hidden = true;
+      return;
+    }
+
+    linkClearStatusElement.textContent = message;
+    linkClearStatusElement.hidden = false;
+  }
+
+  function resetTitleClearConfirmation(): void {
+    if (titleClearTimeout) {
+      clearTimeout(titleClearTimeout);
+      titleClearTimeout = undefined;
+    }
+
+    clearTitleRulesButton.hidden = false;
+    confirmClearTitleRulesButton.hidden = true;
+  }
+
+  function resetLinkClearConfirmation(): void {
+    if (linkClearTimeout) {
+      clearTimeout(linkClearTimeout);
+      linkClearTimeout = undefined;
+    }
+
+    clearLinkRulesButton.hidden = false;
+    confirmClearLinkRulesButton.hidden = true;
+  }
+
+  function filteredTitleRules(): TitleRule[] {
+    return draft.titleRules
+      .map((rule) => sanitizeTitleRule(rule))
+      .filter((rule) => rule.urlPattern || rule.titleSearch || rule.titleReplace);
+  }
+
+  function filteredLinkRules(): LinkRule[] {
+    return draft.linkRules
+      .map((rule) => sanitizeLinkRule(rule))
+      .filter((rule) => rule.urlPattern || rule.linkSearch || rule.linkReplace);
+  }
+
+  function updatePreview(): void {
+    const titleRules = filteredTitleRules();
+    const linkRules = filteredLinkRules();
+
+    const options: OptionsPayload = {
+      version: CURRENT_OPTIONS_VERSION,
+      format: templateField.value,
+      titleRules,
+      linkRules,
+    };
+
+    previewElement.textContent = formatWithOptions(options, {
+      text: DEFAULT_PREVIEW_SAMPLE.text,
+      title: previewSample.title,
+      link: previewSample.link,
+    });
+
+    const transformedTitle = applyTitleRules(titleRules, previewSample.title, previewSample.link);
+    const transformedLink = applyLinkRules(linkRules, previewSample.link);
+
+    sampleOutputTitle.textContent = transformedTitle || '—';
+    sampleOutputUrl.textContent = transformedLink || '—';
+  }
+
+  function createInputCell(
+    field: string,
+    index: number,
+    value: string,
+    label: string,
+  ): HTMLTableCellElement {
+    const cell = document.createElement('td');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.dataset.index = String(index);
+    input.dataset.field = field;
+    input.placeholder = label;
+    input.value = value;
+    cell.append(input);
+    return cell;
+  }
+
+  function createRemoveCell(index: number, scope: 'title' | 'link'): HTMLTableCellElement {
+    const cell = document.createElement('td');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Remove';
+    button.dataset.action = scope === 'title' ? 'remove-title' : 'remove-link';
+    button.dataset.index = String(index);
+    cell.append(button);
+    return cell;
+  }
+
+  function renderTitleRules(): void {
+    titleRulesBody.innerHTML = '';
+
+    draft.titleRules.forEach((rule, index) => {
+      const row = document.createElement('tr');
+      row.dataset.index = String(index);
+
+      row.append(
+        createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
+        createInputCell('titleSearch', index, rule.titleSearch, 'Title search'),
+        createInputCell('titleReplace', index, rule.titleReplace, 'Title replace'),
+        createRemoveCell(index, 'title'),
+      );
+
+      titleRulesBody.append(row);
+    });
+
+    resetTitleClearConfirmation();
+    showTitleClearStatus('');
+    updatePreview();
+  }
+
+  function renderLinkRules(): void {
+    linkRulesBody.innerHTML = '';
+
+    draft.linkRules.forEach((rule, index) => {
+      const row = document.createElement('tr');
+      row.dataset.index = String(index);
+
+      row.append(
+        createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
+        createInputCell('linkSearch', index, rule.linkSearch, 'Link search'),
+        createInputCell('linkReplace', index, rule.linkReplace, 'Link replace'),
+        createRemoveCell(index, 'link'),
+      );
+
+      linkRulesBody.append(row);
+    });
+
+    resetLinkClearConfirmation();
+    showLinkClearStatus('');
+    updatePreview();
+  }
+
+  function addTitleRule(): void {
+    draft.titleRules.push({
+      urlPattern: '',
+      titleSearch: '',
+      titleReplace: '',
+    });
+    renderTitleRules();
+
+    const lastRowInput = titleRulesBody.querySelector<HTMLInputElement>('tr:last-child input[data-field="urlPattern"]');
+    lastRowInput?.focus();
+  }
+
+  function addLinkRule(): void {
+    draft.linkRules.push({
+      urlPattern: '',
+      linkSearch: '',
+      linkReplace: '',
+    });
+    renderLinkRules();
+
+    const lastRowInput = linkRulesBody.querySelector<HTMLInputElement>('tr:last-child input[data-field="urlPattern"]');
+    lastRowInput?.focus();
+  }
+
+  function applyTitleInputChange(target: HTMLInputElement): void {
+    const index = Number.parseInt(target.dataset.index ?? '', 10);
+    const field = target.dataset.field as keyof TitleRule | undefined;
+
+    if (Number.isNaN(index) || field === undefined) {
+      return;
+    }
+
+    const rule = draft.titleRules[index];
+    if (!rule) {
+      return;
+    }
+
+    if (field === 'titleReplace') {
+      rule[field] = target.value;
+    } else {
+      rule[field] = target.value.trimStart();
+    }
+    target.removeAttribute('aria-invalid');
+    updatePreview();
+  }
+
+  function applyLinkInputChange(target: HTMLInputElement): void {
+    const index = Number.parseInt(target.dataset.index ?? '', 10);
+    const field = target.dataset.field as keyof LinkRule | undefined;
+
+    if (Number.isNaN(index) || field === undefined) {
+      return;
+    }
+
+    const rule = draft.linkRules[index];
+    if (!rule) {
+      return;
+    }
+
+    if (field === 'linkReplace') {
+      rule[field] = target.value;
+    } else {
+      rule[field] = target.value.trimStart();
+    }
+    target.removeAttribute('aria-invalid');
+    updatePreview();
+  }
+
+  function validateTitleRules(): ValidationResult {
+    let valid = true;
+    let message: string | undefined;
+
+    draft.titleRules.forEach((rule, index) => {
+      const row = titleRulesBody.querySelector(`tr[data-index="${index}"]`);
+      if (!row) {
+        return;
+      }
+
+      const urlInput = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+      const titleSearchInput = row.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
+      const titleReplaceInput = row.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
+
+      const sanitized = sanitizeTitleRule(rule);
+      draft.titleRules[index] = sanitized;
+
+      const hasRule = Boolean(sanitized.urlPattern || sanitized.titleSearch || sanitized.titleReplace);
+      if (!hasRule) {
+        return;
+      }
+
+      if (!sanitized.urlPattern) {
+        valid = false;
+        message = message ?? 'URL pattern is required when defining a title rule.';
+        urlInput?.setAttribute('aria-invalid', 'true');
+      } else if (!validateRegex(sanitized.urlPattern)) {
+        valid = false;
+        message = message ?? 'One or more title rule URL patterns are invalid regex expressions.';
+        urlInput?.setAttribute('aria-invalid', 'true');
+      }
+
+      if (sanitized.titleReplace && !sanitized.titleSearch) {
+        valid = false;
+        message = message ?? 'Provide a title search pattern before specifying a title replacement.';
+        titleSearchInput?.setAttribute('aria-invalid', 'true');
+      }
+
+      if (sanitized.titleSearch && !validateRegex(sanitized.titleSearch)) {
+        valid = false;
+        message = message ?? 'One or more title search patterns are invalid regex expressions.';
+        titleSearchInput?.setAttribute('aria-invalid', 'true');
+      }
+
+      titleReplaceInput?.removeAttribute('aria-invalid');
+    });
+
+    return { valid, message };
+  }
+
+  function validateLinkRules(): ValidationResult {
+    let valid = true;
+    let message: string | undefined;
+
+    draft.linkRules.forEach((rule, index) => {
+      const row = linkRulesBody.querySelector(`tr[data-index="${index}"]`);
+      if (!row) {
+        return;
+      }
+
+      const urlInput = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+      const linkSearchInput = row.querySelector<HTMLInputElement>('input[data-field="linkSearch"]');
+      const linkReplaceInput = row.querySelector<HTMLInputElement>('input[data-field="linkReplace"]');
+
+      const sanitized = sanitizeLinkRule(rule);
+      draft.linkRules[index] = sanitized;
+
+      const hasRule = Boolean(sanitized.urlPattern || sanitized.linkSearch || sanitized.linkReplace);
+      if (!hasRule) {
+        return;
+      }
+
+      if (!sanitized.urlPattern) {
+        valid = false;
+        message = message ?? 'URL pattern is required when defining a link rule.';
+        urlInput?.setAttribute('aria-invalid', 'true');
+      } else if (!validateRegex(sanitized.urlPattern)) {
+        valid = false;
+        message = message ?? 'One or more link rule URL patterns are invalid regex expressions.';
+        urlInput?.setAttribute('aria-invalid', 'true');
+      }
+
+      if (sanitized.linkReplace && !sanitized.linkSearch) {
+        valid = false;
+        message = message ?? 'Provide a link search pattern before specifying a link replacement.';
+        linkSearchInput?.setAttribute('aria-invalid', 'true');
+      }
+
+      if (sanitized.linkSearch && !validateRegex(sanitized.linkSearch)) {
+        valid = false;
+        message = message ?? 'One or more link search patterns are invalid regex expressions.';
+        linkSearchInput?.setAttribute('aria-invalid', 'true');
+      }
+
+      linkReplaceInput?.removeAttribute('aria-invalid');
+    });
+
+    return { valid, message };
+  }
+
+  function collectPayload(): OptionsPayload {
+    const titleRules = filteredTitleRules();
+    const linkRules = filteredLinkRules();
+
+    return {
+      version: CURRENT_OPTIONS_VERSION,
+      format: templateField.value,
+      titleRules,
+      linkRules,
+    };
+  }
+
+  async function saveOptions(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+
+    clearValidationState(titleRulesBody);
+    clearValidationState(linkRulesBody);
+    templateField.removeAttribute('aria-invalid');
+
+    const templateValidation = (() => {
+      if (!templateField.value.trim()) {
+        templateField.setAttribute('aria-invalid', 'true');
+        return { valid: false, message: 'Template cannot be empty.' } satisfies ValidationResult;
+      }
+      return { valid: true } satisfies ValidationResult;
+    })();
+
+    if (!templateValidation.valid) {
+      setStatus(templateValidation.message ?? 'Template validation failed.', 'error');
+      return;
+    }
+
+    const titleValidation = validateTitleRules();
+    if (!titleValidation.valid) {
+      setStatus(titleValidation.message ?? 'Title rule validation failed.', 'error');
+      return;
+    }
+
+    const linkValidation = validateLinkRules();
+    if (!linkValidation.valid) {
+      setStatus(linkValidation.message ?? 'Link rule validation failed.', 'error');
+      return;
+    }
+
+    const payload = collectPayload();
+
+    if (!storageArea) {
+      setStatus('Chrome storage is unavailable; unable to save changes.', 'error');
+      return;
+    }
+
+    try {
+      await storageArea.set({
+        options: payload,
+        format: payload.format,
+        titleRules: payload.titleRules,
+        linkRules: payload.linkRules,
+      });
+      setStatus('Options saved successfully.');
+      draft = cloneOptions(payload);
+      renderTitleRules();
+      renderLinkRules();
+    } catch (error) {
+      console.error('Failed to save options.', error);
+      setStatus('Failed to save options.', 'error');
+    }
+  }
+
+  async function loadOptions(): Promise<void> {
+    if (!storageArea) {
+      setStatus('Chrome storage is unavailable; using defaults.', 'error');
+      draft = cloneOptions(DEFAULT_OPTIONS);
+      templateField.value = draft.format;
+      renderTitleRules();
+      renderLinkRules();
+      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'wikipedia');
+      return;
+    }
+
+    try {
+      const snapshot = await storageArea.get(['options', 'format', 'titleRules', 'linkRules', 'rules']);
+      draft = cloneOptions(normalizeStoredOptions(snapshot));
+      templateField.value = draft.format;
+      renderTitleRules();
+      renderLinkRules();
+      setStatus('Options loaded.', 'success');
+      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'wikipedia');
+    } catch (error) {
+      console.error('Failed to load options; fallback to defaults.', error);
+      draft = cloneOptions(DEFAULT_OPTIONS);
+      templateField.value = draft.format;
+      renderTitleRules();
+      renderLinkRules();
+      setStatus('Failed to load saved options; defaults restored.', 'error');
+      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'wikipedia');
+    }
   }
 
   function updateSample(partial: { title?: string; link?: string }, preset?: string): void {
@@ -167,330 +600,6 @@ export function initializeOptions(): () => void {
 
     updatePreview();
   }
-
-  function updatePreview(): void {
-    const sanitizedRules = draft.rules.map((rule) => sanitizeRule(rule));
-    const options: OptionsPayload = {
-      version: CURRENT_OPTIONS_VERSION,
-      format: templateField.value,
-      rules: sanitizedRules,
-    };
-    previewElement.textContent = formatWithOptions(options, {
-      text: DEFAULT_PREVIEW_SAMPLE.text,
-      title: previewSample.title,
-      link: previewSample.link,
-    });
-
-    const transformed = applyTransformRules(sanitizedRules, previewSample.title, previewSample.link);
-    sampleOutputTitle.textContent = transformed.title || '—';
-    sampleOutputUrl.textContent = transformed.link || '—';
-  }
-
-  function createInputCell(field: RuleField, index: number, value: string, label: string): HTMLTableCellElement {
-    const cell = document.createElement('td');
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.dataset.index = String(index);
-    input.dataset.field = field;
-    input.placeholder = label;
-    input.value = value;
-    cell.append(input);
-    return cell;
-  }
-
-  function createRemoveCell(index: number): HTMLTableCellElement {
-    const cell = document.createElement('td');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Remove';
-    button.dataset.action = 'remove';
-    button.dataset.index = String(index);
-    cell.append(button);
-    return cell;
-  }
-
-  function renderRules(): void {
-    rulesBody.innerHTML = '';
-
-    draft.rules.forEach((rule, index) => {
-      const row = document.createElement('tr');
-      row.dataset.index = String(index);
-
-      row.append(
-        createInputCell('urlPattern', index, rule.urlPattern, 'URL pattern'),
-        createInputCell('titleSearch', index, rule.titleSearch, 'Title search'),
-        createInputCell('titleReplace', index, rule.titleReplace, 'Title replace'),
-        createInputCell('linkSearch', index, rule.linkSearch, 'Link search'),
-        createInputCell('linkReplace', index, rule.linkReplace, 'Link replace'),
-        createRemoveCell(index),
-      );
-
-      rulesBody.append(row);
-    });
-
-    updatePreview();
-    resetClearConfirmation();
-  }
-
-  function applyInputChange(target: HTMLInputElement): void {
-    const index = Number.parseInt(target.dataset.index ?? '', 10);
-    const field = target.dataset.field as RuleField | undefined;
-
-    if (Number.isNaN(index) || field === undefined) {
-      return;
-    }
-
-    const rule = draft.rules[index];
-    if (!rule) {
-      return;
-    }
-
-    rule[field] = target.value;
-    target.removeAttribute('aria-invalid');
-    updatePreview();
-  }
-
-  function validateTemplate(): ValidationResult {
-    if (!templateField.value.trim()) {
-      templateField.setAttribute('aria-invalid', 'true');
-      return {
-        valid: false,
-        message: 'Template cannot be empty.',
-      };
-    }
-
-    templateField.removeAttribute('aria-invalid');
-    return { valid: true };
-  }
-
-  function validateRules(): ValidationResult {
-    let valid = true;
-    let message: string | undefined;
-
-    draft.rules.forEach((rule, index) => {
-      const row = rulesBody.querySelector(`tr[data-index="${index}"]`);
-      if (!row) {
-        return;
-      }
-
-      const urlInput = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
-      const titleSearchInput = row.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
-      const titleReplaceInput = row.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
-      const linkSearchInput = row.querySelector<HTMLInputElement>('input[data-field="linkSearch"]');
-      const linkReplaceInput = row.querySelector<HTMLInputElement>('input[data-field="linkReplace"]');
-
-      const sanitized = sanitizeRule(rule);
-      draft.rules[index] = sanitized;
-
-      const requireRule = Boolean(sanitized.urlPattern || sanitized.titleSearch || sanitized.linkSearch);
-      if (!requireRule) {
-        return;
-      }
-
-      if (!sanitized.urlPattern) {
-        valid = false;
-        message = message ?? 'URL pattern is required when defining a rule.';
-        urlInput?.setAttribute('aria-invalid', 'true');
-      } else if (!validateRegex(sanitized.urlPattern)) {
-        valid = false;
-        message = message ?? 'One or more URL patterns are invalid regex expressions.';
-        urlInput?.setAttribute('aria-invalid', 'true');
-      }
-
-      if (sanitized.titleReplace && !sanitized.titleSearch) {
-        valid = false;
-        message = message ?? 'Provide a title search pattern before specifying a title replacement.';
-        titleSearchInput?.setAttribute('aria-invalid', 'true');
-      }
-
-      if (sanitized.linkReplace && !sanitized.linkSearch) {
-        valid = false;
-        message = message ?? 'Provide a link search pattern before specifying a link replacement.';
-        linkSearchInput?.setAttribute('aria-invalid', 'true');
-      }
-
-      if (sanitized.titleSearch && !validateRegex(sanitized.titleSearch)) {
-        valid = false;
-        message = message ?? 'One or more title search patterns are invalid regex expressions.';
-        titleSearchInput?.setAttribute('aria-invalid', 'true');
-      }
-
-      if (sanitized.linkSearch && !validateRegex(sanitized.linkSearch)) {
-        valid = false;
-        message = message ?? 'One or more link search patterns are invalid regex expressions.';
-        linkSearchInput?.setAttribute('aria-invalid', 'true');
-      }
-
-      titleReplaceInput?.removeAttribute('aria-invalid');
-      linkReplaceInput?.removeAttribute('aria-invalid');
-    });
-
-    return {
-      valid,
-      message,
-    };
-  }
-
-  function collectPayload(): OptionsPayload {
-    return {
-      version: CURRENT_OPTIONS_VERSION,
-      format: templateField.value,
-      rules: draft.rules
-        .map((rule) => sanitizeRule(rule))
-        .filter((rule) => rule.urlPattern || rule.titleSearch || rule.linkSearch),
-    };
-  }
-
-  async function saveOptions(event: SubmitEvent): Promise<void> {
-    event.preventDefault();
-
-    clearValidationState(rulesBody);
-    templateField.removeAttribute('aria-invalid');
-
-    const templateValidation = validateTemplate();
-    if (!templateValidation.valid) {
-      setStatus(templateValidation.message ?? 'Template validation failed.', 'error');
-      return;
-    }
-
-    const ruleValidation = validateRules();
-    if (!ruleValidation.valid) {
-      setStatus(ruleValidation.message ?? 'Rule validation failed.', 'error');
-      return;
-    }
-
-    const payload = collectPayload();
-
-    if (!storageArea) {
-      setStatus('Chrome storage is unavailable; unable to save changes.', 'error');
-      return;
-    }
-
-    try {
-      await storageArea.set({
-        options: payload,
-        format: payload.format,
-        titleRules: payload.rules.map((rule) => ({
-          urlMatch: rule.urlPattern,
-          titleMatch: rule.titleSearch,
-          titleReplace: rule.titleReplace,
-        })),
-      });
-      setStatus('Options saved successfully.');
-      draft = cloneOptions(payload);
-      renderRules();
-    } catch (error) {
-      console.error('Failed to save options.', error);
-      setStatus('Failed to save options.', 'error');
-    }
-  }
-
-  function addRule(): void {
-    draft.rules.push({
-      urlPattern: '',
-      titleSearch: '',
-      titleReplace: '',
-      linkSearch: '',
-      linkReplace: '',
-    });
-    renderRules();
-
-    const lastRowInput = rulesBody.querySelector<HTMLInputElement>('tr:last-child input[data-field="urlPattern"]');
-    lastRowInput?.focus();
-  }
-
-  async function loadOptions(): Promise<void> {
-    if (!storageArea) {
-      setStatus('Chrome storage is unavailable; using defaults.', 'error');
-      draft = cloneOptions(DEFAULT_OPTIONS);
-      templateField.value = draft.format;
-      renderRules();
-      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
-      return;
-    }
-
-    try {
-      const snapshot = await storageArea.get(['options', 'format', 'titleRules']);
-      draft = cloneOptions(normalizeStoredOptions(snapshot));
-      templateField.value = draft.format;
-      renderRules();
-      setStatus('Options loaded.', 'success');
-      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
-      resetClearConfirmation();
-    } catch (error) {
-      console.error('Failed to load options; fallback to defaults.', error);
-      draft = cloneOptions(DEFAULT_OPTIONS);
-      templateField.value = draft.format;
-      renderRules();
-      setStatus('Failed to load saved options; defaults restored.', 'error');
-      updateSample({ title: DEFAULT_PREVIEW_SAMPLE.title, link: DEFAULT_PREVIEW_SAMPLE.link }, 'example');
-      resetClearConfirmation();
-    }
-  }
-
-  templateField.addEventListener(
-    'input',
-    () => {
-      draft.format = templateField.value;
-      updatePreview();
-    },
-    { signal },
-  );
-
-  restoreTemplateButton.addEventListener(
-    'click',
-    (event) => {
-      event.preventDefault();
-      templateField.value = DEFAULT_TEMPLATE;
-      draft.format = DEFAULT_TEMPLATE;
-      updatePreview();
-      setStatus('Template restored to default.');
-    },
-    { signal },
-  );
-
-  addRuleButton.addEventListener('click', addRule, { signal });
-
-  clearRulesButton.addEventListener(
-    'click',
-    () => {
-      if (draft.rules.length === 0) {
-        setStatus('No rules to clear.', 'error');
-        return;
-      }
-
-      if (clearConfirmationTimeout) {
-        clearTimeout(clearConfirmationTimeout);
-        clearConfirmationTimeout = undefined;
-      }
-
-      clearRulesButton.hidden = true;
-      confirmClearButton.hidden = false;
-      confirmClearButton.focus();
-
-      clearConfirmationTimeout = setTimeout(() => {
-        resetClearConfirmation();
-      }, 5000);
-    },
-    { signal },
-  );
-
-  confirmClearButton.addEventListener(
-    'click',
-    () => {
-      if (draft.rules.length === 0) {
-        resetClearConfirmation();
-        setStatus('No rules to clear.', 'error');
-        return;
-      }
-
-      resetClearConfirmation();
-      draft.rules = [];
-      renderRules();
-      setStatus('All rules cleared.');
-    },
-    { signal },
-  );
 
   samplePresetSelect.addEventListener(
     'change',
@@ -528,17 +637,27 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  rulesBody.addEventListener(
+  titleRulesBody.addEventListener(
     'input',
     (event) => {
       if (event.target instanceof HTMLInputElement) {
-        applyInputChange(event.target);
+        applyTitleInputChange(event.target);
       }
     },
     { signal },
   );
 
-  rulesBody.addEventListener(
+  linkRulesBody.addEventListener(
+    'input',
+    (event) => {
+      if (event.target instanceof HTMLInputElement) {
+        applyLinkInputChange(event.target);
+      }
+    },
+    { signal },
+  );
+
+  titleRulesBody.addEventListener(
     'click',
     (event) => {
       const target = event.target;
@@ -546,14 +665,122 @@ export function initializeOptions(): () => void {
         return;
       }
 
-      if (target.dataset.action === 'remove') {
+      if (target.dataset.action === 'remove-title') {
         const index = Number.parseInt(target.dataset.index ?? '', 10);
         if (!Number.isNaN(index)) {
-          draft.rules.splice(index, 1);
-          renderRules();
-          setStatus('Rule removed.');
+          draft.titleRules.splice(index, 1);
+          renderTitleRules();
+          setStatus('Title rule removed.');
         }
       }
+    },
+    { signal },
+  );
+
+  linkRulesBody.addEventListener(
+    'click',
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      if (target.dataset.action === 'remove-link') {
+        const index = Number.parseInt(target.dataset.index ?? '', 10);
+        if (!Number.isNaN(index)) {
+          draft.linkRules.splice(index, 1);
+          renderLinkRules();
+          setStatus('Link rule removed.');
+        }
+      }
+    },
+    { signal },
+  );
+
+  addTitleRuleButton.addEventListener('click', addTitleRule, { signal });
+  addLinkRuleButton.addEventListener('click', addLinkRule, { signal });
+
+  clearTitleRulesButton.addEventListener(
+    'click',
+    () => {
+      showTitleClearStatus('');
+      if (titleClearTimeout) {
+        clearTimeout(titleClearTimeout);
+        titleClearTimeout = undefined;
+      }
+
+      clearTitleRulesButton.hidden = true;
+      confirmClearTitleRulesButton.hidden = false;
+      confirmClearTitleRulesButton.focus();
+
+      titleClearTimeout = setTimeout(() => {
+        resetTitleClearConfirmation();
+      }, 5000);
+    },
+    { signal },
+  );
+
+  confirmClearTitleRulesButton.addEventListener(
+    'click',
+    () => {
+      resetTitleClearConfirmation();
+      draft.titleRules = [];
+      renderTitleRules();
+      showTitleClearStatus('All title rules cleared.');
+      setStatus('All title rules cleared.');
+    },
+    { signal },
+  );
+
+  clearLinkRulesButton.addEventListener(
+    'click',
+    () => {
+      showLinkClearStatus('');
+      if (linkClearTimeout) {
+        clearTimeout(linkClearTimeout);
+        linkClearTimeout = undefined;
+      }
+
+      clearLinkRulesButton.hidden = true;
+      confirmClearLinkRulesButton.hidden = false;
+      confirmClearLinkRulesButton.focus();
+
+      linkClearTimeout = setTimeout(() => {
+        resetLinkClearConfirmation();
+      }, 5000);
+    },
+    { signal },
+  );
+
+  confirmClearLinkRulesButton.addEventListener(
+    'click',
+    () => {
+      resetLinkClearConfirmation();
+      draft.linkRules = [];
+      renderLinkRules();
+      showLinkClearStatus('All link rules cleared.');
+      setStatus('All link rules cleared.');
+    },
+    { signal },
+  );
+
+  templateField.addEventListener(
+    'input',
+    () => {
+      draft.format = templateField.value;
+      updatePreview();
+    },
+    { signal },
+  );
+
+  restoreTemplateButton.addEventListener(
+    'click',
+    (event) => {
+      event.preventDefault();
+      templateField.value = DEFAULT_TEMPLATE;
+      draft.format = DEFAULT_TEMPLATE;
+      updatePreview();
+      setStatus('Template restored to default.');
     },
     { signal },
   );
@@ -572,6 +799,12 @@ export function initializeOptions(): () => void {
     abortController.abort();
     if (statusTimeout) {
       clearTimeout(statusTimeout);
+    }
+    if (titleClearTimeout) {
+      clearTimeout(titleClearTimeout);
+    }
+    if (linkClearTimeout) {
+      clearTimeout(linkClearTimeout);
     }
     draft = cloneOptions(DEFAULT_OPTIONS);
   };

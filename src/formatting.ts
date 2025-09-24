@@ -1,4 +1,4 @@
-import type { OptionsPayload, TransformRule } from './options-schema.js';
+import type { LinkRule, OptionsPayload, TitleRule } from './options-schema.js';
 
 export interface TemplateTokens {
   text: string;
@@ -16,45 +16,49 @@ function safeApplyRegex(source: string, pattern: string, replacement: string): s
   }
 }
 
-function applyRule(rule: TransformRule, title: string, link: string): { title: string; link: string } {
-  const pattern = rule.urlPattern;
+function matchesUrlPattern(pattern: string, link: string): boolean {
   if (!pattern) {
-    return { title, link };
+    return true;
   }
 
-  let urlRegex: RegExp;
   try {
-    urlRegex = new RegExp(pattern);
+    return new RegExp(pattern).test(link);
   } catch (error) {
     console.error('Invalid URL pattern; skipping rule.', { pattern, error });
-    return { title, link };
+    return false;
   }
-
-  if (!urlRegex.test(link)) {
-    return { title, link };
-  }
-
-  const nextTitle = rule.titleSearch
-    ? safeApplyRegex(title, rule.titleSearch, rule.titleReplace)
-    : title;
-
-  const nextLink = rule.linkSearch ? safeApplyRegex(link, rule.linkSearch, rule.linkReplace) : link;
-
-  return { title: nextTitle, link: nextLink };
 }
 
-export function applyTransformRules(
-  rules: TransformRule[],
-  startingTitle: string,
-  startingLink: string,
-): {
-  title: string;
-  link: string;
-} {
-  return rules.reduce(
-    (accumulator, rule) => applyRule(rule, accumulator.title, accumulator.link),
-    { title: startingTitle, link: startingLink },
-  );
+function applyTitleRule(rule: TitleRule, title: string, link: string): string {
+  if (!matchesUrlPattern(rule.urlPattern, link)) {
+    return title;
+  }
+
+  if (!rule.titleSearch) {
+    return title;
+  }
+
+  return safeApplyRegex(title, rule.titleSearch, rule.titleReplace);
+}
+
+export function applyTitleRules(rules: TitleRule[], startingTitle: string, link: string): string {
+  return rules.reduce((currentTitle, rule) => applyTitleRule(rule, currentTitle, link), startingTitle);
+}
+
+function applyLinkRule(rule: LinkRule, link: string): string {
+  if (!matchesUrlPattern(rule.urlPattern, link)) {
+    return link;
+  }
+
+  if (!rule.linkSearch) {
+    return link;
+  }
+
+  return safeApplyRegex(link, rule.linkSearch, rule.linkReplace);
+}
+
+export function applyLinkRules(rules: LinkRule[], startingLink: string): string {
+  return rules.reduce((currentLink, rule) => applyLinkRule(rule, currentLink), startingLink);
 }
 
 function replaceToken(template: string, token: string, replacement: string): string {
@@ -82,7 +86,8 @@ function replaceTokens(template: string, tokens: Record<string, string>): string
 }
 
 export function formatWithOptions(options: OptionsPayload, tokens: TemplateTokens): string {
-  const { title, link } = applyTransformRules(options.rules, tokens.title, tokens.link);
+  const title = applyTitleRules(options.titleRules, tokens.title, tokens.link);
+  const link = applyLinkRules(options.linkRules, tokens.link);
 
   return replaceTokens(options.format, {
     TEXT: tokens.text,

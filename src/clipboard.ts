@@ -12,7 +12,7 @@ export async function formatForClipboard(
   }
 
   try {
-    const snapshot = await storageArea.get(['options', 'format', 'titleRules']);
+    const snapshot = await storageArea.get(['options', 'format']);
     const options = normalizeStoredOptions(snapshot);
     return formatWithOptions(options, { text: markdown, title, link: url });
   } catch (error) {

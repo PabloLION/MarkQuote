@@ -221,6 +221,8 @@
         align-items: flex-start;
         gap: 16px;
         flex-wrap: wrap;
+        border-top: 1px solid var(--border-color);
+        padding-top: 16px;
       }
 
       .rules-footer .danger {
@@ -267,6 +269,12 @@
         gap: 8px;
         margin-left: auto;
         width: min(200px, 100%);
+      }
+
+      .clear-status {
+        font-size: 0.875rem;
+        color: var(--danger-color);
+        margin: 0;
       }
 
       #status {
@@ -337,11 +345,11 @@
           </div>
         </section>
 
-        <section aria-labelledby="rules-heading">
+        <section aria-labelledby="title-rules-heading">
           <div>
-            <h2 id="rules-heading">Title &amp; URL Rules</h2>
+            <h2 id="title-rules-heading">Title Rules</h2>
             <p class="token-help">
-              Rules apply when the current page URL matches the pattern. Use the samples to preview how titles and links shift.
+              When the current page URL matches the pattern, apply the search and replace to the page title.
             </p>
           </div>
           <div class="preview-controls">
@@ -349,17 +357,14 @@
               Preview examples
               <select id="sample-preset">
                 <option value="custom">Custom URL…</option>
-                <option value="example" data-title="Example Domain" data-url="https://example.com/">
-                  Example Domain
+                <option value="wikipedia" data-title="Markdown - Wikipedia" data-url="https://en.wikipedia.org/wiki/Markdown">
+                  Wikipedia – Markdown
                 </option>
                 <option value="mdn" data-title="HTML: HyperText Markup Language | MDN" data-url="https://developer.mozilla.org/en-US/docs/Web/HTML">
                   MDN – HTML: HyperText Markup Language
                 </option>
                 <option value="daring-fireball" data-title="Daring Fireball: Markdown" data-url="https://daringfireball.net/projects/markdown/">
                   Daring Fireball – Markdown
-                </option>
-                <option value="wikipedia" data-title="Markdown - Wikipedia" data-url="https://en.wikipedia.org/wiki/Markdown">
-                  Wikipedia – Markdown
                 </option>
               </select>
             </label>
@@ -378,12 +383,10 @@
                 <th scope="col">URL pattern</th>
                 <th scope="col">Title search</th>
                 <th scope="col">Title replace</th>
-                <th scope="col">Link search</th>
-                <th scope="col">Link replace</th>
                 <th scope="col">Actions</th>
               </tr>
             </thead>
-            <tbody id="rules-body"></tbody>
+            <tbody id="title-rules-body"></tbody>
           </table>
           <div class="rules-footer">
             <div class="rules-output" aria-live="polite">
@@ -391,15 +394,46 @@
                 <span class="rules-output-label">Output title</span>
                 <code id="sample-output-title"></code>
               </div>
+            </div>
+            <div class="rules-actions">
+              <button type="button" class="secondary" id="add-title-rule">Add title rule</button>
+              <button type="button" class="secondary danger" id="clear-title-rules">Clear all</button>
+              <button type="button" class="confirm-clear" id="confirm-clear-title-rules" hidden>Confirm clear</button>
+              <p id="title-clear-status" class="clear-status" hidden aria-live="polite"></p>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="link-rules-heading">
+          <div>
+            <h2 id="link-rules-heading">Link Rules</h2>
+            <p class="token-help">
+              Use these rules to rewrite the outgoing URL when the current page matches the pattern.
+            </p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">URL pattern</th>
+                <th scope="col">Link search</th>
+                <th scope="col">Link replace</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="link-rules-body"></tbody>
+          </table>
+          <div class="rules-footer">
+            <div class="rules-output" aria-live="polite">
               <div>
                 <span class="rules-output-label">Output URL</span>
                 <code id="sample-output-url"></code>
               </div>
             </div>
             <div class="rules-actions">
-              <button type="button" class="secondary" id="add-rule">Add rule</button>
-              <button type="button" class="secondary danger" id="clear-rules">Clear all</button>
-              <button type="button" class="confirm-clear" id="confirm-clear-rules" hidden>Confirm clear</button>
+              <button type="button" class="secondary" id="add-link-rule">Add link rule</button>
+              <button type="button" class="secondary danger" id="clear-link-rules">Clear all</button>
+              <button type="button" class="confirm-clear" id="confirm-clear-link-rules" hidden>Confirm clear</button>
+              <p id="link-clear-status" class="clear-status" hidden aria-live="polite"></p>
             </div>
           </div>
         </section>
