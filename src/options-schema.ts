@@ -33,6 +33,12 @@ export const DEFAULT_AMAZON_URL_REPLACE = String.raw`$1dp/$2`;
 export const DEFAULT_AMAZON_SAMPLE_URL =
   'https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&dib=eyJ2IjoiMSJ9.rick.roll.sample&dib_tag=se&keywords=rick+astley+album&qid=1700000000&sprefix=rick+astley+album%2Caps%2C200&sr=8-1';
 
+export const DEFAULT_CHATGPT_UTM_URL_PATTERN = String.raw`^https?://`;
+export const DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH = String.raw`([?&])utm_source=chatgpt\.com&`;
+export const DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE = '$1';
+export const DEFAULT_CHATGPT_UTM_TRAILING_SEARCH = String.raw`([?&])utm_source=chatgpt\.com($|#)`;
+export const DEFAULT_CHATGPT_UTM_TRAILING_REPLACE = '$2';
+
 function sanitizeString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
@@ -76,7 +82,19 @@ export function createDefaultUrlRules(): UrlRule[] {
       urlPattern: DEFAULT_AMAZON_URL_PATTERN,
       urlSearch: DEFAULT_AMAZON_URL_SEARCH,
       urlReplace: DEFAULT_AMAZON_URL_REPLACE,
-      continueMatching: false,
+      continueMatching: true,
+    },
+    {
+      urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+      urlSearch: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+      urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+      continueMatching: true,
+    },
+    {
+      urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+      urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+      urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+      continueMatching: true,
     },
   ];
 }

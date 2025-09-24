@@ -6,6 +6,11 @@ import {
   type UrlRule,
   type OptionsPayload,
   type TitleRule,
+  DEFAULT_CHATGPT_UTM_URL_PATTERN,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+  DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
 } from '../../src/options-schema.js';
 
 describe('formatWithOptions', () => {
@@ -141,5 +146,31 @@ describe('formatWithOptions', () => {
 
     const result = applyTitleRules(rules, 'First Article', 'https://example.com');
     expect(result).toBe('Third Article');
+  });
+
+  it('removes chatgpt utm query parameters via chained defaults', () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+        urlSearch: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+        urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+        continueMatching: true,
+      },
+      {
+        urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+        urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+        urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+        continueMatching: true,
+      },
+    ];
+
+    const chainedResult = applyUrlRules(
+      rules,
+      'https://example.com/article?utm_source=chatgpt.com&ref=home&utm_source=chatgpt.com',
+    );
+    expect(chainedResult).toBe('https://example.com/article?ref=home');
+
+    const soloResult = applyUrlRules(rules, 'https://example.com/article?utm_source=chatgpt.com');
+    expect(soloResult).toBe('https://example.com/article');
   });
 });

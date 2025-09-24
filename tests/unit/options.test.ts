@@ -8,6 +8,11 @@ import {
   DEFAULT_AMAZON_URL_SEARCH,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_AMAZON_URL_PATTERN,
+  DEFAULT_CHATGPT_UTM_URL_PATTERN,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+  DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
   DEFAULT_TEMPLATE,
   DEFAULT_WIKI_TITLE_REPLACE,
   DEFAULT_WIKI_TITLE_SEARCH,
@@ -97,15 +102,41 @@ describe('Options Page', () => {
     expect(titleReplaceInput?.value).toBe(DEFAULT_WIKI_TITLE_REPLACE);
     expect(titleContinueToggle?.checked).toBe(false);
 
-    const urlPatternInput = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
-    const urlSearchInput = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="urlSearch"]');
-    const urlReplaceInput = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="urlReplace"]');
-    const urlContinueToggle = firstUrlRow.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
+    const urlRows = Array.from(
+      document.querySelectorAll<HTMLTableRowElement>('#url-rules-body tr'),
+    );
+    expect(urlRows).toHaveLength(3);
 
-    expect(urlPatternInput?.value).toBe(DEFAULT_AMAZON_URL_PATTERN);
-    expect(urlSearchInput?.value).toBe(DEFAULT_AMAZON_URL_SEARCH);
-    expect(urlReplaceInput?.value).toBe(DEFAULT_AMAZON_URL_REPLACE);
-    expect(urlContinueToggle?.checked).toBe(false);
+    const [amazonRow, withNextRow, trailingRow] = urlRows;
+
+    function readRow(row: HTMLTableRowElement) {
+      const pattern = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]')?.value;
+      const search = row.querySelector<HTMLInputElement>('input[data-field="urlSearch"]')?.value;
+      const replace = row.querySelector<HTMLInputElement>('input[data-field="urlReplace"]')?.value;
+      const chained = row.querySelector<HTMLInputElement>('input[data-field="continueMatching"]')?.checked;
+      return { pattern, search, replace, chained };
+    }
+
+    expect(readRow(amazonRow)).toEqual({
+      pattern: DEFAULT_AMAZON_URL_PATTERN,
+      search: DEFAULT_AMAZON_URL_SEARCH,
+      replace: DEFAULT_AMAZON_URL_REPLACE,
+      chained: true,
+    });
+
+    expect(readRow(withNextRow)).toEqual({
+      pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+      search: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+      replace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+      chained: true,
+    });
+
+    expect(readRow(trailingRow)).toEqual({
+      pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+      search: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+      replace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+      chained: true,
+    });
   });
 
   it('loads the saved template and renders a preview', () => {
@@ -192,31 +223,19 @@ describe('Options Page', () => {
     addTitleRuleButton.click();
     addUrlRuleButton.click();
 
-    const titleUrlInput = document.querySelector<HTMLInputElement>(
-      '#title-rules-body input[data-field="urlPattern"]',
-    );
-    const titleSearchInput = document.querySelector<HTMLInputElement>(
-      '#title-rules-body input[data-field="titleSearch"]',
-    );
-    const titleReplaceInput = document.querySelector<HTMLInputElement>(
-      '#title-rules-body input[data-field="titleReplace"]',
-    );
-    const titleContinueToggle = document.querySelector<HTMLInputElement>(
-      '#title-rules-body input[data-field="continueMatching"]',
-    );
+    const titleRows = Array.from(document.querySelectorAll('#title-rules-body tr'));
+    const titleLastRow = titleRows[titleRows.length - 1];
+    const titleUrlInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+    const titleSearchInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="titleSearch"]');
+    const titleReplaceInput = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="titleReplace"]');
+    const titleContinueToggle = titleLastRow?.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
 
-    const urlRuleUrlInput = document.querySelector<HTMLInputElement>(
-      '#url-rules-body input[data-field="urlPattern"]',
-    );
-    const urlSearchInput = document.querySelector<HTMLInputElement>(
-      '#url-rules-body input[data-field="urlSearch"]',
-    );
-    const urlReplaceInput = document.querySelector<HTMLInputElement>(
-      '#url-rules-body input[data-field="urlReplace"]',
-    );
-    const urlContinueToggle = document.querySelector<HTMLInputElement>(
-      '#url-rules-body input[data-field="continueMatching"]',
-    );
+    const urlRows = Array.from(document.querySelectorAll('#url-rules-body tr'));
+    const urlLastRow = urlRows[urlRows.length - 1];
+    const urlRuleUrlInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlPattern"]');
+    const urlSearchInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlSearch"]');
+    const urlReplaceInput = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="urlReplace"]');
+    const urlContinueToggle = urlLastRow?.querySelector<HTMLInputElement>('input[data-field="continueMatching"]');
 
     const form = document.getElementById('options-form') as HTMLFormElement;
 
@@ -291,22 +310,58 @@ describe('Options Page', () => {
     }];
 
     expect(payload.options.version).toBe(1);
-    expect(payload.options.titleRules).toEqual([
-      {
-        urlPattern: 'example.com',
-        titleSearch: 'Example',
-        titleReplace: 'Sample',
-        continueMatching: true,
-      },
-    ]);
-    expect(payload.options.urlRules).toEqual([
-      {
-        urlPattern: 'example.com',
-        urlSearch: 'http',
-        urlReplace: 'https',
-        continueMatching: true,
-      },
-    ]);
+    expect(payload.options.titleRules).toHaveLength(2);
+
+    const [defaultTitleRule, customTitleRule] = payload.options.titleRules;
+
+    expect(defaultTitleRule).toEqual({
+      urlPattern: DEFAULT_WIKI_URL_PATTERN,
+      titleSearch: DEFAULT_WIKI_TITLE_SEARCH,
+      titleReplace: DEFAULT_WIKI_TITLE_REPLACE,
+      continueMatching: false,
+    });
+
+    expect(customTitleRule).toEqual({
+      urlPattern: 'example.com',
+      titleSearch: 'Example',
+      titleReplace: 'Sample',
+      continueMatching: true,
+    });
+
+    const urlRulesPayload = payload.options.urlRules;
+
+    expect(urlRulesPayload).toHaveLength(4);
+
+    const [amazonRule, withNextRule, trailingRule, customRule] = urlRulesPayload;
+
+    expect(amazonRule).toEqual({
+      urlPattern: DEFAULT_AMAZON_URL_PATTERN,
+      urlSearch: DEFAULT_AMAZON_URL_SEARCH,
+      urlReplace: DEFAULT_AMAZON_URL_REPLACE,
+      continueMatching: true,
+    });
+
+    expect(withNextRule).toEqual({
+      urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+      urlSearch: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+      urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+      continueMatching: true,
+    });
+
+    expect(trailingRule).toEqual({
+      urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
+      urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+      urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+      continueMatching: true,
+    });
+
+    expect(customRule).toEqual({
+      urlPattern: 'example.com',
+      urlSearch: 'http',
+      urlReplace: 'https',
+      continueMatching: true,
+    });
+
     expect(payload.titleRules).toEqual(payload.options.titleRules);
     expect(payload.urlRules).toEqual(payload.options.urlRules);
   });
@@ -353,6 +408,8 @@ describe('Options Page', () => {
     const confirmButton = document.getElementById('confirm-clear-url-rules') as HTMLButtonElement;
     const clearStatus = document.getElementById('url-clear-status') as HTMLParagraphElement;
 
+    const initialRowCount = document.querySelectorAll('#url-rules-body tr').length;
+
     addUrlRuleButton.click();
     const urlInput = document.querySelector<HTMLInputElement>(
       '#url-rules-body input[data-field="urlPattern"]',
@@ -372,7 +429,7 @@ describe('Options Page', () => {
     clearButton.click();
     expect(clearButton.hidden).toBe(true);
     expect(confirmButton.hidden).toBe(false);
-    expect(document.querySelectorAll('#url-rules-body tr').length).toBe(2);
+    expect(document.querySelectorAll('#url-rules-body tr').length).toBe(initialRowCount + 1);
     expect(clearStatus.hidden).toBe(true);
 
     confirmButton.click();
