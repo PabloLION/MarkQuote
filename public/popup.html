@@ -37,18 +37,9 @@
       }
 
       header {
-        display: flex;
+        display: grid;
         gap: 8px;
-        align-items: center;
-      }
-
-      header button {
-        flex: 1 1 auto;
-      }
-
-      header button.inline {
-        flex: 0 0 auto;
-        margin-left: auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
       button {
@@ -60,6 +51,7 @@
         color: inherit;
         cursor: pointer;
         transition: background-color 140ms ease, border-color 140ms ease;
+        width: 100%;
       }
 
       button.primary {
@@ -101,8 +93,8 @@
     <header>
       <button class="primary" id="options-button">Options</button>
       <button id="hotkeys-button">Hotkey</button>
+      <button id="inline-mode-button">Copy inline mode</button>
       <button id="feedback-button">Feedback</button>
-      <button class="inline" id="inline-mode-button">Copy inline mode</button>
     </header>
     <div id="message"></div>
     <pre id="preview"></pre>
