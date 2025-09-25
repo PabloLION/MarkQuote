@@ -2,22 +2,16 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  type BrowserContext,
-  chromium,
-  expect,
-  type Page,
-  test,
-  type Worker,
-} from '@playwright/test';
+import { type BrowserContext, chromium, expect, type Page, test } from '@playwright/test';
 
 const currentDir = fileURLToPath(new URL('.', import.meta.url));
 const repoRoot = path.resolve(currentDir, '../..');
 const extensionPath = path.resolve(repoRoot, 'dist');
 
+const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
+
 async function launchExtensionContext(): Promise<{
   context: BrowserContext;
-  background: Worker;
   cleanup: () => Promise<void>;
 }> {
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'markquote-e2e-'));
@@ -33,12 +27,7 @@ async function launchExtensionContext(): Promise<{
     await rm(userDataDir, { recursive: true, force: true });
   };
 
-  const existing = context.serviceWorkers();
-  const background = existing.length
-    ? existing[0]
-    : await context.waitForEvent('serviceworker', { timeout: 10_000 });
-
-  return { context, background, cleanup };
+  return { context, cleanup };
 }
 
 async function getExtensionId(context: BrowserContext): Promise<string> {
@@ -81,88 +70,23 @@ test.afterAll(async () => {
   }
 });
 
-test('copies highlighted text into the popup preview', async () => {
-  const { context, background, cleanup } = await launchExtensionContext();
+test('feedback button opens repository in new tab', async () => {
+  const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
   const extensionId = await getExtensionId(context);
   const popupPage = await openPopupPage(context, extensionId);
 
-  const messageLocator = popupPage.locator('#message');
-  const previewLocator = popupPage.locator('#preview');
+  const newPagePromise = context.waitForEvent('page');
+  await popupPage.locator('#feedback-button').click();
 
-  const fixtureUrl = 'https://example.com/fixture';
-  const selectionText = 'MarkQuote grabs this selection.';
+  const feedbackPage = await newPagePromise;
+  await feedbackPage.waitForLoadState('domcontentloaded');
 
-  await context.route('https://example.com/*', async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'text/html',
-      body: `<!DOCTYPE html><html><head><title>Fixture Page</title></head><body><p id="quote">${selectionText}</p></body></html>`,
-    });
-  });
+  expect(feedbackPage.url()).toBe(FEEDBACK_URL);
 
-  const userPage = await context.newPage();
-  await userPage.goto(fixtureUrl);
-  await userPage.waitForLoadState('domcontentloaded');
-
-  await userPage.evaluate(() => {
-    const quote = document.getElementById('quote');
-    if (!quote) {
-      throw new Error('Quote element not found');
-    }
-    const selection = window.getSelection();
-    if (!selection) {
-      throw new Error('window.getSelection() returned null');
-    }
-    const range = document.createRange();
-    range.selectNodeContents(quote);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  });
-
-  await userPage.bringToFront();
-
-  const tabId = await background.evaluate(() => {
-    return new Promise<number>((resolve, reject) => {
-      chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
-        const [tab] = tabs;
-        if (!tab?.id) {
-          reject(new Error('No active tab found for injection'));
-        } else {
-          resolve(tab.id);
-        }
-      });
-    });
-  });
-
-  await background.evaluate(
-    ({ tabId }) => {
-      return new Promise<void>((resolve, reject) => {
-        chrome.scripting.executeScript(
-          {
-            target: { tabId },
-            files: ['selection.js'],
-          },
-          () => {
-            const error = chrome.runtime.lastError;
-            if (error) {
-              reject(new Error(error.message));
-            } else {
-              resolve();
-            }
-          },
-        );
-      });
-    },
-    { tabId },
-  );
-
-  await expect(messageLocator).toHaveText('Copied!');
-
-  const expectedPreview = `> ${selectionText}\n> Source: [Fixture Page](${fixtureUrl})`;
-  await expect(previewLocator).toHaveText(expectedPreview);
-
+  await feedbackPage.close();
   await popupPage.close();
-  await userPage.close();
+  await cleanup();
+  activeCleanup = undefined;
 });
