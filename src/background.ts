@@ -50,8 +50,21 @@ chrome.runtime.onMessage.addListener(async (request, sender, _sendResponse) => {
   console.log('Background script received message:', request);
 
   if (request?.type === 'request-selection-copy') {
-    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    triggerCopy(tabs[0]);
+    const tabs = await chrome.tabs.query({ lastFocusedWindow: true });
+    const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith('http'));
+    const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith('chrome-extension://');
+
+    const targetTab =
+      tabs.find((tab) => tab.active && isHttpTab(tab)) ??
+      tabs.find((tab) => isHttpTab(tab)) ??
+      tabs.find((tab) => !isExtensionTab(tab)) ??
+      tabs[0];
+
+    if (targetTab) {
+      triggerCopy(targetTab);
+    } else {
+      console.warn('No tab found to trigger copy from popup request.');
+    }
     return;
   }
 
