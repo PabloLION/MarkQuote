@@ -48,6 +48,13 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 chrome.runtime.onMessage.addListener(async (request, sender, _sendResponse) => {
   console.log('Background script received message:', request);
+
+  if (request?.type === 'request-selection-copy') {
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    triggerCopy(tabs[0]);
+    return;
+  }
+
   if (request.markdown) {
     console.log('Received Markdown:', request.markdown);
     const markdown = request.markdown;

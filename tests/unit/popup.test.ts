@@ -27,6 +27,7 @@ describe('popup', () => {
   beforeEach(() => {
     mountPopupDom();
     sinonChrome.reset();
+    sinonChrome.runtime.sendMessage.resolves();
     globalThis.chrome = sinonChrome as unknown as typeof chrome;
     dispose = initializePopup();
   });
@@ -70,5 +71,9 @@ describe('popup', () => {
     expect(sinonChrome.tabs.create.callCount).toBe(2);
     expect(sinonChrome.tabs.create.getCall(0).args[0]).toEqual({ url: FEEDBACK_URL });
     expect(sinonChrome.tabs.create.getCall(1).args[0]).toEqual({ url: INLINE_MODE_ISSUE_QUERY });
+  });
+
+  it('requests a selection copy when initialized', () => {
+    expect(sinonChrome.runtime.sendMessage.calledWith({ type: 'request-selection-copy' })).toBe(true);
   });
 });

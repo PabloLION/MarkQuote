@@ -33,6 +33,10 @@ export function initializePopup(): () => void {
 
   chrome.runtime.onMessage.addListener(messageListener);
 
+  chrome.runtime.sendMessage({ type: 'request-selection-copy' }).catch((error) => {
+    console.warn('Failed to request selection copy.', error);
+  });
+
   const openOptions = () => {
     if (chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
