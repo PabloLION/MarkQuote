@@ -8,7 +8,11 @@ const currentDir = fileURLToPath(new URL('.', import.meta.url));
 const repoRoot = path.resolve(currentDir, '../..');
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
-  execSync('pnpm build', { stdio: 'inherit', cwd: repoRoot });
+  execSync('pnpm build', {
+    stdio: 'inherit',
+    cwd: repoRoot,
+    env: { ...process.env, VITE_E2E: 'true' },
+  });
 
   const manifestPath = path.join(repoRoot, 'dist', 'manifest.json');
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
@@ -16,7 +20,10 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
   };
 
   const hostPermissions = new Set(manifest.host_permissions ?? []);
-  hostPermissions.add('https://example.com/*');
+  const requiredHosts = ['https://example.com/*', 'https://en.wikipedia.org/*'];
+  for (const host of requiredHosts) {
+    hostPermissions.add(host);
+  }
 
   writeFileSync(
     manifestPath,
