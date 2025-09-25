@@ -1,12 +1,20 @@
 import { formatForClipboard } from './clipboard.js';
+import {
+  DEFAULT_OPTIONS,
+  CURRENT_OPTIONS_VERSION,
+  normalizeStoredOptions,
+  type OptionsPayload,
+} from './options-schema.js';
 
 const DEFAULT_TITLE = 'Page Title';
 const DEFAULT_URL = 'https://example.com';
 const E2E_SELECTION_MESSAGE = 'e2e:selection';
 const E2E_LAST_FORMATTED_MESSAGE = 'e2e:get-last-formatted';
+const E2E_SET_OPTIONS_MESSAGE = 'e2e:set-options';
 const isE2ETest = (import.meta.env?.VITE_E2E ?? '').toLowerCase() === 'true';
 let lastFormattedPreview = '';
 let lastPreviewError: string | undefined;
+let lastOptionsSnapshot: OptionsPayload = DEFAULT_OPTIONS;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -88,6 +96,23 @@ async function runCopyPipeline(markdown: string, title: string, url: string): Pr
   return formatted;
 }
 
+async function persistOptions(payload: OptionsPayload): Promise<void> {
+  const storageArea = chrome.storage?.sync;
+  if (!storageArea) {
+    console.warn('chrome.storage.sync is unavailable; cannot persist options.');
+    return;
+  }
+
+  const normalized = normalizeStoredOptions({ options: payload });
+  lastOptionsSnapshot = normalized;
+  await storageArea.set({
+    options: normalized,
+    format: normalized.format,
+    titleRules: normalized.titleRules,
+    urlRules: normalized.urlRules,
+  });
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Background script received message:', request, { isE2ETest });
 
@@ -127,6 +152,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     void runCopyPipeline(request.markdown, title, url).then((formatted) => {
       sendResponse?.({ formatted });
     });
+    return true;
+  }
+
+  if (isE2ETest && request?.type === E2E_SET_OPTIONS_MESSAGE) {
+    const candidate = request.options as OptionsPayload | undefined;
+    if (!candidate) {
+      console.warn('E2E set-options message missing payload.');
+      sendResponse?.({ ok: false });
+      return false;
+    }
+
+    void persistOptions({
+      ...candidate,
+      version: CURRENT_OPTIONS_VERSION,
+    })
+      .then(() => {
+        sendResponse?.({ ok: true });
+      })
+      .catch((error) => {
+        console.error('Failed to persist options via E2E message.', error);
+        sendResponse?.({ ok: false, error: error instanceof Error ? error.message : String(error) });
+      });
     return true;
   }
 

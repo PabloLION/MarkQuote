@@ -5,6 +5,10 @@ import {
   openPopupPage,
   type LaunchExtensionResult,
 } from './helpers/extension.js';
+import {
+  readLastFormatted,
+  sendSelectionMessage,
+} from './helpers/e2e.js';
 
 const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
 const WIKIPEDIA_URL =
@@ -70,85 +74,62 @@ test('feedback button opens repository in new tab', async () => {
   await popupPage.close();
 });
 
-test('renders formatted markdown for a Wikipedia selection', async () => {
-  const { context, cleanup } = await launchExtensionContext();
-  activeCleanup = cleanup;
+const COLOR_SCHEMES: Array<'dark' | 'light'> = ['dark', 'light'];
 
-  await stubWikipediaPage(context);
+for (const colorScheme of COLOR_SCHEMES) {
+  test(`renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
+    const { context, cleanup } = await launchExtensionContext({ colorScheme });
+    activeCleanup = cleanup;
 
-  const articlePage = await context.newPage();
-  await articlePage.goto(WIKIPEDIA_URL, { waitUntil: 'domcontentloaded' });
+    await stubWikipediaPage(context);
 
-  await articlePage.evaluate((selectionText) => {
-    const target = document.getElementById('quote');
-    if (!target) {
-      throw new Error('Expected quote element to exist.');
-    }
+    const articlePage = await context.newPage();
+    await articlePage.goto(WIKIPEDIA_URL, { waitUntil: 'domcontentloaded' });
 
-    const range = document.createRange();
-    range.selectNodeContents(target);
+    await articlePage.evaluate((selectionText) => {
+      const target = document.getElementById('quote');
+      if (!target) {
+        throw new Error('Expected quote element to exist.');
+      }
 
-    const selection = window.getSelection();
-    if (!selection) {
-      throw new Error('Selection API unavailable.');
-    }
+      const range = document.createRange();
+      range.selectNodeContents(target);
 
-    selection.removeAllRanges();
-    selection.addRange(range);
+      const selection = window.getSelection();
+      if (!selection) {
+        throw new Error('Selection API unavailable.');
+      }
 
-    const selected = selection.toString();
-    if (selected.trim() !== selectionText) {
-      throw new Error(`Unexpected selection text: ${selected}`);
-    }
-  }, SAMPLE_SELECTION);
+      selection.removeAllRanges();
+      selection.addRange(range);
 
-  await articlePage.bringToFront();
+      const selected = selection.toString();
+      if (selected.trim() !== selectionText) {
+        throw new Error(`Unexpected selection text: ${selected}`);
+      }
+    }, SAMPLE_SELECTION);
 
-  const extensionId = await getExtensionId(context);
-  await articlePage.bringToFront();
-  const popupPage = await openPopupPage(context, extensionId);
-  popupPage.on('console', (message) => {
-    console.log(`[popup:${message.type()}] ${message.text()}`);
-  });
-  await popupPage.evaluate(() => {
-    chrome.runtime.onMessage.addListener((msg) => {
-      console.log('popup received message', msg);
-    });
-  });
+    await articlePage.bringToFront();
 
-  await popupPage.evaluate(
-    ({ markdown, title, url }) => {
-      chrome.runtime.sendMessage({
-        type: 'e2e:selection',
-        markdown,
-        title,
-        url,
-      });
-    },
-    {
+    const extensionId = await getExtensionId(context);
+    await articlePage.bringToFront();
+    const popupPage = await openPopupPage(context, extensionId);
+
+    await sendSelectionMessage(popupPage, {
       markdown: SAMPLE_SELECTION,
       title: 'Markdown - Wikipedia',
       url: WIKIPEDIA_URL,
-    },
-  );
-
-  const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
-  const previewText = await popupPage.locator('#preview').textContent();
-  console.log('preview text before assertion:', previewText);
-  await expect(popupPage.locator('#preview')).toHaveText(expectedPreview);
-  await expect(popupPage.locator('#message')).toHaveText('Copied!');
-
-  const previewStatus = await popupPage.evaluate(() => {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: 'e2e:get-last-formatted' }, (response) => {
-        resolve(response);
-      });
     });
+
+    const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
+    const previewText = await popupPage.locator('#preview').textContent();
+    await expect(popupPage.locator('#preview')).toHaveText(expectedPreview);
+    await expect(popupPage.locator('#message')).toHaveText('Copied!');
+
+    const previewStatus = await readLastFormatted(popupPage);
+    await expect(previewStatus).toEqual({ formatted: expectedPreview, error: undefined });
+
+    await popupPage.close();
+    await articlePage.close();
   });
-
-  console.log('preview status:', previewStatus);
-  await expect(previewStatus).toEqual({ formatted: expectedPreview, error: undefined });
-
-  await popupPage.close();
-  await articlePage.close();
-});
+}
