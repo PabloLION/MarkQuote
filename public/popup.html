@@ -5,70 +5,99 @@
     <link rel="stylesheet" href="/styles/base.css" />
     <style>
       :root {
-        --page-background: #ffffff;
-        --page-foreground: #1e1e1e;
-        --preview-background: #f0f0f0;
-        --button-background: #eeeeee;
-        --button-border: #cccccc;
-        --button-hover: #dddddd;
+        --popup-width: 320px;
+        --surface-background: #ffffff;
+        --surface-foreground: #1e1e1e;
+        --panel-background: #f4f4f5;
+        --border-color: #d4d4d8;
+        --accent-color: #2563eb;
+        --accent-foreground: #ffffff;
       }
 
       @media (prefers-color-scheme: dark) {
         :root {
-          --page-background: #121212;
-          --page-foreground: #f5f5f5;
-          --preview-background: #1f1f1f;
-          --button-background: #2a2a2a;
-          --button-border: #3a3a3a;
-          --button-hover: #333333;
+          --surface-background: #111827;
+          --surface-foreground: #e5e7eb;
+          --panel-background: #1f2937;
+          --border-color: #374151;
+          --accent-color: #3b82f6;
+          --accent-foreground: #0b1120;
         }
       }
 
       body {
-        width: 300px;
-        padding: 10px;
         margin: 0;
-        background: var(--page-background);
-        color: var(--page-foreground);
+        padding: 16px;
+        background: var(--surface-background);
+        color: var(--surface-foreground);
+        width: var(--popup-width);
+        box-sizing: border-box;
+        display: grid;
+        gap: 12px;
       }
-      #message {
-        font-weight: bold;
-        margin-bottom: 10px;
+
+      header {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      #preview {
-        white-space: pre-wrap;
-        font-family: ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-        background-color: var(--preview-background);
-        padding: 5px;
-        border-radius: 5px;
-        max-height: 100px;
-        overflow-y: auto;
-        margin-bottom: 10px;
-      }
-      .button-container button {
-        width: 100%;
-        padding: 8px;
-        margin-bottom: 5px;
-        border: 1px solid var(--button-border);
-        border-radius: 4px;
-        background-color: var(--button-background);
+
+      button {
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        padding: 8px 14px;
+        font-weight: 600;
+        background: transparent;
         color: inherit;
         cursor: pointer;
-        transition: background-color 120ms ease;
+        transition: background-color 140ms ease, border-color 140ms ease;
+        width: 100%;
       }
-      .button-container button:hover {
-        background-color: var(--button-hover);
+
+      button.primary {
+        background: var(--accent-color);
+        border-color: var(--accent-color);
+        color: var(--accent-foreground);
+      }
+
+      button:hover {
+        background-color: rgba(37, 99, 235, 0.1);
+        border-color: var(--accent-color);
+      }
+
+      button.primary:hover {
+        background-color: var(--accent-color);
+        filter: brightness(1.05);
+      }
+
+      #message {
+        font-weight: 600;
+      }
+
+      #preview {
+        margin: 0;
+        background: var(--panel-background);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px;
+        max-height: 140px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-size: 0.9rem;
       }
     </style>
   </head>
   <body>
+    <header>
+      <button class="primary" id="options-button">Options</button>
+      <button id="hotkeys-button">Hotkey</button>
+      <button id="inline-mode-button">Copy inline</button>
+      <button id="feedback-button">Feedback</button>
+    </header>
     <div id="message"></div>
-    <div id="preview"></div>
-    <div class="button-container">
-      <button id="settings-button">Options</button>
-      <button id="source-link-formatter-button">Source Link Formatter</button>
-      <button id="hotkeys-button">Hotkeys</button>
-    </div>
+    <pre id="preview"></pre>
     <script src="popup.js"></script>
   </body>
 </html>
