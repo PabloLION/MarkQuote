@@ -11,24 +11,38 @@ interface RuleApplicationResult {
   matched: boolean;
 }
 
+function compileRegex(pattern: string, onError: (error: unknown) => void): RegExp | undefined {
+  if (!pattern) {
+    return undefined;
+  }
+
+  try {
+    return new RegExp(pattern);
+  } catch (error) {
+    onError(error);
+    return undefined;
+  }
+}
+
 function safeApplyRegex(
   source: string,
   pattern: string,
   replacement: string,
 ): RuleApplicationResult {
-  try {
-    const regex = new RegExp(pattern);
-    const matched = regex.test(source);
-    if (!matched) {
-      return { value: source, matched: false };
-    }
-
-    const replaced = source.replace(new RegExp(pattern), replacement);
-    return { value: replaced, matched: true };
-  } catch (error) {
+  const regex = compileRegex(pattern, (error) => {
     console.error('Failed to apply regex replacement.', { pattern, replacement, error });
+  });
+
+  if (!regex) {
     return { value: source, matched: false };
   }
+
+  if (!regex.test(source)) {
+    return { value: source, matched: false };
+  }
+
+  const replaced = source.replace(regex, replacement);
+  return { value: replaced, matched: true };
 }
 
 function matchesUrlPattern(pattern: string, url: string): boolean {
@@ -36,12 +50,15 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
     return true;
   }
 
-  try {
-    return new RegExp(pattern).test(url);
-  } catch (error) {
+  const regex = compileRegex(pattern, (error) => {
     console.error('Invalid URL pattern; skipping rule.', { pattern, error });
+  });
+
+  if (!regex) {
     return false;
   }
+
+  return regex.test(url);
 }
 
 function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplicationResult {
@@ -99,7 +116,7 @@ export function applyUrlRules(rules: UrlRule[], startingUrl: string): string {
 }
 
 function replaceToken(template: string, token: string, replacement: string): string {
-  const pattern = new RegExp(`\\{\\{\\s*${token}\\s*\\}}`, 'g');
+  const pattern = new RegExp(`\\{\\{\\s*${token}\\s*\\}}`, 'gi');
   return template.replace(pattern, (_match: string, offset: number) => {
     const lineStart = template.lastIndexOf('\n', offset);
     const prefix = template.slice(lineStart + 1, offset);
@@ -115,8 +132,7 @@ function replaceToken(template: string, token: string, replacement: string): str
 
 function replaceTokens(template: string, tokens: Record<string, string>): string {
   return Object.entries(tokens).reduce((accumulator, [token, value]) => {
-    const updated = replaceToken(accumulator, token, value);
-    return replaceToken(updated, token.toLowerCase(), value);
+    return replaceToken(accumulator, token, value);
   }, template);
 }
 

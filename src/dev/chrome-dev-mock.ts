@@ -85,76 +85,56 @@ function callMaybe<T>(callback: MaybeCallback<T>, value: T) {
 }
 
 function configureStorageArea(storeRef: { current: StorageMap }, mode: PersistenceMode) {
-  const getImpl = (keys?: StorageKeys, callback?: (items: StorageMap) => void) => {
-    const result = resolveStorageResult(storeRef.current, keys);
-    callMaybe(callback, result);
-    return Promise.resolve(result);
-  };
+  const configure = (area: typeof sinonChrome.storage.sync) => {
+    const getImpl = (keys?: StorageKeys, callback?: (items: StorageMap) => void) => {
+      const result = resolveStorageResult(storeRef.current, keys);
+      callMaybe(callback, result);
+      return Promise.resolve(result);
+    };
 
-  sinonChrome.storage.sync.get.callsFake(
-    (keys?: unknown, callback?: (items: StorageMap) => void) => {
+    area.get.callsFake((keys?: unknown, callback?: (items: StorageMap) => void) => {
       if (typeof keys === 'function') {
         return getImpl(undefined, keys as (items: StorageMap) => void);
       }
 
       return getImpl(keys as StorageKeys, callback);
-    },
-  );
-
-  sinonChrome.storage.local.get.callsFake(
-    (keys?: unknown, callback?: (items: StorageMap) => void) => {
-      if (typeof keys === 'function') {
-        return getImpl(undefined, keys as (items: StorageMap) => void);
-      }
-
-      return getImpl(keys as StorageKeys, callback);
-    },
-  );
-
-  const setImpl = (items: Record<string, unknown>, callback?: () => void) => {
-    storeRef.current = { ...storeRef.current, ...items };
-    persistStore(mode, storeRef.current);
-    callMaybe(callback, undefined);
-    return Promise.resolve();
-  };
-
-  sinonChrome.storage.sync.set.callsFake((items: Record<string, unknown>, callback?: () => void) =>
-    setImpl(items, callback),
-  );
-  sinonChrome.storage.local.set.callsFake((items: Record<string, unknown>, callback?: () => void) =>
-    setImpl(items, callback),
-  );
-
-  const removeImpl = (keys: string | string[], callback?: () => void) => {
-    const toRemove = Array.isArray(keys) ? keys : [keys];
-    toRemove.forEach((key) => {
-      delete storeRef.current[key];
     });
-    persistStore(mode, storeRef.current);
-    callMaybe(callback, undefined);
-    return Promise.resolve();
+
+    const setImpl = (items: Record<string, unknown>, callback?: () => void) => {
+      storeRef.current = { ...storeRef.current, ...items };
+      persistStore(mode, storeRef.current);
+      callMaybe(callback, undefined);
+      return Promise.resolve();
+    };
+
+    area.set.callsFake((items: Record<string, unknown>, callback?: () => void) =>
+      setImpl(items, callback),
+    );
+
+    const removeImpl = (keys: string | string[], callback?: () => void) => {
+      const toRemove = Array.isArray(keys) ? keys : [keys];
+      toRemove.forEach((key) => {
+        delete storeRef.current[key];
+      });
+      persistStore(mode, storeRef.current);
+      callMaybe(callback, undefined);
+      return Promise.resolve();
+    };
+
+    area.remove.callsFake((keys: string | string[], callback?: () => void) =>
+      removeImpl(keys, callback),
+    );
+
+    area.clear.callsFake((callback?: () => void) => {
+      storeRef.current = {};
+      persistStore(mode, storeRef.current);
+      callMaybe(callback, undefined);
+      return Promise.resolve();
+    });
   };
 
-  sinonChrome.storage.sync.remove.callsFake((keys: string | string[], callback?: () => void) =>
-    removeImpl(keys, callback),
-  );
-  sinonChrome.storage.local.remove.callsFake((keys: string | string[], callback?: () => void) =>
-    removeImpl(keys, callback),
-  );
-
-  sinonChrome.storage.sync.clear.callsFake((callback?: () => void) => {
-    storeRef.current = {};
-    persistStore(mode, storeRef.current);
-    callMaybe(callback, undefined);
-    return Promise.resolve();
-  });
-
-  sinonChrome.storage.local.clear.callsFake((callback?: () => void) => {
-    storeRef.current = {};
-    persistStore(mode, storeRef.current);
-    callMaybe(callback, undefined);
-    return Promise.resolve();
-  });
+  configure(sinonChrome.storage.sync);
+  configure(sinonChrome.storage.local);
 }
 
 function configureRuntime() {
