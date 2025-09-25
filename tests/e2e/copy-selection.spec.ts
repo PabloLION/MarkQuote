@@ -1,68 +1,53 @@
-import { mkdtemp, rm } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { type BrowserContext, chromium, expect, type Page, test } from '@playwright/test';
-
-const currentDir = fileURLToPath(new URL('.', import.meta.url));
-const repoRoot = path.resolve(currentDir, '../..');
-const extensionPath = path.resolve(repoRoot, 'dist');
+import { expect, test } from '@playwright/test';
+import {
+  getExtensionId,
+  launchExtensionContext,
+  openPopupPage,
+  type LaunchExtensionResult,
+} from './helpers/extension.js';
+import {
+  readLastFormatted,
+  sendSelectionMessage,
+} from './helpers/e2e.js';
 
 const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
+const WIKIPEDIA_URL =
+  'https://en.wikipedia.org/wiki/Markdown?utm_source=chatgpt.com&utm_medium=email';
+const SAMPLE_SELECTION = 'Markdown keeps formatting simple.';
 
-async function launchExtensionContext(): Promise<{
-  context: BrowserContext;
-  cleanup: () => Promise<void>;
-}> {
-  const userDataDir = await mkdtemp(path.join(os.tmpdir(), 'markquote-e2e-'));
+async function stubWikipediaPage(context: LaunchExtensionResult['context']) {
+  await context.route('https://en.wikipedia.org/**', async (route) => {
+    const requestedUrl = route.request().url();
 
-  const context = await chromium.launchPersistentContext(userDataDir, {
-    headless: false,
-    colorScheme: 'dark',
-    args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+    if (!requestedUrl.startsWith('https://en.wikipedia.org/wiki/Markdown')) {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+
+    const html = `<!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8" />
+          <title>Markdown - Wikipedia</title>
+        </head>
+        <body>
+          <main>
+            <article>
+              <p id="quote">${SAMPLE_SELECTION}</p>
+            </article>
+          </main>
+        </body>
+      </html>`;
+
+    await route.fulfill({
+      contentType: 'text/html',
+      body: html,
+    });
   });
-
-  const cleanup = async () => {
-    await context.close();
-    await rm(userDataDir, { recursive: true, force: true });
-  };
-
-  return { context, cleanup };
 }
-
-async function getExtensionId(context: BrowserContext): Promise<string> {
-  const page = await context.newPage();
-  await page.goto('chrome://extensions');
-
-  const devModeToggle = page.locator('cr-toggle#devMode');
-  await devModeToggle.waitFor({ state: 'visible' });
-  if ((await devModeToggle.getAttribute('aria-pressed')) === 'false') {
-    await devModeToggle.click();
-    await page.waitForTimeout(500);
-  }
-
-  const extensionCard = page.locator('extensions-item');
-  await extensionCard.first().waitFor({ state: 'visible' });
-  const extensionId = await extensionCard.first().getAttribute('id');
-  await page.close();
-
-  if (!extensionId) {
-    throw new Error('Unable to determine extension id from chrome://extensions');
-  }
-
-  return extensionId;
-}
-
-async function openPopupPage(context: BrowserContext, extensionId: string): Promise<Page> {
-  const popup = await context.newPage();
-  await popup.goto(`chrome-extension://${extensionId}/popup.html`);
-  await popup.waitForLoadState('domcontentloaded');
-  return popup;
-}
-
 let activeCleanup: (() => Promise<void>) | undefined;
 
-test.afterAll(async () => {
+test.afterEach(async () => {
   if (activeCleanup) {
     const cleanup = activeCleanup;
     activeCleanup = undefined;
@@ -87,6 +72,64 @@ test('feedback button opens repository in new tab', async () => {
 
   await feedbackPage.close();
   await popupPage.close();
-  await cleanup();
-  activeCleanup = undefined;
 });
+
+const COLOR_SCHEMES: Array<'dark' | 'light'> = ['dark', 'light'];
+
+for (const colorScheme of COLOR_SCHEMES) {
+  test(`renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
+    const { context, cleanup } = await launchExtensionContext({ colorScheme });
+    activeCleanup = cleanup;
+
+    await stubWikipediaPage(context);
+
+    const articlePage = await context.newPage();
+    await articlePage.goto(WIKIPEDIA_URL, { waitUntil: 'domcontentloaded' });
+
+    await articlePage.evaluate((selectionText) => {
+      const target = document.getElementById('quote');
+      if (!target) {
+        throw new Error('Expected quote element to exist.');
+      }
+
+      const range = document.createRange();
+      range.selectNodeContents(target);
+
+      const selection = window.getSelection();
+      if (!selection) {
+        throw new Error('Selection API unavailable.');
+      }
+
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      const selected = selection.toString();
+      if (selected.trim() !== selectionText) {
+        throw new Error(`Unexpected selection text: ${selected}`);
+      }
+    }, SAMPLE_SELECTION);
+
+    await articlePage.bringToFront();
+
+    const extensionId = await getExtensionId(context);
+    await articlePage.bringToFront();
+    const popupPage = await openPopupPage(context, extensionId);
+
+    await sendSelectionMessage(popupPage, {
+      markdown: SAMPLE_SELECTION,
+      title: 'Markdown - Wikipedia',
+      url: WIKIPEDIA_URL,
+    });
+
+    const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
+    const previewText = await popupPage.locator('#preview').textContent();
+    await expect(popupPage.locator('#preview')).toHaveText(expectedPreview);
+    await expect(popupPage.locator('#message')).toHaveText('Copied!');
+
+    const previewStatus = await readLastFormatted(popupPage);
+    await expect(previewStatus).toEqual({ formatted: expectedPreview, error: undefined });
+
+    await popupPage.close();
+    await articlePage.close();
+  });
+}

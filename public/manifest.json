@@ -6,13 +6,15 @@
   "permissions": [
     "contextMenus",
     "activeTab",
+    "tabs",
     "scripting",
     "offscreen",
     "storage",
     "clipboardWrite"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
