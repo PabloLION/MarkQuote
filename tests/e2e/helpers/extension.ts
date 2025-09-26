@@ -24,8 +24,13 @@ export async function launchExtensionContext(
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
-    colorScheme: options.colorScheme ?? 'dark',
-    args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
+    colorScheme: options.colorScheme ?? "dark",
+    args: [
+      `--disable-extensions-except=${extensionPath}`,
+      `--load-extension=${extensionPath}`,
+      '--window-position=50000,0',
+      '--window-size=320,320',
+    ],
   });
 
   const cleanup = async () => {

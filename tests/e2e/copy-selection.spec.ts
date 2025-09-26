@@ -1,10 +1,5 @@
 import { expect, test } from '@playwright/test';
-import {
-  getExtensionId,
-  launchExtensionContext,
-  openPopupPage,
-  type LaunchExtensionResult,
-} from './helpers/extension.js';
+import { getExtensionId, launchExtensionContext, openPopupPage, type LaunchExtensionResult } from './helpers/extension.js';
 import {
   readLastFormatted,
   sendSelectionMessage,

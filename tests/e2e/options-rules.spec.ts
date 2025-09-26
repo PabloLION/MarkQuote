@@ -6,12 +6,7 @@ import {
   createDefaultUrlRules,
   type OptionsPayload,
 } from '../../src/options-schema.js';
-import {
-  getExtensionId,
-  launchExtensionContext,
-  openExtensionPage,
-  openPopupPage,
-} from './helpers/extension.js';
+import { getExtensionId, launchExtensionContext, openExtensionPage, openPopupPage } from './helpers/extension.js';
 import { readLastFormatted, sendSelectionMessage, setOptionsPayload } from './helpers/e2e.js';
 
 let activeCleanup: (() => Promise<void>) | undefined;
