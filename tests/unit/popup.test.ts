@@ -8,6 +8,13 @@ const INLINE_MODE_ISSUE_QUERY =
 
 const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
 
+type CommandsShim = typeof chrome.commands & {
+  openShortcutSettings?: () => void;
+};
+
+const getSinonCommands = (): CommandsShim =>
+  (sinonChrome as unknown as { commands: CommandsShim }).commands;
+
 function mountPopupDom() {
   document.body.innerHTML = `
     <header>
@@ -26,9 +33,7 @@ describe('popup', () => {
     let dispose: (() => void) | undefined;
     let windowOpenSpy: ReturnType<typeof vi.spyOn>;
     let clipboardWriteSpy: ReturnType<typeof vi.fn>;
-    const originalShortcutOpener = (sinonChrome.commands as unknown as {
-      openShortcutSettings?: () => void;
-    }).openShortcutSettings;
+    const originalShortcutOpener = getSinonCommands().openShortcutSettings;
     let openShortcutSettingsSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
@@ -42,8 +47,7 @@ describe('popup', () => {
       });
       windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
       openShortcutSettingsSpy = vi.fn();
-      (sinonChrome.commands as unknown as { openShortcutSettings?: () => void }).openShortcutSettings =
-        openShortcutSettingsSpy;
+      getSinonCommands().openShortcutSettings = openShortcutSettingsSpy;
       globalThis.chrome = sinonChrome as unknown as typeof chrome;
       dispose = initializePopup();
     });
@@ -52,8 +56,11 @@ describe('popup', () => {
       dispose?.();
       windowOpenSpy.mockRestore();
       delete (navigator as unknown as { clipboard?: unknown }).clipboard;
-      (sinonChrome.commands as unknown as { openShortcutSettings?: () => void }).openShortcutSettings =
-        originalShortcutOpener;
+      if (originalShortcutOpener) {
+        getSinonCommands().openShortcutSettings = originalShortcutOpener;
+      } else {
+        delete getSinonCommands().openShortcutSettings;
+      }
       sinonChrome.reset();
     });
 
@@ -88,7 +95,12 @@ describe('popup', () => {
 
       expect(windowOpenSpy).toHaveBeenCalledTimes(2);
       expect(windowOpenSpy).toHaveBeenNthCalledWith(1, FEEDBACK_URL, '_blank', 'noopener');
-      expect(windowOpenSpy).toHaveBeenNthCalledWith(2, INLINE_MODE_ISSUE_QUERY, '_blank', 'noopener');
+      expect(windowOpenSpy).toHaveBeenNthCalledWith(
+        2,
+        INLINE_MODE_ISSUE_QUERY,
+        '_blank',
+        'noopener',
+      );
     });
 
     it('requests a selection copy when initialized', () => {
@@ -107,8 +119,7 @@ describe('popup', () => {
       sinonChrome.reset();
       sinonChrome.runtime.sendMessage.resolves();
       windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-      delete (sinonChrome.commands as unknown as { openShortcutSettings?: () => void })
-        .openShortcutSettings;
+      delete getSinonCommands().openShortcutSettings;
       globalThis.chrome = sinonChrome as unknown as typeof chrome;
       dispose = initializePopup();
     });
