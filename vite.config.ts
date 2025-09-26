@@ -34,7 +34,6 @@ export default defineConfig(({ command }) => {
           background: resolve(__dirname, 'src/background.ts'),
           content: resolve(__dirname, 'src/content.ts'),
           selection: resolve(__dirname, 'src/selection.ts'),
-          offscreen: resolve(__dirname, 'src/offscreen.ts'),
           options: resolve(__dirname, 'src/options-entry.ts'),
           popup: resolve(__dirname, 'src/popup-entry.ts'),
         },

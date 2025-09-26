@@ -20,14 +20,50 @@ export function initializePopup(): () => void {
     return () => {};
   }
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (error) {
+      console.warn('navigator.clipboard.writeText failed; falling back to execCommand.', error);
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.append(textarea);
+    textarea.select();
+
+    let success = false;
+    try {
+      success = document.execCommand('copy');
+    } catch (error) {
+      console.warn('document.execCommand("copy") failed.', error);
+    }
+
+    textarea.remove();
+    return success;
+  };
+
   const messageListener = (request: CopiedTextMessage) => {
     if (request.type === 'copied-text-preview') {
-      if (messageDiv) {
-        messageDiv.textContent = 'Copied!';
-      }
       if (previewDiv) {
         previewDiv.textContent = request.text;
       }
+
+      if (messageDiv) {
+        messageDiv.textContent = 'Copied!';
+      }
+
+      void copyToClipboard(request.text).then((success) => {
+        if (!success && messageDiv) {
+          messageDiv.textContent = 'Unable to copy automatically. Text is ready below.';
+        }
+      });
     }
   };
 
@@ -47,8 +83,12 @@ export function initializePopup(): () => void {
   };
 
   const openShortcuts = () => {
-    if (chrome.tabs?.create) {
-      chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+    const openShortcutSettings = (
+      chrome.commands as typeof chrome.commands & { openShortcutSettings?: () => void }
+    ).openShortcutSettings;
+
+    if (typeof openShortcutSettings === 'function') {
+      openShortcutSettings();
       return;
     }
 
@@ -56,11 +96,6 @@ export function initializePopup(): () => void {
   };
 
   const openExternal = (url: string) => {
-    if (chrome.tabs?.create) {
-      chrome.tabs.create({ url });
-      return;
-    }
-
     window.open(url, '_blank', 'noopener');
   };
 

@@ -14,7 +14,6 @@ const E2E_SET_OPTIONS_MESSAGE = 'e2e:set-options';
 const isE2ETest = (import.meta.env?.VITE_E2E ?? '').toLowerCase() === 'true';
 let lastFormattedPreview = '';
 let lastPreviewError: string | undefined;
-let lastOptionsSnapshot: OptionsPayload = DEFAULT_OPTIONS;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -63,17 +62,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
 });
 
 async function runCopyPipeline(markdown: string, title: string, url: string): Promise<string> {
-  console.log('Formatting markdown for clipboard.', { title, url });
   const formatted = await formatForClipboard(markdown, title, url);
-  console.log('Final formatted text:', formatted);
-
-  try {
-    await createOffscreenDocument();
-    console.log('Sending to offscreen document for copying.');
-    chrome.runtime.sendMessage({ type: 'copy-to-clipboard', text: formatted });
-  } catch (error) {
-    console.warn('Unable to create offscreen document for clipboard writes.', error);
-  }
 
   chrome.runtime
     .sendMessage({ type: 'copied-text-preview', text: formatted })
@@ -104,7 +93,6 @@ async function persistOptions(payload: OptionsPayload): Promise<void> {
   }
 
   const normalized = normalizeStoredOptions({ options: payload });
-  lastOptionsSnapshot = normalized;
   await storageArea.set({
     options: normalized,
     format: normalized.format,
@@ -183,20 +171,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.markdown) {
-    console.log('Received Markdown:', request.markdown);
     const title = sender.tab?.title || DEFAULT_TITLE;
     const url = sender.tab?.url || DEFAULT_URL;
     void runCopyPipeline(request.markdown, title, url);
   }
 });
-
-async function createOffscreenDocument() {
-  if (await chrome.offscreen.hasDocument()) {
-    return;
-  }
-  await chrome.offscreen.createDocument({
-    url: 'offscreen.html',
-    reasons: [chrome.offscreen.Reason.CLIPBOARD],
-    justification: 'Needed to copy text to the clipboard',
-  });
-}

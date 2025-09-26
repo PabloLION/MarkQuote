@@ -24,17 +24,36 @@ function mountPopupDom() {
 describe('popup', () => {
   describe('with chrome runtime', () => {
     let dispose: (() => void) | undefined;
+    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+    let clipboardWriteSpy: ReturnType<typeof vi.fn>;
+    const originalShortcutOpener = (sinonChrome.commands as unknown as {
+      openShortcutSettings?: () => void;
+    }).openShortcutSettings;
+    let openShortcutSettingsSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
       mountPopupDom();
       sinonChrome.reset();
       sinonChrome.runtime.sendMessage.resolves();
+      clipboardWriteSpy = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: { writeText: clipboardWriteSpy },
+      });
+      windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+      openShortcutSettingsSpy = vi.fn();
+      (sinonChrome.commands as unknown as { openShortcutSettings?: () => void }).openShortcutSettings =
+        openShortcutSettingsSpy;
       globalThis.chrome = sinonChrome as unknown as typeof chrome;
       dispose = initializePopup();
     });
 
     afterEach(() => {
       dispose?.();
+      windowOpenSpy.mockRestore();
+      delete (navigator as unknown as { clipboard?: unknown }).clipboard;
+      (sinonChrome.commands as unknown as { openShortcutSettings?: () => void }).openShortcutSettings =
+        originalShortcutOpener;
       sinonChrome.reset();
     });
 
@@ -45,6 +64,7 @@ describe('popup', () => {
 
       expect(document.getElementById('message')?.textContent).toBe('Copied!');
       expect(document.getElementById('preview')?.textContent).toBe('Example markdown');
+      expect(clipboardWriteSpy).toHaveBeenCalledWith('Example markdown');
     });
 
     it('opens options page when the options button is clicked', () => {
@@ -55,25 +75,20 @@ describe('popup', () => {
     });
 
     it('opens shortcuts page when the hotkey button is clicked', () => {
-      sinonChrome.tabs.create.resetHistory();
-
       const hotkeysButton = document.getElementById('hotkeys-button');
       hotkeysButton?.dispatchEvent(new Event('click', { bubbles: true }));
 
-      expect(sinonChrome.tabs.create.calledOnceWith({ url: 'chrome://extensions/shortcuts' })).toBe(
-        true,
-      );
+      expect(openShortcutSettingsSpy).toHaveBeenCalledTimes(1);
+      expect(windowOpenSpy).not.toHaveBeenCalled();
     });
 
     it('opens feedback repository and inline mode issue when buttons are clicked', () => {
-      sinonChrome.tabs.create.resetHistory();
-
       document.getElementById('feedback-button')?.dispatchEvent(new Event('click'));
       document.getElementById('inline-mode-button')?.dispatchEvent(new Event('click'));
 
-      expect(sinonChrome.tabs.create.callCount).toBe(2);
-      expect(sinonChrome.tabs.create.getCall(0).args[0]).toEqual({ url: FEEDBACK_URL });
-      expect(sinonChrome.tabs.create.getCall(1).args[0]).toEqual({ url: INLINE_MODE_ISSUE_QUERY });
+      expect(windowOpenSpy).toHaveBeenCalledTimes(2);
+      expect(windowOpenSpy).toHaveBeenNthCalledWith(1, FEEDBACK_URL, '_blank', 'noopener');
+      expect(windowOpenSpy).toHaveBeenNthCalledWith(2, INLINE_MODE_ISSUE_QUERY, '_blank', 'noopener');
     });
 
     it('requests a selection copy when initialized', () => {
@@ -84,7 +99,6 @@ describe('popup', () => {
   });
 
   describe('fallback behaviour', () => {
-    const originalTabs = sinonChrome.tabs;
     let dispose: (() => void) | undefined;
     let windowOpenSpy: ReturnType<typeof vi.spyOn>;
 
@@ -93,7 +107,8 @@ describe('popup', () => {
       sinonChrome.reset();
       sinonChrome.runtime.sendMessage.resolves();
       windowOpenSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-      (sinonChrome as unknown as { tabs?: typeof chrome.tabs }).tabs = undefined;
+      delete (sinonChrome.commands as unknown as { openShortcutSettings?: () => void })
+        .openShortcutSettings;
       globalThis.chrome = sinonChrome as unknown as typeof chrome;
       dispose = initializePopup();
     });
@@ -101,15 +116,13 @@ describe('popup', () => {
     afterEach(() => {
       dispose?.();
       windowOpenSpy.mockRestore();
-      (sinonChrome as unknown as { tabs?: typeof chrome.tabs }).tabs =
-        originalTabs as typeof chrome.tabs;
       sinonChrome.reset();
     });
 
-    it('falls back to window.open when tabs API is unavailable', () => {
-      document.getElementById('feedback-button')?.dispatchEvent(new Event('click'));
+    it('falls back to window.open when shortcut settings API is unavailable', () => {
+      document.getElementById('hotkeys-button')?.dispatchEvent(new Event('click'));
 
-      expect(windowOpenSpy).toHaveBeenCalledWith(FEEDBACK_URL, '_blank', 'noopener');
+      expect(windowOpenSpy).toHaveBeenCalledWith('chrome://extensions/shortcuts', '_blank');
     });
   });
 

@@ -16,7 +16,7 @@ MarkQuote provides several ways to copy selected web content as a Markdown quote
 
 ## Architecture Overview
 
-This extension is built following the Manifest V3 architecture for Chrome Extensions, which emphasizes the use of Service Workers for background tasks and Offscreen Documents for DOM-related operations.
+This extension follows the Manifest V3 architecture for Chrome Extensions, pairing a background Service Worker with lightweight extension pages (popup/options) to handle user interaction and clipboard access.
 
 ### `src/background.ts` (Service Worker)
 
@@ -24,15 +24,11 @@ The `background.ts` script serves as the extension's **Service Worker**. It oper
 
 - **Event-Driven:** It's designed to be event-driven, meaning it wakes up when an event occurs (e.g., a user clicks the extension icon, a context menu item is selected) and goes dormant when idle to conserve system resources.
 - **No Direct DOM Access:** Crucially, the Service Worker does **not** have direct access to the DOM (Document Object Model) of web pages or the extension's own HTML pages. This is a security and performance feature of Manifest V3.
-- **Central Coordinator:** It acts as the central hub, managing context menus, handling toolbar icon clicks, receiving messages from content scripts (like `selection.ts`), and orchestrating complex operations by communicating with other parts of the extension, such as the Offscreen Document.
+- **Central Coordinator:** It acts as the hub, managing context menus, toolbar clicks, and messages from scripts like `selection.ts`, then distributing formatted results to the popup.
 
-### `src/offscreen.ts` (Offscreen Document)
+### `src/popup.ts` (Extension UI)
 
-The `offscreen.ts` script runs within a hidden HTML page (`offscreen.html`) known as an **Offscreen Document**. This component is specifically used to perform tasks that require DOM access or certain browser APIs that are unavailable to the Service Worker.
-
-- **DOM Access:** Unlike the Service Worker, the Offscreen Document **does** have access to the DOM. This makes it suitable for operations that involve manipulating HTML elements or using APIs that depend on a document context.
-- **Clipboard Operations:** Its primary role in MarkQuote is to handle clipboard operations. Due to browser security restrictions, directly copying text to the user's clipboard from a Service Worker is not straightforward. The Offscreen Document provides a secure and reliable environment to execute clipboard commands (like `document.execCommand('copy')`) by temporarily creating and manipulating a hidden `<textarea>` element.
-- **Managed by Service Worker:** The Offscreen Document is created and managed by the `background.ts` Service Worker, which sends it messages with data to be processed (e.g., text to copy).
+The popup receives the formatted markdown from the background worker, renders it for preview, and writes it to the clipboard using the modern Clipboard API. Because the popup runs in a focused extension page, it can interact with the DOM and clipboard without relying on hidden offscreen documents.
 
 ## Development Setup
 
