@@ -18,6 +18,17 @@ MarkQuote provides several ways to copy selected web content as a Markdown quote
 
 This extension follows the Manifest V3 architecture for Chrome Extensions, pairing a background Service Worker with lightweight extension pages (popup/options) to handle user interaction and clipboard access.
 
+### Permissions & Site Access
+
+MarkQuote requests only the permissions required for its copy workflow:
+
+- `contextMenus` to surface the "Copy as Markdown Quote" entry when text is selected.
+- `activeTab` so the background worker can read the current page selection after a user gesture.
+- `scripting` to inject the lightweight `selection.js` helper that extracts the highlighted HTML.
+- `storage` to persist the markdown template and regex rules configured on the options page.
+
+No host permissions are requested by default; the extension relies on user-initiated actions (toolbar icon, context menu, keyboard shortcut) to operate.
+
 ### `src/background.ts` (Service Worker)
 
 The `background.ts` script serves as the extension's **Service Worker**. It operates in the background, listening for various browser events and coordinating the extension's functionality.
