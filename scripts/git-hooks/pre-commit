@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+pnpm biome check --write --log-level error
