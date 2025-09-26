@@ -33,3 +33,20 @@ export async function readLastFormatted(page: Page): Promise<{ formatted: string
     });
   });
 }
+
+export async function primeSelectionStub(
+  page: Page,
+  payload: { markdown: string; title: string; url: string },
+): Promise<void> {
+  const result = await page.evaluate((message) => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: 'e2e:prime-selection', ...message }, (response) => {
+        resolve(response ?? { ok: false, error: 'No response received' });
+      });
+    });
+  }, payload);
+
+  if (!result?.ok) {
+    throw new Error(`Failed to prime selection stub: ${result?.error ?? 'unknown error'}`);
+  }
+}

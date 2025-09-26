@@ -8,6 +8,7 @@ import {
 import {
   readLastFormatted,
   sendSelectionMessage,
+  primeSelectionStub,
 } from './helpers/e2e.js';
 
 const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
@@ -72,6 +73,69 @@ test('feedback button opens repository in new tab', async () => {
 
   await feedbackPage.close();
   await popupPage.close();
+});
+
+test('popup request pipeline formats the active tab selection', async () => {
+  const { context, cleanup } = await launchExtensionContext({ colorScheme: 'dark' });
+  activeCleanup = cleanup;
+
+  const extensionId = await getExtensionId(context);
+  await stubWikipediaPage(context);
+
+  const articlePage = await context.newPage();
+  await articlePage.goto(WIKIPEDIA_URL, { waitUntil: 'domcontentloaded' });
+
+  await articlePage.evaluate((selectionText) => {
+    const target = document.getElementById('quote');
+    if (!target) {
+      throw new Error('Expected quote element to exist.');
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(target);
+
+    const selection = window.getSelection();
+    if (!selection) {
+      throw new Error('Selection API unavailable.');
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    const selected = selection.toString();
+    if (selected.trim() !== selectionText) {
+      throw new Error(`Unexpected selection text: ${selected}`);
+    }
+  }, SAMPLE_SELECTION);
+
+  const controlPage = await openPopupPage(context, extensionId);
+  await primeSelectionStub(controlPage, {
+    markdown: SAMPLE_SELECTION,
+    title: 'Markdown - Wikipedia',
+    url: WIKIPEDIA_URL,
+  });
+  await controlPage.close();
+
+  await articlePage.bringToFront();
+
+  const popupPage = await openPopupPage(context, extensionId);
+
+  const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
+
+  await expect
+    .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+      message: 'Waiting for background selection pipeline to finish.',
+    })
+    .toBe(expectedPreview);
+
+  const finalStatus = await readLastFormatted(popupPage);
+  expect(finalStatus.error).toBeUndefined();
+
+  await expect(popupPage.locator('#preview')).toHaveText(expectedPreview);
+  await expect(popupPage.locator('#message')).toHaveText('Copied!');
+
+  await popupPage.close();
+  await articlePage.close();
 });
 
 const COLOR_SCHEMES: Array<'dark' | 'light'> = ['dark', 'light'];

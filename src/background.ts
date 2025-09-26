@@ -14,6 +14,13 @@ const E2E_SET_OPTIONS_MESSAGE = 'e2e:set-options';
 const isE2ETest = (import.meta.env?.VITE_E2E ?? '').toLowerCase() === 'true';
 let lastFormattedPreview = '';
 let lastPreviewError: string | undefined;
+let e2eSelectionStub:
+  | {
+      markdown: string;
+      title: string;
+      url: string;
+    }
+  | undefined;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -42,6 +49,9 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined) {
     () => {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError.message);
+        if (isE2ETest) {
+          lastPreviewError = chrome.runtime.lastError.message;
+        }
       }
     },
   );
@@ -105,6 +115,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log('Background script received message:', request, { isE2ETest });
 
   if (request?.type === 'request-selection-copy') {
+    if (isE2ETest && e2eSelectionStub) {
+      const stub = e2eSelectionStub;
+      e2eSelectionStub = undefined;
+      void runCopyPipeline(stub.markdown, stub.title, stub.url).catch((error) => {
+        console.error('Failed to process E2E stub selection.', error);
+      });
+      sendResponse?.({ ok: true });
+      return true;
+    }
+
     void chrome.tabs
       .query({ lastFocusedWindow: true })
       .then((tabs) => {
@@ -167,6 +187,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (isE2ETest && request?.type === E2E_LAST_FORMATTED_MESSAGE) {
     sendResponse?.({ formatted: lastFormattedPreview, error: lastPreviewError });
+    return true;
+  }
+
+  if (isE2ETest && request?.type === 'e2e:prime-selection') {
+    const markdown = typeof request.markdown === 'string' ? request.markdown : '';
+    const title = typeof request.title === 'string' && request.title ? request.title : DEFAULT_TITLE;
+    const url = typeof request.url === 'string' && request.url ? request.url : DEFAULT_URL;
+
+    if (!markdown) {
+      sendResponse?.({ ok: false, error: 'Missing markdown payload for stub selection.' });
+      return false;
+    }
+
+    e2eSelectionStub = { markdown, title, url };
+    sendResponse?.({ ok: true });
     return true;
   }
 
