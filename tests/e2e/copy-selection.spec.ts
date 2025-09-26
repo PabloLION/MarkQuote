@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { getExtensionId, launchExtensionContext, openPopupPage, type LaunchExtensionResult } from './helpers/extension.js';
+import { primeSelectionStub, readLastFormatted, sendSelectionMessage } from './helpers/e2e.js';
 import {
-  readLastFormatted,
-  sendSelectionMessage,
-  primeSelectionStub,
-} from './helpers/e2e.js';
+  getExtensionId,
+  type LaunchExtensionResult,
+  launchExtensionContext,
+  openPopupPage,
+} from './helpers/extension.js';
 
 const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
 const WIKIPEDIA_URL =
@@ -181,7 +182,7 @@ for (const colorScheme of COLOR_SCHEMES) {
     });
 
     const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
-    const previewText = await popupPage.locator('#preview').textContent();
+    const _previewText = await popupPage.locator('#preview').textContent();
     await expect(popupPage.locator('#preview')).toHaveText(expectedPreview);
     await expect(popupPage.locator('#message')).toHaveText('Copied!');
 

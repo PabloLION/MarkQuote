@@ -2,7 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { chromium, type BrowserContext, type Page } from '@playwright/test';
+import { type BrowserContext, chromium, type Page } from '@playwright/test';
 
 const moduleDir = fileURLToPath(new URL('.', import.meta.url));
 const repoRoot = path.resolve(moduleDir, '../../..');
@@ -24,7 +24,7 @@ export async function launchExtensionContext(
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
-    colorScheme: options.colorScheme ?? "dark",
+    colorScheme: options.colorScheme ?? 'dark',
     args: [
       `--disable-extensions-except=${extensionPath}`,
       `--load-extension=${extensionPath}`,
@@ -76,9 +76,6 @@ export async function openExtensionPage(
   return page;
 }
 
-export async function openPopupPage(
-  context: BrowserContext,
-  extensionId: string,
-): Promise<Page> {
+export async function openPopupPage(context: BrowserContext, extensionId: string): Promise<Page> {
   return openExtensionPage(context, extensionId, 'popup.html');
 }

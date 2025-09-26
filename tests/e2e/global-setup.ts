@@ -12,5 +12,4 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     cwd: repoRoot,
     env: { ...process.env, VITE_E2E: 'true' },
   });
-
 }

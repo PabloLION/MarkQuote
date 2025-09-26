@@ -1,5 +1,5 @@
-import type { OptionsPayload } from '../../src/options-schema';
 import type { Page } from '@playwright/test';
+import type { OptionsPayload } from '../../src/options-schema';
 
 export async function sendSelectionMessage(
   page: Page,
@@ -20,11 +20,15 @@ export async function setOptionsPayload(page: Page, options: OptionsPayload): Pr
   }, options);
 
   if (!result?.ok) {
-    throw new Error(`Failed to set options via runtime message: ${result?.error ?? 'unknown error'}`);
+    throw new Error(
+      `Failed to set options via runtime message: ${result?.error ?? 'unknown error'}`,
+    );
   }
 }
 
-export async function readLastFormatted(page: Page): Promise<{ formatted: string; error?: string }> {
+export async function readLastFormatted(
+  page: Page,
+): Promise<{ formatted: string; error?: string }> {
   return page.evaluate(() => {
     return new Promise<{ formatted: string; error?: string }>((resolve) => {
       chrome.runtime.sendMessage({ type: 'e2e:get-last-formatted' }, (response) => {

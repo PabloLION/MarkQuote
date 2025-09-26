@@ -1,13 +1,18 @@
 import { expect, test } from '@playwright/test';
 import {
   CURRENT_OPTIONS_VERSION,
-  DEFAULT_TEMPLATE,
   createDefaultTitleRules,
   createDefaultUrlRules,
+  DEFAULT_TEMPLATE,
   type OptionsPayload,
 } from '../../src/options-schema.js';
-import { getExtensionId, launchExtensionContext, openExtensionPage, openPopupPage } from './helpers/extension.js';
 import { readLastFormatted, sendSelectionMessage, setOptionsPayload } from './helpers/e2e.js';
+import {
+  getExtensionId,
+  launchExtensionContext,
+  openExtensionPage,
+  openPopupPage,
+} from './helpers/extension.js';
 
 let activeCleanup: (() => Promise<void>) | undefined;
 
@@ -135,8 +140,7 @@ test('chained URL rules respect break versus continue', async () => {
     .poll(async () => (await readLastFormatted(popupPage)).formatted)
     .toBe(expectedAmazon);
 
-  const exampleUrl =
-    'https://example.com/article?utm_source=chatgpt.com&utm_medium=email';
+  const exampleUrl = 'https://example.com/article?utm_source=chatgpt.com&utm_medium=email';
 
   await sendSelectionMessage(popupPage, {
     markdown: 'Sample',
