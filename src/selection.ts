@@ -1,4 +1,4 @@
-import { convertHtmlToMarkdown } from './converter.js';
+import { convertHtmlToMarkdown } from "./converter.js";
 
 (() => {
   const selection = window.getSelection();
@@ -7,7 +7,7 @@ import { convertHtmlToMarkdown } from './converter.js';
   }
 
   const range = selection.getRangeAt(0);
-  const container = document.createElement('div');
+  const container = document.createElement("div");
   container.appendChild(range.cloneContents());
   const html = container.innerHTML;
   const markdown = convertHtmlToMarkdown(html);

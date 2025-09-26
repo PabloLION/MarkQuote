@@ -1,7 +1,7 @@
-import './polyfills';
-import sinonChrome from 'sinon-chrome';
+import "./polyfills";
+import sinonChrome from "sinon-chrome";
 
-const STORAGE_KEY = 'markquote-dev-storage';
+const STORAGE_KEY = "markquote-dev-storage";
 
 type StorageMap = Record<string, unknown>;
 
@@ -9,7 +9,7 @@ type StorageKeys = string | string[] | Record<string, unknown> | undefined;
 
 type MaybeCallback<T> = ((value: T) => void) | undefined;
 
-type PersistenceMode = 'localStorage' | 'memory';
+type PersistenceMode = "localStorage" | "memory";
 
 type DevHelpers = {
   emitMessage: (payload: unknown) => void;
@@ -23,11 +23,11 @@ declare global {
   }
 }
 
-const hasWindow = typeof window !== 'undefined';
-const hasLocalStorage = hasWindow && 'localStorage' in window;
+const hasWindow = typeof window !== "undefined";
+const hasLocalStorage = hasWindow && "localStorage" in window;
 
 function readPersistedStore(mode: PersistenceMode): StorageMap {
-  if (mode === 'memory' || !hasLocalStorage) {
+  if (mode === "memory" || !hasLocalStorage) {
     return {};
   }
 
@@ -35,20 +35,20 @@ function readPersistedStore(mode: PersistenceMode): StorageMap {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as StorageMap) : {};
   } catch (error) {
-    console.warn('Unable to access localStorage for dev storage mock.', error);
+    console.warn("Unable to access localStorage for dev storage mock.", error);
     return {};
   }
 }
 
 function persistStore(mode: PersistenceMode, store: StorageMap) {
-  if (mode === 'memory' || !hasLocalStorage) {
+  if (mode === "memory" || !hasLocalStorage) {
     return;
   }
 
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
   } catch (error) {
-    console.warn('Unable to persist dev storage mock to localStorage.', error);
+    console.warn("Unable to persist dev storage mock to localStorage.", error);
   }
 }
 
@@ -57,7 +57,7 @@ function resolveStorageResult(store: StorageMap, keys: StorageKeys): StorageMap 
     return { ...store };
   }
 
-  if (typeof keys === 'string') {
+  if (typeof keys === "string") {
     return { [keys]: store[keys] };
   }
 
@@ -79,7 +79,7 @@ function resolveStorageResult(store: StorageMap, keys: StorageKeys): StorageMap 
 }
 
 function callMaybe<T>(callback: MaybeCallback<T>, value: T) {
-  if (typeof callback === 'function') {
+  if (typeof callback === "function") {
     callback(value);
   }
 }
@@ -93,7 +93,7 @@ function configureStorageArea(storeRef: { current: StorageMap }, mode: Persisten
     };
 
     area.get.callsFake((keys?: unknown, callback?: (items: StorageMap) => void) => {
-      if (typeof keys === 'function') {
+      if (typeof keys === "function") {
         return getImpl(undefined, keys as (items: StorageMap) => void);
       }
 
@@ -140,7 +140,7 @@ function configureStorageArea(storeRef: { current: StorageMap }, mode: Persisten
 function configureRuntime() {
   sinonChrome.runtime.openOptionsPage.callsFake(() => {
     if (hasWindow) {
-      window.location.href = '/options.html';
+      window.location.href = "/options.html";
     }
   });
 
@@ -153,8 +153,8 @@ function configureRuntime() {
 function configureTabs() {
   sinonChrome.tabs.create.callsFake((createProperties: chrome.tabs.CreateProperties) => {
     if (hasWindow) {
-      const url = createProperties.url ?? 'about:blank';
-      window.open(url, '_blank');
+      const url = createProperties.url ?? "about:blank";
+      window.open(url, "_blank");
     }
     return Promise.resolve({ id: Math.floor(Math.random() * 1000) } as chrome.tabs.Tab);
   });
@@ -166,7 +166,7 @@ export type EnsureChromeMockOptions = {
 
 export function ensureChromeMock(options: EnsureChromeMockOptions = {}) {
   const persistence: PersistenceMode =
-    options.persistence ?? (hasLocalStorage ? 'localStorage' : 'memory');
+    options.persistence ?? (hasLocalStorage ? "localStorage" : "memory");
   const storeRef = { current: readPersistedStore(persistence) };
 
   sinonChrome.reset();
@@ -174,7 +174,7 @@ export function ensureChromeMock(options: EnsureChromeMockOptions = {}) {
   configureRuntime();
   configureTabs();
 
-  Object.defineProperty(sinonChrome.runtime, 'lastError', {
+  Object.defineProperty(sinonChrome.runtime, "lastError", {
     configurable: true,
     enumerable: true,
     get() {

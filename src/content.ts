@@ -1,1 +1,1 @@
-console.log('Hello from MarkQuote!');
+console.log("Hello from MarkQuote!");

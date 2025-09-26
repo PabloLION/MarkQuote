@@ -52,7 +52,7 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined) {
           lastPreviewError = chrome.runtime.lastError.message;
         }
       }
-    }
+    },
   );
 }
 
@@ -70,11 +70,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
   }
 });
 
-async function runCopyPipeline(
-  markdown: string,
-  title: string,
-  url: string
-): Promise<string> {
+async function runCopyPipeline(markdown: string, title: string, url: string): Promise<string> {
   const formatted = await formatForClipboard(markdown, title, url);
 
   chrome.runtime
@@ -87,8 +83,7 @@ async function runCopyPipeline(
     .catch((error) => {
       console.warn("Failed to notify popup preview.", error);
       if (isE2ETest) {
-        lastPreviewError =
-          error instanceof Error ? error.message : String(error);
+        lastPreviewError = error instanceof Error ? error.message : String(error);
       }
     });
 
@@ -122,11 +117,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (isE2ETest && e2eSelectionStub) {
       const stub = e2eSelectionStub;
       e2eSelectionStub = undefined;
-      void runCopyPipeline(stub.markdown, stub.title, stub.url).catch(
-        (error) => {
-          console.error("Failed to process E2E stub selection.", error);
-        }
-      );
+      void runCopyPipeline(stub.markdown, stub.title, stub.url).catch((error) => {
+        console.error("Failed to process E2E stub selection.", error);
+      });
       sendResponse?.({ ok: true });
       return true;
     }
@@ -134,10 +127,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     void chrome.tabs
       .query({ lastFocusedWindow: true })
       .then((tabs) => {
-        const isHttpTab = (tab: chrome.tabs.Tab) =>
-          Boolean(tab.url?.startsWith("http"));
-        const isExtensionTab = (tab: chrome.tabs.Tab) =>
-          tab.url?.startsWith("chrome-extension://");
+        const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
+        const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith("chrome-extension://");
 
         const targetTab =
           tabs.find((tab) => tab.active && isHttpTab(tab)) ??
@@ -164,13 +155,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
 
     const title =
-      typeof request.title === "string" && request.title
-        ? request.title
-        : DEFAULT_TITLE;
-    const url =
-      typeof request.url === "string" && request.url
-        ? request.url
-        : DEFAULT_URL;
+      typeof request.title === "string" && request.title ? request.title : DEFAULT_TITLE;
+    const url = typeof request.url === "string" && request.url ? request.url : DEFAULT_URL;
     void runCopyPipeline(request.markdown, title, url).then((formatted) => {
       sendResponse?.({ formatted });
     });
@@ -211,16 +197,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (isE2ETest && request?.type === "e2e:prime-selection") {
-    const markdown =
-      typeof request.markdown === "string" ? request.markdown : "";
+    const markdown = typeof request.markdown === "string" ? request.markdown : "";
     const title =
-      typeof request.title === "string" && request.title
-        ? request.title
-        : DEFAULT_TITLE;
-    const url =
-      typeof request.url === "string" && request.url
-        ? request.url
-        : DEFAULT_URL;
+      typeof request.title === "string" && request.title ? request.title : DEFAULT_TITLE;
+    const url = typeof request.url === "string" && request.url ? request.url : DEFAULT_URL;
 
     if (!markdown) {
       sendResponse?.({

@@ -1,6 +1,6 @@
-import { initializePopup } from './popup.js';
+import { initializePopup } from "./popup.js";
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   const dispose = initializePopup();
 
   const hot = (

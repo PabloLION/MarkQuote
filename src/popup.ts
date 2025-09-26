@@ -1,22 +1,22 @@
 type CopiedTextMessage = {
-  type: 'copied-text-preview';
+  type: "copied-text-preview";
   text: string;
 };
 
-const FEEDBACK_URL = 'https://github.com/PabloLION/MarkQuote';
+const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote";
 const INLINE_MODE_DISCUSSION_URL =
-  'https://github.com/PabloLION/MarkQuote/issues?q=is%3Aissue+inline+mode';
+  "https://github.com/PabloLION/MarkQuote/issues?q=is%3Aissue+inline+mode";
 
 export function initializePopup(): () => void {
-  const messageDiv = document.getElementById('message');
-  const previewDiv = document.getElementById('preview');
-  const optionsButton = document.getElementById('options-button');
-  const hotkeysButton = document.getElementById('hotkeys-button');
-  const feedbackButton = document.getElementById('feedback-button');
-  const inlineModeButton = document.getElementById('inline-mode-button');
+  const messageDiv = document.getElementById("message");
+  const previewDiv = document.getElementById("preview");
+  const optionsButton = document.getElementById("options-button");
+  const hotkeysButton = document.getElementById("hotkeys-button");
+  const feedbackButton = document.getElementById("feedback-button");
+  const inlineModeButton = document.getElementById("inline-mode-button");
 
   if (!chrome?.runtime) {
-    console.warn('chrome.runtime is unavailable; popup interactions are limited.');
+    console.warn("chrome.runtime is unavailable; popup interactions are limited.");
     return () => {};
   }
 
@@ -27,20 +27,20 @@ export function initializePopup(): () => void {
         return true;
       }
     } catch (error) {
-      console.warn('navigator.clipboard.writeText failed; falling back to execCommand.', error);
+      console.warn("navigator.clipboard.writeText failed; falling back to execCommand.", error);
     }
 
-    const textarea = document.createElement('textarea');
+    const textarea = document.createElement("textarea");
     textarea.value = text;
-    textarea.setAttribute('readonly', 'true');
-    textarea.style.position = 'absolute';
-    textarea.style.left = '-9999px';
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
     document.body.append(textarea);
     textarea.select();
 
     let success = false;
     try {
-      success = document.execCommand('copy');
+      success = document.execCommand("copy");
     } catch (error) {
       console.warn('document.execCommand("copy") failed.', error);
     }
@@ -50,18 +50,18 @@ export function initializePopup(): () => void {
   };
 
   const messageListener = (request: CopiedTextMessage) => {
-    if (request.type === 'copied-text-preview') {
+    if (request.type === "copied-text-preview") {
       if (previewDiv) {
         previewDiv.textContent = request.text;
       }
 
       if (messageDiv) {
-        messageDiv.textContent = 'Copied!';
+        messageDiv.textContent = "Copied!";
       }
 
       void copyToClipboard(request.text).then((success) => {
         if (!success && messageDiv) {
-          messageDiv.textContent = 'Unable to copy automatically. Text is ready below.';
+          messageDiv.textContent = "Unable to copy automatically. Text is ready below.";
         }
       });
     }
@@ -69,8 +69,8 @@ export function initializePopup(): () => void {
 
   chrome.runtime.onMessage.addListener(messageListener);
 
-  chrome.runtime.sendMessage({ type: 'request-selection-copy' }).catch((error) => {
-    console.warn('Failed to request selection copy.', error);
+  chrome.runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
+    console.warn("Failed to request selection copy.", error);
   });
 
   const openOptions = () => {
@@ -79,7 +79,7 @@ export function initializePopup(): () => void {
       return;
     }
 
-    window.open('options.html', '_blank');
+    window.open("options.html", "_blank");
   };
 
   const openShortcuts = () => {
@@ -87,31 +87,31 @@ export function initializePopup(): () => void {
       chrome.commands as typeof chrome.commands & { openShortcutSettings?: () => void }
     ).openShortcutSettings;
 
-    if (typeof openShortcutSettings === 'function') {
+    if (typeof openShortcutSettings === "function") {
       openShortcutSettings();
       return;
     }
 
-    window.open('chrome://extensions/shortcuts', '_blank');
+    window.open("chrome://extensions/shortcuts", "_blank");
   };
 
   const openExternal = (url: string) => {
-    window.open(url, '_blank', 'noopener');
+    window.open(url, "_blank", "noopener");
   };
 
   const openFeedback = () => openExternal(FEEDBACK_URL);
   const openInlineModeIssue = () => openExternal(INLINE_MODE_DISCUSSION_URL);
 
-  optionsButton?.addEventListener('click', openOptions);
-  hotkeysButton?.addEventListener('click', openShortcuts);
-  feedbackButton?.addEventListener('click', openFeedback);
-  inlineModeButton?.addEventListener('click', openInlineModeIssue);
+  optionsButton?.addEventListener("click", openOptions);
+  hotkeysButton?.addEventListener("click", openShortcuts);
+  feedbackButton?.addEventListener("click", openFeedback);
+  inlineModeButton?.addEventListener("click", openInlineModeIssue);
 
   return () => {
     chrome.runtime.onMessage.removeListener(messageListener);
-    optionsButton?.removeEventListener('click', openOptions);
-    hotkeysButton?.removeEventListener('click', openShortcuts);
-    feedbackButton?.removeEventListener('click', openFeedback);
-    inlineModeButton?.removeEventListener('click', openInlineModeIssue);
+    optionsButton?.removeEventListener("click", openOptions);
+    hotkeysButton?.removeEventListener("click", openShortcuts);
+    feedbackButton?.removeEventListener("click", openFeedback);
+    inlineModeButton?.removeEventListener("click", openInlineModeIssue);
   };
 }
