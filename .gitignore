@@ -2,6 +2,7 @@
 /.ignored
 /.gemini-clipboard
 /test-results
+/.dev
 
 # Logs
 logs
