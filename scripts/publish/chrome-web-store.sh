@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${EXTENSION_ID:?Missing EXTENSION_ID}"
-: "${CLIENT_ID:?Missing CLIENT_ID}"
-: "${CLIENT_SECRET:?Missing CLIENT_SECRET}"
-: "${REFRESH_TOKEN:?Missing REFRESH_TOKEN}"
+ENV_FILE=".dev/secrets/chrome-web-store.env"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  # shellcheck source=/dev/null
+  source "${ENV_FILE}"
+fi
+
+: "${EXTENSION_ID:?Missing EXTENSION_ID (set or place in ${ENV_FILE})}"
+: "${CLIENT_ID:?Missing CLIENT_ID (set or place in ${ENV_FILE})}"
+: "${CLIENT_SECRET:?Missing CLIENT_SECRET (set or place in ${ENV_FILE})}"
+: "${REFRESH_TOKEN:?Missing REFRESH_TOKEN (set or place in ${ENV_FILE})}"
 
 ZIP_PATH=${1:-dist/markquote.zip}
 API_VERSION_HEADER="x-goog-api-version: 2"

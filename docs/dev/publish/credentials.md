@@ -15,13 +15,9 @@ Console:
   token via the OAuth flow described in `chrome-web-store-publish-api.md`.
 
 ## Local Usage
-Source the env file before running the publish script:
-
-```bash
-source .dev/secrets/chrome-web-store.env
-export EXTENSION_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-scripts/publish/chrome-web-store.sh
-```
+Place credentials in `.dev/secrets/chrome-web-store.env` (template in
+`scripts/publish/chrome-web-store.env.example`). The publish script automatically sources it when
+present; extra variables can still be exported manually before invocation when needed.
 
 ## Access Control
 - Only maintainers (listed in `#team-maintainers` Slack channel) have 1Password access.

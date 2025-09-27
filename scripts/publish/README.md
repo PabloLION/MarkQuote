@@ -6,10 +6,10 @@ Publish API.
 Usage:
 
 ```bash
-source .dev/secrets/chrome-web-store.env
 scripts/publish/chrome-web-store.sh dist/markquote-v<version>.zip
 ```
 
+The script automatically sources `.dev/secrets/chrome-web-store.env` when present.
 Environment variables (`chrome-web-store.env.example` provides a template):
 - `EXTENSION_ID`
 - `CLIENT_ID`
