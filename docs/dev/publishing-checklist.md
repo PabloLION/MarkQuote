@@ -20,13 +20,9 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
    - Open the options page and validate rule edits persist.
 
 ## 3. Package
-- From the repo root run:
-  ```bash
-  cd dist
-  zip -r ../markquote-v<version>.zip .
-  cd ..
-  ```
-- Stage the ZIP for upload and archive it in release assets (`docs/releases/` when approved).
+- Preferred: `pnpm package` (runs `pnpm build`, verifies manifest version, and drops
+  `docs/releases/markquote-v<version>.zip`).
+- If packaging manually, zip the `dist/` folder and copy the archive into `docs/releases/`.
 
 ## 4. Store Submission / Automation
 - Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `scripts/publish/chrome-web-store.sh dist/markquote-v<version>.zip`.
