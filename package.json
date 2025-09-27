@@ -25,7 +25,7 @@
     "dev": "vite",
     "dev:playwright": "tsx scripts/dev/playwright-dev.ts",
     "bundle": "tsx scripts/package/bundle.ts",
-    "prepare": "tsx scripts/package-hooks/prepare.ts",
+    "prepare": "tsx scripts/package/prepare.ts",
     "test": "vitest",
     "test:e2e": "pnpm exec playwright test",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
