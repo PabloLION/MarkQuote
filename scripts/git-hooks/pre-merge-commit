@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf 'Running Playwright end-to-end tests before merge...\n'
+PNPM_BIN=$(command -v pnpm || true)
+if [[ -z "$PNPM_BIN" ]]; then
+  printf 'pnpm is not available in PATH. Aborting merge.\n' >&2
+  exit 1
+fi
+
+pnpm test:e2e --project=chromium-extension

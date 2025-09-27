@@ -1,10 +1,10 @@
 /// <reference types="node" />
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import sinonChrome from 'sinon-chrome';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import sinonChrome from "sinon-chrome";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   DEFAULT_AMAZON_SAMPLE_URL,
@@ -20,18 +20,18 @@ import {
   DEFAULT_WIKI_TITLE_REPLACE,
   DEFAULT_WIKI_TITLE_SEARCH,
   DEFAULT_WIKI_URL_PATTERN,
-} from '../../src/options-schema';
+} from "../../src/options-schema";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const html = fs.readFileSync(path.resolve(__dirname, '../../public/options.html'), 'utf8');
+const html = fs.readFileSync(path.resolve(__dirname, "../../public/options.html"), "utf8");
 
 function flushMicrotasks(): Promise<void> {
   return Promise.resolve();
 }
 
-describe('Options Page', () => {
+describe("Options Page", () => {
   let disposeOptions: (() => void) | undefined;
 
   beforeEach(async () => {
@@ -44,14 +44,14 @@ describe('Options Page', () => {
     sinonChrome.storage.sync.get.resolves({
       options: {
         version: 1,
-        format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})',
+        format: "> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})",
         titleRules: [],
         urlRules: [],
       },
     });
     sinonChrome.storage.sync.set.resolves();
 
-    const { initializeOptions } = await import('../../src/options');
+    const { initializeOptions } = await import("../../src/options");
     disposeOptions = initializeOptions();
 
     await flushMicrotasks();
@@ -63,42 +63,42 @@ describe('Options Page', () => {
     sinonChrome.reset();
   });
 
-  it('initializes default wikipedia sample and title rule when storage is empty', async () => {
+  it("initializes default wikipedia sample and title rule when storage is empty", async () => {
     disposeOptions?.();
     sinonChrome.reset();
     vi.resetModules();
 
     sinonChrome.storage.sync.get.resolves({});
 
-    const { initializeOptions } = await import('../../src/options');
+    const { initializeOptions } = await import("../../src/options");
     disposeOptions = initializeOptions();
 
     await flushMicrotasks();
     await flushMicrotasks();
 
     const titleSamplePresetSelect = document.getElementById(
-      'title-sample-preset',
+      "title-sample-preset",
     ) as HTMLSelectElement | null;
     const urlSamplePresetSelect = document.getElementById(
-      'url-sample-preset',
+      "url-sample-preset",
     ) as HTMLSelectElement | null;
-    const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
-    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
-    const sampleOutputTitle = document.getElementById('sample-output-title');
-    const sampleOutputUrl = document.getElementById('sample-output-url');
+    const sampleTitleInput = document.getElementById("sample-title") as HTMLInputElement | null;
+    const sampleUrlInput = document.getElementById("sample-url") as HTMLInputElement | null;
+    const sampleOutputTitle = document.getElementById("sample-output-title");
+    const sampleOutputUrl = document.getElementById("sample-output-url");
 
-    expect(titleSamplePresetSelect?.value).toBe('wikipedia');
-    expect(urlSamplePresetSelect?.value).toBe('amazon');
-    expect(sampleTitleInput?.value).toBe('Markdown - Wikipedia');
+    expect(titleSamplePresetSelect?.value).toBe("wikipedia");
+    expect(urlSamplePresetSelect?.value).toBe("amazon");
+    expect(sampleTitleInput?.value).toBe("Markdown - Wikipedia");
     expect(sampleUrlInput?.value).toBe(DEFAULT_AMAZON_SAMPLE_URL);
-    expect(sampleOutputTitle?.textContent).toBe('Markdown - Wikipedia');
-    expect(sampleOutputUrl?.textContent).toBe('https://www.amazon.com/dp/B01KBIJ53I');
+    expect(sampleOutputTitle?.textContent).toBe("Markdown - Wikipedia");
+    expect(sampleOutputUrl?.textContent).toBe("https://www.amazon.com/dp/B01KBIJ53I");
 
-    const firstTitleRow = document.querySelector<HTMLTableRowElement>('#title-rules-body tr');
-    const firstUrlRow = document.querySelector<HTMLTableRowElement>('#url-rules-body tr');
+    const firstTitleRow = document.querySelector<HTMLTableRowElement>("#title-rules-body tr");
+    const firstUrlRow = document.querySelector<HTMLTableRowElement>("#url-rules-body tr");
 
     if (!firstTitleRow || !firstUrlRow) {
-      throw new Error('Expected default rule rows to be rendered.');
+      throw new Error("Expected default rule rows to be rendered.");
     }
 
     const titlePatternInput = firstTitleRow.querySelector<HTMLInputElement>(
@@ -120,7 +120,7 @@ describe('Options Page', () => {
     expect(titleContinueToggle?.checked).toBe(true);
 
     const urlRows = Array.from(
-      document.querySelectorAll<HTMLTableRowElement>('#url-rules-body tr'),
+      document.querySelectorAll<HTMLTableRowElement>("#url-rules-body tr"),
     );
     expect(urlRows).toHaveLength(3);
 
@@ -158,101 +158,101 @@ describe('Options Page', () => {
     });
   });
 
-  it('loads the saved template and renders a preview', () => {
-    const templateField = document.getElementById('format-template') as HTMLTextAreaElement | null;
-    const previewElement = document.getElementById('format-preview');
+  it("loads the saved template and renders a preview", () => {
+    const templateField = document.getElementById("format-template") as HTMLTextAreaElement | null;
+    const previewElement = document.getElementById("format-preview");
     const titleSamplePresetSelect = document.getElementById(
-      'title-sample-preset',
+      "title-sample-preset",
     ) as HTMLSelectElement | null;
     const urlSamplePresetSelect = document.getElementById(
-      'url-sample-preset',
+      "url-sample-preset",
     ) as HTMLSelectElement | null;
-    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement | null;
-    const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement | null;
-    const sampleOutputTitle = document.getElementById('sample-output-title');
-    const sampleOutputUrl = document.getElementById('sample-output-url');
-    const titleClearStatus = document.getElementById('title-clear-status');
+    const sampleUrlInput = document.getElementById("sample-url") as HTMLInputElement | null;
+    const sampleTitleInput = document.getElementById("sample-title") as HTMLInputElement | null;
+    const sampleOutputTitle = document.getElementById("sample-output-title");
+    const sampleOutputUrl = document.getElementById("sample-output-url");
+    const titleClearStatus = document.getElementById("title-clear-status");
 
-    expect(templateField?.value).toContain('{{TITLE}}');
-    expect(previewElement?.textContent).toContain('Markdown - Wikipedia');
-    expect(previewElement?.textContent).toContain('https://www.amazon.com/dp/B01KBIJ53I');
-    expect(titleSamplePresetSelect?.value).toBe('wikipedia');
-    expect(urlSamplePresetSelect?.value).toBe('amazon');
+    expect(templateField?.value).toContain("{{TITLE}}");
+    expect(previewElement?.textContent).toContain("Markdown - Wikipedia");
+    expect(previewElement?.textContent).toContain("https://www.amazon.com/dp/B01KBIJ53I");
+    expect(titleSamplePresetSelect?.value).toBe("wikipedia");
+    expect(urlSamplePresetSelect?.value).toBe("amazon");
     expect(sampleUrlInput?.value).toBe(DEFAULT_AMAZON_SAMPLE_URL);
-    expect(sampleTitleInput?.value).toBe('Markdown - Wikipedia');
-    expect(sampleOutputTitle?.textContent).toBe('Markdown - Wikipedia');
-    expect(sampleOutputUrl?.textContent).toBe('https://www.amazon.com/dp/B01KBIJ53I');
+    expect(sampleTitleInput?.value).toBe("Markdown - Wikipedia");
+    expect(sampleOutputTitle?.textContent).toBe("Markdown - Wikipedia");
+    expect(sampleOutputUrl?.textContent).toBe("https://www.amazon.com/dp/B01KBIJ53I");
     expect(titleClearStatus?.hidden).toBe(true);
   });
 
-  it('updates the preview when the sample inputs change', () => {
-    const previewElement = document.getElementById('format-preview');
-    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
-    const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement;
+  it("updates the preview when the sample inputs change", () => {
+    const previewElement = document.getElementById("format-preview");
+    const sampleUrlInput = document.getElementById("sample-url") as HTMLInputElement;
+    const sampleTitleInput = document.getElementById("sample-title") as HTMLInputElement;
     const titleSamplePresetSelect = document.getElementById(
-      'title-sample-preset',
+      "title-sample-preset",
     ) as HTMLSelectElement;
-    const urlSamplePresetSelect = document.getElementById('url-sample-preset') as HTMLSelectElement;
-    const sampleOutputTitle = document.getElementById('sample-output-title');
-    const sampleOutputUrl = document.getElementById('sample-output-url');
+    const urlSamplePresetSelect = document.getElementById("url-sample-preset") as HTMLSelectElement;
+    const sampleOutputTitle = document.getElementById("sample-output-title");
+    const sampleOutputUrl = document.getElementById("sample-output-url");
 
-    sampleUrlInput.value = 'https://dev.to/example';
-    sampleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
-    sampleTitleInput.value = 'Dev Example Post';
-    sampleTitleInput.dispatchEvent(new Event('input', { bubbles: true }));
+    sampleUrlInput.value = "https://dev.to/example";
+    sampleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    sampleTitleInput.value = "Dev Example Post";
+    sampleTitleInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    expect(urlSamplePresetSelect.value).toBe('custom');
-    expect(titleSamplePresetSelect.value).toBe('custom');
-    expect(previewElement?.textContent).toContain('https://dev.to/example');
-    expect(previewElement?.textContent).toContain('Dev Example Post');
-    expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
+    expect(urlSamplePresetSelect.value).toBe("custom");
+    expect(titleSamplePresetSelect.value).toBe("custom");
+    expect(previewElement?.textContent).toContain("https://dev.to/example");
+    expect(previewElement?.textContent).toContain("Dev Example Post");
+    expect(sampleOutputUrl?.textContent).toBe("https://dev.to/example");
 
     const titlePresetOption =
       titleSamplePresetSelect.querySelector<HTMLOptionElement>('option[value="mdn"]');
     if (!titlePresetOption) {
-      throw new Error('Expected MDN title preset to exist.');
+      throw new Error("Expected MDN title preset to exist.");
     }
 
-    titleSamplePresetSelect.value = 'mdn';
-    titleSamplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    titleSamplePresetSelect.value = "mdn";
+    titleSamplePresetSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
     expect(sampleTitleInput.value).toBe(titlePresetOption.dataset.title);
-    expect(sampleUrlInput.value).toBe('https://dev.to/example');
-    expect(urlSamplePresetSelect.value).toBe('custom');
-    expect(titleSamplePresetSelect.value).toBe('mdn');
-    expect(previewElement?.textContent).toContain('https://dev.to/example');
-    expect(previewElement?.textContent).toContain(titlePresetOption.dataset.title ?? '');
-    expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? '');
-    expect(sampleOutputUrl?.textContent).toBe('https://dev.to/example');
+    expect(sampleUrlInput.value).toBe("https://dev.to/example");
+    expect(urlSamplePresetSelect.value).toBe("custom");
+    expect(titleSamplePresetSelect.value).toBe("mdn");
+    expect(previewElement?.textContent).toContain("https://dev.to/example");
+    expect(previewElement?.textContent).toContain(titlePresetOption.dataset.title ?? "");
+    expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? "");
+    expect(sampleOutputUrl?.textContent).toBe("https://dev.to/example");
 
     const urlPresetOption = urlSamplePresetSelect.querySelector<HTMLOptionElement>(
       'option[value="daring-fireball"]',
     );
     if (!urlPresetOption) {
-      throw new Error('Expected Daring Fireball URL preset to exist.');
+      throw new Error("Expected Daring Fireball URL preset to exist.");
     }
 
-    urlSamplePresetSelect.value = 'daring-fireball';
-    urlSamplePresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    urlSamplePresetSelect.value = "daring-fireball";
+    urlSamplePresetSelect.dispatchEvent(new Event("change", { bubbles: true }));
 
     expect(sampleUrlInput.value).toBe(urlPresetOption.dataset.url);
     expect(sampleTitleInput.value).toBe(titlePresetOption.dataset.title);
-    expect(titleSamplePresetSelect.value).toBe('mdn');
-    expect(urlSamplePresetSelect.value).toBe('daring-fireball');
-    expect(previewElement?.textContent).toContain(urlPresetOption.dataset.url ?? '');
-    expect(previewElement?.textContent).toContain(titlePresetOption.dataset.title ?? '');
-    expect(sampleOutputUrl?.textContent).toBe(urlPresetOption.dataset.url ?? '');
-    expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? '');
+    expect(titleSamplePresetSelect.value).toBe("mdn");
+    expect(urlSamplePresetSelect.value).toBe("daring-fireball");
+    expect(previewElement?.textContent).toContain(urlPresetOption.dataset.url ?? "");
+    expect(previewElement?.textContent).toContain(titlePresetOption.dataset.title ?? "");
+    expect(sampleOutputUrl?.textContent).toBe(urlPresetOption.dataset.url ?? "");
+    expect(sampleOutputTitle?.textContent).toBe(titlePresetOption.dataset.title ?? "");
   });
 
-  it('persists title and URL rules with versioned payload', async () => {
-    const addTitleRuleButton = document.getElementById('add-title-rule') as HTMLButtonElement;
-    const addUrlRuleButton = document.getElementById('add-url-rule') as HTMLButtonElement;
+  it("persists title and URL rules with versioned payload", async () => {
+    const addTitleRuleButton = document.getElementById("add-title-rule") as HTMLButtonElement;
+    const addUrlRuleButton = document.getElementById("add-url-rule") as HTMLButtonElement;
     addTitleRuleButton.click();
     addUrlRuleButton.click();
 
     const titleRows = Array.from(
-      document.querySelectorAll<HTMLTableRowElement>('#title-rules-body tr'),
+      document.querySelectorAll<HTMLTableRowElement>("#title-rules-body tr"),
     );
     const titleLastRow = titleRows[titleRows.length - 1];
     const titleUrlInput = titleLastRow?.querySelector<HTMLInputElement>(
@@ -269,7 +269,7 @@ describe('Options Page', () => {
     );
 
     const urlRows = Array.from(
-      document.querySelectorAll<HTMLTableRowElement>('#url-rules-body tr'),
+      document.querySelectorAll<HTMLTableRowElement>("#url-rules-body tr"),
     );
     const urlLastRow = urlRows[urlRows.length - 1];
     const urlRuleUrlInput = urlLastRow?.querySelector<HTMLInputElement>(
@@ -285,7 +285,7 @@ describe('Options Page', () => {
       'input[data-field="continueMatching"]',
     );
 
-    const form = document.getElementById('options-form') as HTMLFormElement;
+    const form = document.getElementById("options-form") as HTMLFormElement;
 
     if (
       !titleUrlInput ||
@@ -298,32 +298,32 @@ describe('Options Page', () => {
       !urlContinueToggle ||
       !form
     ) {
-      throw new Error('Expected inputs were not present.');
+      throw new Error("Expected inputs were not present.");
     }
 
-    titleUrlInput.value = 'example.com';
-    titleSearchInput.value = 'Example';
-    titleReplaceInput.value = 'Sample';
+    titleUrlInput.value = "example.com";
+    titleSearchInput.value = "Example";
+    titleReplaceInput.value = "Sample";
     if (!titleContinueToggle || !urlContinueToggle) {
-      throw new Error('Expected continue toggles to exist.');
+      throw new Error("Expected continue toggles to exist.");
     }
 
     titleContinueToggle.checked = false;
-    urlRuleUrlInput.value = 'example.com';
-    urlSearchInput.value = 'http';
-    urlReplaceInput.value = 'https';
+    urlRuleUrlInput.value = "example.com";
+    urlSearchInput.value = "http";
+    urlReplaceInput.value = "https";
     urlContinueToggle.checked = false;
 
-    titleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
-    titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    titleReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
-    titleContinueToggle.dispatchEvent(new Event('change', { bubbles: true }));
-    urlRuleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
-    urlSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    urlReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
-    urlContinueToggle.dispatchEvent(new Event('change', { bubbles: true }));
+    titleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    titleSearchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    titleReplaceInput.dispatchEvent(new Event("input", { bubbles: true }));
+    titleContinueToggle.dispatchEvent(new Event("change", { bubbles: true }));
+    urlRuleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    urlSearchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    urlReplaceInput.dispatchEvent(new Event("input", { bubbles: true }));
+    urlContinueToggle.dispatchEvent(new Event("change", { bubbles: true }));
 
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     await flushMicrotasks();
     await flushMicrotasks();
 
@@ -376,9 +376,9 @@ describe('Options Page', () => {
     });
 
     expect(customTitleRule).toEqual({
-      urlPattern: 'example.com',
-      titleSearch: 'Example',
-      titleReplace: 'Sample',
+      urlPattern: "example.com",
+      titleSearch: "Example",
+      titleReplace: "Sample",
       continueMatching: true,
     });
 
@@ -410,9 +410,9 @@ describe('Options Page', () => {
     });
 
     expect(customRule).toEqual({
-      urlPattern: 'example.com',
-      urlSearch: 'http',
-      urlReplace: 'https',
+      urlPattern: "example.com",
+      urlSearch: "http",
+      urlReplace: "https",
       continueMatching: true,
     });
 
@@ -420,11 +420,11 @@ describe('Options Page', () => {
     expect(payload.urlRules).toEqual(payload.options.urlRules);
   });
 
-  it('requires confirmation before clearing title rules', () => {
-    const addTitleRuleButton = document.getElementById('add-title-rule') as HTMLButtonElement;
-    const clearButton = document.getElementById('clear-title-rules') as HTMLButtonElement;
-    const confirmButton = document.getElementById('confirm-clear-title-rules') as HTMLButtonElement;
-    const clearStatus = document.getElementById('title-clear-status') as HTMLParagraphElement;
+  it("requires confirmation before clearing title rules", () => {
+    const addTitleRuleButton = document.getElementById("add-title-rule") as HTMLButtonElement;
+    const clearButton = document.getElementById("clear-title-rules") as HTMLButtonElement;
+    const confirmButton = document.getElementById("confirm-clear-title-rules") as HTMLButtonElement;
+    const clearStatus = document.getElementById("title-clear-status") as HTMLParagraphElement;
 
     addTitleRuleButton.click();
     const urlInput = document.querySelector<HTMLInputElement>(
@@ -432,11 +432,11 @@ describe('Options Page', () => {
     );
 
     if (!urlInput) {
-      throw new Error('Expected rule input to exist after adding rule.');
+      throw new Error("Expected rule input to exist after adding rule.");
     }
 
-    urlInput.value = 'example';
-    urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+    urlInput.value = "example";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
 
     expect(clearButton.hidden).toBe(false);
     expect(confirmButton.hidden).toBe(true);
@@ -445,24 +445,24 @@ describe('Options Page', () => {
     clearButton.click();
     expect(clearButton.hidden).toBe(true);
     expect(confirmButton.hidden).toBe(false);
-    expect(document.querySelectorAll('#title-rules-body tr').length).toBe(2);
+    expect(document.querySelectorAll("#title-rules-body tr").length).toBe(2);
     expect(clearStatus.hidden).toBe(true);
 
     confirmButton.click();
     expect(clearButton.hidden).toBe(false);
     expect(confirmButton.hidden).toBe(true);
-    expect(document.querySelectorAll('#title-rules-body tr').length).toBe(0);
+    expect(document.querySelectorAll("#title-rules-body tr").length).toBe(0);
     expect(clearStatus.hidden).toBe(false);
-    expect(clearStatus.textContent).toBe('All title rules cleared.');
+    expect(clearStatus.textContent).toBe("All title rules cleared.");
   });
 
-  it('requires confirmation before clearing URL rules', () => {
-    const addUrlRuleButton = document.getElementById('add-url-rule') as HTMLButtonElement;
-    const clearButton = document.getElementById('clear-url-rules') as HTMLButtonElement;
-    const confirmButton = document.getElementById('confirm-clear-url-rules') as HTMLButtonElement;
-    const clearStatus = document.getElementById('url-clear-status') as HTMLParagraphElement;
+  it("requires confirmation before clearing URL rules", () => {
+    const addUrlRuleButton = document.getElementById("add-url-rule") as HTMLButtonElement;
+    const clearButton = document.getElementById("clear-url-rules") as HTMLButtonElement;
+    const confirmButton = document.getElementById("confirm-clear-url-rules") as HTMLButtonElement;
+    const clearStatus = document.getElementById("url-clear-status") as HTMLParagraphElement;
 
-    const initialRowCount = document.querySelectorAll('#url-rules-body tr').length;
+    const initialRowCount = document.querySelectorAll("#url-rules-body tr").length;
 
     addUrlRuleButton.click();
     const urlInput = document.querySelector<HTMLInputElement>(
@@ -470,11 +470,11 @@ describe('Options Page', () => {
     );
 
     if (!urlInput) {
-      throw new Error('Expected URL rule input to exist after adding rule.');
+      throw new Error("Expected URL rule input to exist after adding rule.");
     }
 
-    urlInput.value = 'example';
-    urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+    urlInput.value = "example";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
 
     expect(clearButton.hidden).toBe(false);
     expect(confirmButton.hidden).toBe(true);
@@ -483,19 +483,19 @@ describe('Options Page', () => {
     clearButton.click();
     expect(clearButton.hidden).toBe(true);
     expect(confirmButton.hidden).toBe(false);
-    expect(document.querySelectorAll('#url-rules-body tr').length).toBe(initialRowCount + 1);
+    expect(document.querySelectorAll("#url-rules-body tr").length).toBe(initialRowCount + 1);
     expect(clearStatus.hidden).toBe(true);
 
     confirmButton.click();
     expect(clearButton.hidden).toBe(false);
     expect(confirmButton.hidden).toBe(true);
-    expect(document.querySelectorAll('#url-rules-body tr').length).toBe(0);
+    expect(document.querySelectorAll("#url-rules-body tr").length).toBe(0);
     expect(clearStatus.hidden).toBe(false);
-    expect(clearStatus.textContent).toBe('All URL rules cleared.');
+    expect(clearStatus.textContent).toBe("All URL rules cleared.");
   });
 
-  it('shows transformed sample outputs when title rules match', () => {
-    const addTitleRuleButton = document.getElementById('add-title-rule') as HTMLButtonElement;
+  it("shows transformed sample outputs when title rules match", () => {
+    const addTitleRuleButton = document.getElementById("add-title-rule") as HTMLButtonElement;
     addTitleRuleButton.click();
 
     const titleUrlInput = document.querySelector<HTMLInputElement>(
@@ -507,33 +507,33 @@ describe('Options Page', () => {
     const titleReplaceInput = document.querySelector<HTMLInputElement>(
       '#title-rules-body input[data-field="titleReplace"]',
     );
-    const sampleOutputTitle = document.getElementById('sample-output-title');
+    const sampleOutputTitle = document.getElementById("sample-output-title");
 
     if (!titleUrlInput || !titleSearchInput || !titleReplaceInput || !sampleOutputTitle) {
-      throw new Error('Expected title rule inputs not found.');
+      throw new Error("Expected title rule inputs not found.");
     }
 
-    titleUrlInput.value = 'example';
-    titleSearchInput.value = 'Example';
-    titleReplaceInput.value = 'Sample';
+    titleUrlInput.value = "example";
+    titleSearchInput.value = "Example";
+    titleReplaceInput.value = "Sample";
 
-    titleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
-    titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    titleReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
+    titleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    titleSearchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    titleReplaceInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const sampleTitleInput = document.getElementById('sample-title') as HTMLInputElement;
-    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
+    const sampleTitleInput = document.getElementById("sample-title") as HTMLInputElement;
+    const sampleUrlInput = document.getElementById("sample-url") as HTMLInputElement;
 
-    sampleTitleInput.value = 'Example Domain';
-    sampleTitleInput.dispatchEvent(new Event('input', { bubbles: true }));
-    sampleUrlInput.value = 'https://example.com/';
-    sampleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+    sampleTitleInput.value = "Example Domain";
+    sampleTitleInput.dispatchEvent(new Event("input", { bubbles: true }));
+    sampleUrlInput.value = "https://example.com/";
+    sampleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    expect(sampleOutputTitle.textContent).toBe('Sample Domain');
+    expect(sampleOutputTitle.textContent).toBe("Sample Domain");
   });
 
-  it('shows transformed sample URL when URL rules match', () => {
-    const addUrlRuleButton = document.getElementById('add-url-rule') as HTMLButtonElement;
+  it("shows transformed sample URL when URL rules match", () => {
+    const addUrlRuleButton = document.getElementById("add-url-rule") as HTMLButtonElement;
     addUrlRuleButton.click();
 
     const urlRuleUrlInput = document.querySelector<HTMLInputElement>(
@@ -545,29 +545,29 @@ describe('Options Page', () => {
     const urlReplaceInput = document.querySelector<HTMLInputElement>(
       '#url-rules-body input[data-field="urlReplace"]',
     );
-    const sampleOutputUrl = document.getElementById('sample-output-url');
+    const sampleOutputUrl = document.getElementById("sample-output-url");
 
     if (!urlRuleUrlInput || !urlSearchInput || !urlReplaceInput || !sampleOutputUrl) {
-      throw new Error('Expected URL rule inputs not found.');
+      throw new Error("Expected URL rule inputs not found.");
     }
 
-    urlRuleUrlInput.value = 'example';
-    urlSearchInput.value = '^http://';
-    urlReplaceInput.value = 'https://';
+    urlRuleUrlInput.value = "example";
+    urlSearchInput.value = "^http://";
+    urlReplaceInput.value = "https://";
 
-    urlRuleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
-    urlSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
-    urlReplaceInput.dispatchEvent(new Event('input', { bubbles: true }));
+    urlRuleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    urlSearchInput.dispatchEvent(new Event("input", { bubbles: true }));
+    urlReplaceInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    const sampleUrlInput = document.getElementById('sample-url') as HTMLInputElement;
-    sampleUrlInput.value = 'http://example.com/';
-    sampleUrlInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const sampleUrlInput = document.getElementById("sample-url") as HTMLInputElement;
+    sampleUrlInput.value = "http://example.com/";
+    sampleUrlInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    expect(sampleOutputUrl.textContent).toBe('https://example.com/');
+    expect(sampleOutputUrl.textContent).toBe("https://example.com/");
   });
 
-  it('rejects invalid regex patterns and keeps existing state', async () => {
-    const addTitleRuleButton = document.getElementById('add-title-rule') as HTMLButtonElement;
+  it("rejects invalid regex patterns and keeps existing state", async () => {
+    const addTitleRuleButton = document.getElementById("add-title-rule") as HTMLButtonElement;
     addTitleRuleButton.click();
 
     const urlInput = document.querySelector<HTMLInputElement>(
@@ -576,34 +576,34 @@ describe('Options Page', () => {
     const titleSearchInput = document.querySelector<HTMLInputElement>(
       '#title-rules-body input[data-field="titleSearch"]',
     );
-    const form = document.getElementById('options-form') as HTMLFormElement;
-    const status = document.getElementById('status');
+    const form = document.getElementById("options-form") as HTMLFormElement;
+    const status = document.getElementById("status");
 
     if (!urlInput || !titleSearchInput || !form || !status) {
-      throw new Error('Expected inputs were not present.');
+      throw new Error("Expected inputs were not present.");
     }
 
-    urlInput.value = '[[['; // invalid regex
-    titleSearchInput.value = 'Title';
-    urlInput.dispatchEvent(new Event('input', { bubbles: true }));
-    titleSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    urlInput.value = "[[["; // invalid regex
+    titleSearchInput.value = "Title";
+    urlInput.dispatchEvent(new Event("input", { bubbles: true }));
+    titleSearchInput.dispatchEvent(new Event("input", { bubbles: true }));
 
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     await flushMicrotasks();
     await flushMicrotasks();
 
     expect(sinonChrome.storage.sync.set.called).toBe(false);
-    expect(urlInput.getAttribute('aria-invalid')).toBe('true');
-    expect(status.getAttribute('data-variant')).toBe('error');
+    expect(urlInput.getAttribute("aria-invalid")).toBe("true");
+    expect(status.getAttribute("data-variant")).toBe("error");
     expect(status.textContent).toMatch(/invalid regex/i);
   });
 
-  it('restores the default template when requested', () => {
-    const templateField = document.getElementById('format-template') as HTMLTextAreaElement;
-    const restoreButton = document.getElementById('restore-template') as HTMLButtonElement;
+  it("restores the default template when requested", () => {
+    const templateField = document.getElementById("format-template") as HTMLTextAreaElement;
+    const restoreButton = document.getElementById("restore-template") as HTMLButtonElement;
 
-    templateField.value = 'Custom template';
-    templateField.dispatchEvent(new Event('input', { bubbles: true }));
+    templateField.value = "Custom template";
+    templateField.dispatchEvent(new Event("input", { bubbles: true }));
 
     restoreButton.click();
 

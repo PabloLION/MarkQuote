@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-import { applyTitleRules, applyUrlRules, formatWithOptions } from '../../src/formatting.js';
+import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../src/formatting.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
@@ -11,148 +11,148 @@ import {
   type OptionsPayload,
   type TitleRule,
   type UrlRule,
-} from '../../src/options-schema.js';
+} from "../../src/options-schema.js";
 
-describe('formatWithOptions', () => {
-  it('applies title and URL transforms when URL matches', () => {
+describe("formatWithOptions", () => {
+  it("applies title and URL transforms when URL matches", () => {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
-      format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})',
+      format: "> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})",
       titleRules: [
         {
-          urlPattern: 'example.com',
-          titleSearch: 'Example',
-          titleReplace: 'Sample',
+          urlPattern: "example.com",
+          titleSearch: "Example",
+          titleReplace: "Sample",
           continueMatching: false,
         },
       ],
       urlRules: [
         {
-          urlPattern: 'example.com',
-          urlSearch: 'http',
-          urlReplace: 'https',
+          urlPattern: "example.com",
+          urlSearch: "http",
+          urlReplace: "https",
           continueMatching: false,
         },
       ],
     };
 
     const result = formatWithOptions(options, {
-      text: 'Quote',
-      title: 'Example Article',
-      url: 'http://example.com',
+      text: "Quote",
+      title: "Example Article",
+      url: "http://example.com",
     });
 
-    expect(result).toContain('[Sample Article](https://example.com)');
+    expect(result).toContain("[Sample Article](https://example.com)");
   });
 
-  it('preserves indentation for multiline text replacements', () => {
+  it("preserves indentation for multiline text replacements", () => {
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
-      format: '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})',
+      format: "> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})",
       titleRules: [],
       urlRules: [],
     };
 
     const output = formatWithOptions(options, {
-      text: 'First line\nSecond line',
-      title: 'Article',
-      url: 'https://example.com',
+      text: "First line\nSecond line",
+      title: "Article",
+      url: "https://example.com",
     });
 
-    expect(output).toContain('> First line');
-    expect(output).toContain('\n> Second line');
+    expect(output).toContain("> First line");
+    expect(output).toContain("\n> Second line");
   });
 
-  it('returns transformed title and URL independently of template', () => {
+  it("returns transformed title and URL independently of template", () => {
     const titleRules: TitleRule[] = [
       {
-        urlPattern: 'nytimes',
-        titleSearch: 'Opinion',
-        titleReplace: 'Column',
+        urlPattern: "nytimes",
+        titleSearch: "Opinion",
+        titleReplace: "Column",
         continueMatching: false,
       },
     ];
 
     const urlRules: UrlRule[] = [
       {
-        urlPattern: 'nytimes',
-        urlSearch: 'http',
-        urlReplace: 'https',
+        urlPattern: "nytimes",
+        urlSearch: "http",
+        urlReplace: "https",
         continueMatching: false,
       },
     ];
 
     const transformedTitle = applyTitleRules(
       titleRules,
-      'Opinion Piece',
-      'http://nytimes.com/story',
+      "Opinion Piece",
+      "http://nytimes.com/story",
     );
-    const transformedUrl = applyUrlRules(urlRules, 'http://nytimes.com/story');
-    expect(transformedTitle).toBe('Column Piece');
-    expect(transformedUrl).toBe('https://nytimes.com/story');
+    const transformedUrl = applyUrlRules(urlRules, "http://nytimes.com/story");
+    expect(transformedTitle).toBe("Column Piece");
+    expect(transformedUrl).toBe("https://nytimes.com/story");
   });
 
-  it('stops applying subsequent title rules when continueMatching is false', () => {
+  it("stops applying subsequent title rules when continueMatching is false", () => {
     const rules: TitleRule[] = [
       {
-        urlPattern: '',
-        titleSearch: 'First',
-        titleReplace: 'Second',
+        urlPattern: "",
+        titleSearch: "First",
+        titleReplace: "Second",
         continueMatching: false,
       },
       {
-        urlPattern: '',
-        titleSearch: 'Second',
-        titleReplace: 'Third',
+        urlPattern: "",
+        titleSearch: "Second",
+        titleReplace: "Third",
         continueMatching: true,
       },
     ];
 
-    const result = applyTitleRules(rules, 'First Article', 'https://example.com');
-    expect(result).toBe('Second Article');
+    const result = applyTitleRules(rules, "First Article", "https://example.com");
+    expect(result).toBe("Second Article");
   });
 
-  it('continues applying URL rules when continueMatching is true', () => {
+  it("continues applying URL rules when continueMatching is true", () => {
     const rules: UrlRule[] = [
       {
-        urlPattern: '',
-        urlSearch: '^http://',
-        urlReplace: 'https://',
+        urlPattern: "",
+        urlSearch: "^http://",
+        urlReplace: "https://",
         continueMatching: true,
       },
       {
-        urlPattern: '',
-        urlSearch: 'example',
-        urlReplace: 'sample',
+        urlPattern: "",
+        urlSearch: "example",
+        urlReplace: "sample",
         continueMatching: false,
       },
     ];
 
-    const result = applyUrlRules(rules, 'http://example.com/article');
-    expect(result).toBe('https://sample.com/article');
+    const result = applyUrlRules(rules, "http://example.com/article");
+    expect(result).toBe("https://sample.com/article");
   });
 
-  it('continues applying title rules when continueMatching is true', () => {
+  it("continues applying title rules when continueMatching is true", () => {
     const rules: TitleRule[] = [
       {
-        urlPattern: '',
-        titleSearch: 'First',
-        titleReplace: 'Second',
+        urlPattern: "",
+        titleSearch: "First",
+        titleReplace: "Second",
         continueMatching: true,
       },
       {
-        urlPattern: '',
-        titleSearch: 'Second',
-        titleReplace: 'Third',
+        urlPattern: "",
+        titleSearch: "Second",
+        titleReplace: "Third",
         continueMatching: false,
       },
     ];
 
-    const result = applyTitleRules(rules, 'First Article', 'https://example.com');
-    expect(result).toBe('Third Article');
+    const result = applyTitleRules(rules, "First Article", "https://example.com");
+    expect(result).toBe("Third Article");
   });
 
-  it('removes chatgpt utm query parameters via chained defaults', () => {
+  it("removes chatgpt utm query parameters via chained defaults", () => {
     const rules: UrlRule[] = [
       {
         urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
@@ -170,11 +170,11 @@ describe('formatWithOptions', () => {
 
     const chainedResult = applyUrlRules(
       rules,
-      'https://example.com/article?utm_source=chatgpt.com&ref=home&utm_source=chatgpt.com',
+      "https://example.com/article?utm_source=chatgpt.com&ref=home&utm_source=chatgpt.com",
     );
-    expect(chainedResult).toBe('https://example.com/article?ref=home');
+    expect(chainedResult).toBe("https://example.com/article?ref=home");
 
-    const soloResult = applyUrlRules(rules, 'https://example.com/article?utm_source=chatgpt.com');
-    expect(soloResult).toBe('https://example.com/article');
+    const soloResult = applyUrlRules(rules, "https://example.com/article?utm_source=chatgpt.com");
+    expect(soloResult).toBe("https://example.com/article");
   });
 });

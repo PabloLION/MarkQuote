@@ -1,4 +1,4 @@
-import type { OptionsPayload, TitleRule, UrlRule } from './options-schema.js';
+import type { OptionsPayload, TitleRule, UrlRule } from "./options-schema.js";
 
 export interface TemplateTokens {
   text: string;
@@ -30,7 +30,7 @@ function safeApplyRegex(
   replacement: string,
 ): RuleApplicationResult {
   const regex = compileRegex(pattern, (error) => {
-    console.error('Failed to apply regex replacement.', { pattern, replacement, error });
+    console.error("Failed to apply regex replacement.", { pattern, replacement, error });
   });
 
   if (!regex) {
@@ -51,7 +51,7 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
   }
 
   const regex = compileRegex(pattern, (error) => {
-    console.error('Invalid URL pattern; skipping rule.', { pattern, error });
+    console.error("Invalid URL pattern; skipping rule.", { pattern, error });
   });
 
   if (!regex) {
@@ -116,17 +116,17 @@ export function applyUrlRules(rules: UrlRule[], startingUrl: string): string {
 }
 
 function replaceToken(template: string, token: string, replacement: string): string {
-  const pattern = new RegExp(`\\{\\{\\s*${token}\\s*\\}}`, 'gi');
+  const pattern = new RegExp(`\\{\\{\\s*${token}\\s*\\}}`, "gi");
   return template.replace(pattern, (_match: string, offset: number) => {
-    const lineStart = template.lastIndexOf('\n', offset);
+    const lineStart = template.lastIndexOf("\n", offset);
     const prefix = template.slice(lineStart + 1, offset);
-    const lines = replacement.split('\n');
+    const lines = replacement.split("\n");
 
     if (lines.length <= 1) {
       return replacement;
     }
 
-    return lines.map((line, index) => (index === 0 ? line : `${prefix}${line}`)).join('\n');
+    return lines.map((line, index) => (index === 0 ? line : `${prefix}${line}`)).join("\n");
   });
 }
 

@@ -1,6 +1,6 @@
-import { ensureChromeMock } from './chrome-dev-mock.js';
-import { mountDevNav } from './dev-nav.js';
-import { injectPublicPageMarkup } from './load-static-page.js';
+import { ensureChromeMock } from "./chrome-dev-mock.js";
+import { mountDevNav } from "./dev-nav.js";
+import { injectPublicPageMarkup } from "./load-static-page.js";
 
 type PageKey = Parameters<typeof mountDevNav>[0];
 
@@ -32,7 +32,7 @@ export function bootstrapDevSurface<TModule>(options: DevSurfaceOptions<TModule>
   ensureChromeMock();
   mountDevNav(options.navKey);
 
-  const mountPoint = requireMountPoint(options.mountPointId ?? 'dev-root');
+  const mountPoint = requireMountPoint(options.mountPointId ?? "dev-root");
   const markupUrl = new URL(options.markupPath, import.meta.url);
 
   let cleanupMarkup: Dispose | undefined;
@@ -40,7 +40,7 @@ export function bootstrapDevSurface<TModule>(options: DevSurfaceOptions<TModule>
 
   async function mountSurface(): Promise<void> {
     cleanupMarkup?.();
-    mountPoint.innerHTML = '';
+    mountPoint.innerHTML = "";
     cleanupMarkup = await injectPublicPageMarkup(markupUrl, mountPoint);
 
     const module = await options.loadModule();

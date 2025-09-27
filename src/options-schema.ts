@@ -21,7 +21,7 @@ export interface OptionsPayload {
   urlRules: UrlRule[];
 }
 
-export const DEFAULT_TEMPLATE = '> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})';
+export const DEFAULT_TEMPLATE = "> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})";
 
 export const DEFAULT_WIKI_URL_PATTERN = String.raw`^https?://(?:[\w-]+\.)?en\.wikipedia\.org/`;
 // biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
@@ -34,35 +34,35 @@ export const DEFAULT_AMAZON_URL_SEARCH = String.raw`^(https?://(?:www\.)?amazon\
 // biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
 export const DEFAULT_AMAZON_URL_REPLACE = String.raw`$1dp/$2`;
 export const DEFAULT_AMAZON_SAMPLE_URL =
-  'https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&dib=eyJ2IjoiMSJ9.rick.roll.sample&dib_tag=se&keywords=rick+astley+album&qid=1700000000&sprefix=rick+astley+album%2Caps%2C200&sr=8-1';
+  "https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=sr_1_1?crid=AmazonSample123&dib=eyJ2IjoiMSJ9.rick.roll.sample&dib_tag=se&keywords=rick+astley+album&qid=1700000000&sprefix=rick+astley+album%2Caps%2C200&sr=8-1";
 
 // biome-ignore lint/complexity/noUselessStringRaw: Keep raw template for regex sharing and documentation parity.
 export const DEFAULT_CHATGPT_UTM_URL_PATTERN = String.raw`^https?://`;
 export const DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH = String.raw`([?&])utm_source=chatgpt\.com&`;
-export const DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE = '$1';
+export const DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE = "$1";
 export const DEFAULT_CHATGPT_UTM_TRAILING_SEARCH = String.raw`([?&])utm_source=chatgpt\.com($|#)`;
-export const DEFAULT_CHATGPT_UTM_TRAILING_REPLACE = '$2';
+export const DEFAULT_CHATGPT_UTM_TRAILING_REPLACE = "$2";
 
 function sanitizeString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+  return typeof value === "string" ? value : "";
 }
 
 function sanitizeBoolean(value: unknown): boolean {
-  if (typeof value === 'boolean') {
+  if (typeof value === "boolean") {
     return value;
   }
 
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const normalized = value.trim().toLowerCase();
-    if (normalized === 'true') {
+    if (normalized === "true") {
       return true;
     }
-    if (normalized === 'false') {
+    if (normalized === "false") {
       return false;
     }
   }
 
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     return value !== 0;
   }
 
@@ -81,7 +81,7 @@ function readStringField(
       return sanitizeString(record[key]);
     }
   }
-  return '';
+  return "";
 }
 
 function readBooleanField(
@@ -183,7 +183,7 @@ interface RawUrlRuleShape {
 interface RawCombinedRuleShape extends RawTitleRuleShape, RawUrlRuleShape {}
 
 function isObject(candidate: unknown): candidate is Record<string, unknown> {
-  return typeof candidate === 'object' && candidate !== null;
+  return typeof candidate === "object" && candidate !== null;
 }
 
 function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
@@ -193,13 +193,13 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
 
   const candidate = rawRule as RawTitleRuleShape;
   const record = candidate as Record<string, unknown>;
-  const urlPattern = readStringField(record, ['urlPattern', 'urlMatch']);
-  const titleSearch = readStringField(record, ['titleSearch', 'titleMatch']);
-  const titleReplace = readStringField(record, 'titleReplace');
+  const urlPattern = readStringField(record, ["urlPattern", "urlMatch"]);
+  const titleSearch = readStringField(record, ["titleSearch", "titleMatch"]);
+  const titleReplace = readStringField(record, "titleReplace");
   const continueMatching = readBooleanField(record, [
-    'continueMatching',
-    'continue',
-    'fallthrough',
+    "continueMatching",
+    "continue",
+    "fallthrough",
   ]);
 
   if (!urlPattern && !titleSearch && !titleReplace) {
@@ -221,13 +221,13 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
 
   const candidate = rawRule as RawUrlRuleShape;
   const record = candidate as Record<string, unknown>;
-  const urlPattern = readStringField(record, 'urlPattern');
-  const urlSearch = readStringField(record, 'urlSearch');
-  const urlReplace = readStringField(record, 'urlReplace');
+  const urlPattern = readStringField(record, "urlPattern");
+  const urlSearch = readStringField(record, "urlSearch");
+  const urlReplace = readStringField(record, "urlReplace");
   const continueMatching = readBooleanField(record, [
-    'continueMatching',
-    'continue',
-    'fallthrough',
+    "continueMatching",
+    "continue",
+    "fallthrough",
   ]);
 
   if (!urlPattern && !urlSearch && !urlReplace) {
@@ -266,15 +266,15 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
 
   const candidate = rawRule as RawCombinedRuleShape;
   const record = candidate as Record<string, unknown>;
-  const urlPattern = readStringField(record, ['urlPattern', 'urlMatch']);
-  const titleSearch = readStringField(record, ['titleSearch', 'titleMatch']);
-  const titleReplace = readStringField(record, 'titleReplace');
-  const urlSearch = readStringField(record, 'urlSearch');
-  const urlReplace = readStringField(record, 'urlReplace');
+  const urlPattern = readStringField(record, ["urlPattern", "urlMatch"]);
+  const titleSearch = readStringField(record, ["titleSearch", "titleMatch"]);
+  const titleReplace = readStringField(record, "titleReplace");
+  const urlSearch = readStringField(record, "urlSearch");
+  const urlReplace = readStringField(record, "urlReplace");
   const continueMatching = readBooleanField(record, [
-    'continueMatching',
-    'continue',
-    'fallthrough',
+    "continueMatching",
+    "continue",
+    "fallthrough",
   ]);
 
   if (!urlPattern && !titleSearch && !urlSearch && !urlReplace) {
@@ -311,14 +311,14 @@ function normalizeFormat(rawFormat: unknown, hadLegacyFormat: boolean): string {
   }
 
   format = format
-    .replace(/\{\{\s*text\s*\}\}/gi, '{{TEXT}}')
-    .replace(/\{\{\s*title\s*\}\}/gi, '{{TITLE}}')
-    .replace(/\{\{\s*(link|url)\s*\}\}/gi, '{{URL}}');
+    .replace(/\{\{\s*text\s*\}\}/gi, "{{TEXT}}")
+    .replace(/\{\{\s*title\s*\}\}/gi, "{{TITLE}}")
+    .replace(/\{\{\s*(link|url)\s*\}\}/gi, "{{URL}}");
 
   const hasTextToken = /\{\{\s*TEXT\s*\}\}/.test(format);
   if (!hasTextToken) {
-    const prefix = hadLegacyFormat ? '> {{TEXT}}' : '{{TEXT}}';
-    format = `${prefix}${format ? `\n${format}` : ''}`;
+    const prefix = hadLegacyFormat ? "> {{TEXT}}" : "{{TEXT}}";
+    format = `${prefix}${format ? `\n${format}` : ""}`;
   }
 
   return format;

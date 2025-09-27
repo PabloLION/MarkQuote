@@ -1,4 +1,4 @@
-import { initializeOptions } from './options.js';
+import { initializeOptions } from "./options.js";
 
 function boot(): void {
   const dispose = initializeOptions();
@@ -16,8 +16,8 @@ function boot(): void {
   });
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', boot);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
 } else {
   boot();
 }

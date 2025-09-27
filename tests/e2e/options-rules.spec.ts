@@ -1,18 +1,18 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 import {
   CURRENT_OPTIONS_VERSION,
-  DEFAULT_TEMPLATE,
   createDefaultTitleRules,
   createDefaultUrlRules,
+  DEFAULT_TEMPLATE,
   type OptionsPayload,
-} from '../../src/options-schema.js';
+} from "../../src/options-schema.js";
+import { readLastFormatted, sendSelectionMessage, setOptionsPayload } from "./helpers/e2e.js";
 import {
   getExtensionId,
   launchExtensionContext,
   openExtensionPage,
   openPopupPage,
-} from './helpers/extension.js';
-import { readLastFormatted, sendSelectionMessage, setOptionsPayload } from './helpers/e2e.js';
+} from "./helpers/extension.js";
 
 let activeCleanup: (() => Promise<void>) | undefined;
 
@@ -24,7 +24,7 @@ test.afterEach(async () => {
   }
 });
 
-test('options UI edits update popup preview', async () => {
+test("options UI edits update popup preview", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
@@ -36,17 +36,17 @@ test('options UI edits update popup preview', async () => {
     format: DEFAULT_TEMPLATE,
     titleRules: [
       {
-        urlPattern: '.*',
-        titleSearch: '(.+)',
-        titleReplace: 'Original:$1',
+        urlPattern: ".*",
+        titleSearch: "(.+)",
+        titleReplace: "Original:$1",
         continueMatching: false,
       },
     ],
     urlRules: [
       {
-        urlPattern: '.*',
-        urlSearch: '^(.+)$',
-        urlReplace: '$1?initial=true',
+        urlPattern: ".*",
+        urlSearch: "^(.+)$",
+        urlReplace: "$1?initial=true",
         continueMatching: false,
       },
     ],
@@ -55,7 +55,7 @@ test('options UI edits update popup preview', async () => {
   await setOptionsPayload(controlPage, initialOptions);
   await controlPage.close();
 
-  const optionsPage = await openExtensionPage(context, extensionId, 'options.html');
+  const optionsPage = await openExtensionPage(context, extensionId, "options.html");
   const titleReplaceInput = optionsPage.locator(
     '#title-rules-body tr:first-child input[data-field="titleReplace"]',
   );
@@ -63,26 +63,26 @@ test('options UI edits update popup preview', async () => {
     '#url-rules-body tr:first-child input[data-field="urlReplace"]',
   );
 
-  await expect(titleReplaceInput).toHaveValue('Original:$1');
-  await expect(urlReplaceInput).toHaveValue('$1?initial=true');
+  await expect(titleReplaceInput).toHaveValue("Original:$1");
+  await expect(urlReplaceInput).toHaveValue("$1?initial=true");
 
-  await titleReplaceInput.fill('Edited:$1');
-  await urlReplaceInput.fill('$1?edited=true');
+  await titleReplaceInput.fill("Edited:$1");
+  await urlReplaceInput.fill("$1?edited=true");
 
-  await optionsPage.locator('#save-options').click();
-  await expect(optionsPage.locator('#status')).toHaveText('Options saved successfully.');
+  await optionsPage.locator("#save-options").click();
+  await expect(optionsPage.locator("#status")).toHaveText("Options saved successfully.");
 
   const popupPage = await openPopupPage(context, extensionId);
 
   await sendSelectionMessage(popupPage, {
-    markdown: 'Body text',
-    title: 'Sample Title',
-    url: 'https://example.com/path',
+    markdown: "Body text",
+    title: "Sample Title",
+    url: "https://example.com/path",
   });
 
   const expectedPreview = `> Body text\n> Source: [Edited:Sample Title](https://example.com/path?edited=true)`;
-  await expect(popupPage.locator('#preview')).toHaveText(expectedPreview);
-  await expect(popupPage.locator('#message')).toHaveText('Copied!');
+  await expect(popupPage.locator("#preview")).toHaveText(expectedPreview);
+  await expect(popupPage.locator("#message")).toHaveText("Copied!");
 
   const formatted = await readLastFormatted(popupPage);
   expect(formatted.formatted).toBe(expectedPreview);
@@ -91,7 +91,7 @@ test('options UI edits update popup preview', async () => {
   await optionsPage.close();
 });
 
-test('chained URL rules respect break versus continue', async () => {
+test("chained URL rules respect break versus continue", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
@@ -107,16 +107,16 @@ test('chained URL rules respect break versus continue', async () => {
     urlRules[1],
     amazonRule,
     {
-      urlPattern: '^https?://',
-      urlSearch: '$',
-      urlReplace: '&should-not-appear=true',
+      urlPattern: "^https?://",
+      urlSearch: "$",
+      urlReplace: "&should-not-appear=true",
       continueMatching: true,
     },
   ];
 
   const options: OptionsPayload = {
     version: CURRENT_OPTIONS_VERSION,
-    format: '{{URL}}',
+    format: "{{URL}}",
     titleRules,
     urlRules: augmentedUrlRules,
   };
@@ -127,30 +127,29 @@ test('chained URL rules respect break versus continue', async () => {
   const popupPage = await openPopupPage(context, extensionId);
 
   const amazonUrl =
-    'https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=tracking?utm_source=chatgpt.com&tag=123';
+    "https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=tracking?utm_source=chatgpt.com&tag=123";
 
   await sendSelectionMessage(popupPage, {
-    markdown: 'Sample',
-    title: 'Amazon Title',
+    markdown: "Sample",
+    title: "Amazon Title",
     url: amazonUrl,
   });
   await popupPage.waitForTimeout(500);
-  const expectedAmazon = 'Sample\nhttps://www.amazon.com/dp/B01KBIJ53I';
+  const expectedAmazon = "Sample\nhttps://www.amazon.com/dp/B01KBIJ53I";
   await expect
     .poll(async () => (await readLastFormatted(popupPage)).formatted)
     .toBe(expectedAmazon);
 
-  const exampleUrl =
-    'https://example.com/article?utm_source=chatgpt.com&utm_medium=email';
+  const exampleUrl = "https://example.com/article?utm_source=chatgpt.com&utm_medium=email";
 
   await sendSelectionMessage(popupPage, {
-    markdown: 'Sample',
-    title: 'Example Title',
+    markdown: "Sample",
+    title: "Example Title",
     url: exampleUrl,
   });
   await popupPage.waitForTimeout(500);
   const expectedExample =
-    'Sample\nhttps://example.com/article?utm_medium=email&should-not-appear=true';
+    "Sample\nhttps://example.com/article?utm_medium=email&should-not-appear=true";
   await expect
     .poll(async () => (await readLastFormatted(popupPage)).formatted)
     .toBe(expectedExample);

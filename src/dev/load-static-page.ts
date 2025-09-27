@@ -10,19 +10,19 @@ export async function injectPublicPageMarkup(
 
   const html = await response.text();
   const parser = new DOMParser();
-  const parsed = parser.parseFromString(html, 'text/html');
+  const parsed = parser.parseFromString(html, "text/html");
 
   const appendedElements: Element[] = [];
 
-  Array.from(parsed.head.querySelectorAll('style')).forEach((styleEl) => {
-    const clone = document.createElement('style');
+  Array.from(parsed.head.querySelectorAll("style")).forEach((styleEl) => {
+    const clone = document.createElement("style");
     clone.textContent = styleEl.textContent;
     mount.appendChild(clone);
     appendedElements.push(clone);
   });
 
   Array.from(parsed.body.children).forEach((child) => {
-    if (child.tagName.toLowerCase() === 'script') {
+    if (child.tagName.toLowerCase() === "script") {
       return;
     }
     const clone = child.cloneNode(true) as Element;

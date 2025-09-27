@@ -1,4 +1,4 @@
-type PageKey = 'home' | 'options' | 'popup';
+type PageKey = "home" | "options" | "popup";
 
 type NavLink = {
   key: PageKey;
@@ -7,19 +7,19 @@ type NavLink = {
 };
 
 const links: NavLink[] = [
-  { key: 'home', label: 'Overview', href: '/index.html' },
-  { key: 'options', label: 'Options Page', href: '/options.html' },
-  { key: 'popup', label: 'Popup', href: '/popup.html' },
+  { key: "home", label: "Overview", href: "/index.html" },
+  { key: "options", label: "Options Page", href: "/options.html" },
+  { key: "popup", label: "Popup", href: "/popup.html" },
 ];
 
 export function mountDevNav(active: PageKey) {
-  const existing = document.getElementById('dev-nav');
+  const existing = document.getElementById("dev-nav");
   if (existing) {
     existing.remove();
   }
 
-  const nav = document.createElement('nav');
-  nav.id = 'dev-nav';
+  const nav = document.createElement("nav");
+  nav.id = "dev-nav";
   nav.innerHTML = `
     <style>
       #dev-nav {
@@ -57,15 +57,15 @@ export function mountDevNav(active: PageKey) {
   `;
 
   links.forEach((link) => {
-    const anchor = document.createElement('a');
+    const anchor = document.createElement("a");
     anchor.href = link.href;
     anchor.textContent = link.label;
     anchor.dataset.active = String(link.key === active);
     nav.appendChild(anchor);
   });
 
-  const helperText = document.createElement('span');
-  helperText.textContent = 'Development preview with hot reload';
+  const helperText = document.createElement("span");
+  helperText.textContent = "Development preview with hot reload";
   nav.appendChild(helperText);
 
   document.body.prepend(nav);
