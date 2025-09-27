@@ -90,10 +90,14 @@ function requireElement<T extends HTMLElement>(id: string): T {
   return element as T;
 }
 
+function optionalElement<T extends HTMLElement>(id: string): T | null {
+  return document.getElementById(id) as T | null;
+}
+
 export function initializeOptions(): () => void {
   const form = requireElement<HTMLFormElement>("options-form");
-  const templateField = requireElement<HTMLTextAreaElement>("format-template");
-  const restoreTemplateButton = requireElement<HTMLButtonElement>("restore-template");
+  const templateField = optionalElement<HTMLTextAreaElement>("format-template");
+  const restoreTemplateButton = optionalElement<HTMLButtonElement>("restore-template");
   const previewElement = requireElement<HTMLElement>("format-preview");
   const statusElement = requireElement<HTMLElement>("status");
 
@@ -208,8 +212,6 @@ export function initializeOptions(): () => void {
 
   if (
     !(form instanceof HTMLFormElement) ||
-    !(templateField instanceof HTMLTextAreaElement) ||
-    !(restoreTemplateButton instanceof HTMLButtonElement) ||
     !(previewElement instanceof HTMLElement) ||
     !(statusElement instanceof HTMLElement) ||
     !(titleSamplePresetSelect instanceof HTMLSelectElement) ||
@@ -375,7 +377,7 @@ export function initializeOptions(): () => void {
 
     const options: OptionsPayload = {
       version: CURRENT_OPTIONS_VERSION,
-      format: templateField?.value,
+      format: templateField?.value ?? draft.format ?? DEFAULT_TEMPLATE,
       titleRules,
       urlRules,
     };
@@ -845,7 +847,7 @@ export function initializeOptions(): () => void {
 
     return {
       version: CURRENT_OPTIONS_VERSION,
-      format: templateField?.value,
+      format: templateField?.value ?? draft.format ?? DEFAULT_TEMPLATE,
       titleRules,
       urlRules,
     };
@@ -856,15 +858,20 @@ export function initializeOptions(): () => void {
 
     clearValidationState(titleRulesBody);
     clearValidationState(urlRulesBody);
-    templateField.removeAttribute("aria-invalid");
+    templateField?.removeAttribute("aria-invalid");
 
-    const templateValidation = (() => {
-      if (!templateField?.value.trim()) {
-        templateField?.setAttribute("aria-invalid", "true");
-        return { valid: false, message: "Template cannot be empty." } satisfies ValidationResult;
-      }
-      return { valid: true } satisfies ValidationResult;
-    })();
+    const templateValidation = templateField
+      ? (() => {
+          if (!templateField.value.trim()) {
+            templateField.setAttribute("aria-invalid", "true");
+            return {
+              valid: false,
+              message: "Template cannot be empty.",
+            } satisfies ValidationResult;
+          }
+          return { valid: true } satisfies ValidationResult;
+        })()
+      : ({ valid: true } satisfies ValidationResult);
 
     if (!templateValidation.valid) {
       setStatus(templateValidation.message ?? "Template validation failed.", "error");
@@ -893,7 +900,7 @@ export function initializeOptions(): () => void {
     try {
       await storageArea.set({
         options: payload,
-        format: payload.format,
+        format: payload.format ?? DEFAULT_TEMPLATE,
         titleRules: payload.titleRules,
         urlRules: payload.urlRules,
       });
@@ -911,7 +918,9 @@ export function initializeOptions(): () => void {
     if (!storageArea) {
       setStatus("Chrome storage is unavailable; using defaults.", "error");
       draft = cloneOptions(DEFAULT_OPTIONS);
-      templateField.value = draft.format;
+      if (templateField) {
+        templateField.value = draft.format;
+      }
       renderRules("title");
       renderRules("url");
       updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, "wikipedia");
@@ -929,7 +938,9 @@ export function initializeOptions(): () => void {
         "rules",
       ]);
       draft = cloneOptions(normalizeStoredOptions(snapshot));
-      templateField.value = draft.format;
+      if (templateField) {
+        templateField.value = draft.format;
+      }
       renderRules("title");
       renderRules("url");
       setStatus("Options loaded.", "success");
@@ -938,7 +949,9 @@ export function initializeOptions(): () => void {
     } catch (error) {
       console.error("Failed to load options; fallback to defaults.", error);
       draft = cloneOptions(DEFAULT_OPTIONS);
-      templateField.value = draft.format;
+      if (templateField) {
+        templateField.value = draft.format;
+      }
       renderRules("title");
       renderRules("url");
       setStatus("Failed to load saved options; defaults restored.", "error");
@@ -1142,20 +1155,24 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  templateField?.addEventListener(
-    "input",
-    () => {
-      draft.format = templateField?.value;
-      updatePreview();
-    },
-    { signal },
-  );
+  if (templateField) {
+    templateField.addEventListener(
+      "input",
+      () => {
+        draft.format = templateField.value;
+        updatePreview();
+      },
+      { signal },
+    );
+  }
 
-  restoreTemplateButton.addEventListener(
+  restoreTemplateButton?.addEventListener(
     "click",
     (event) => {
       event.preventDefault();
-      templateField.value = DEFAULT_TEMPLATE;
+      if (templateField) {
+        templateField.value = DEFAULT_TEMPLATE;
+      }
       draft.format = DEFAULT_TEMPLATE;
       updatePreview();
       setStatus("Template restored to default.");

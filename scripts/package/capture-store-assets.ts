@@ -147,6 +147,28 @@ async function renderTemplate(
   await page.close();
 }
 
+async function captureOverviewScreenshot(
+  context: BrowserContext,
+  popupBuffer: Buffer,
+  iconBuffer: Buffer,
+  hotkey: string,
+  outputPath: string,
+): Promise<void> {
+  const templatePath = path.join(templatesDir, "overview.html");
+  let html = await fs.readFile(templatePath, "utf8");
+  html = html
+    .replaceAll("{{POPUP_IMAGE}}", toDataUri(popupBuffer))
+    .replaceAll("{{ICON}}", toDataUri(iconBuffer))
+    .replaceAll("{{HOTKEY}}", hotkey);
+
+  const page = await context.newPage();
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setContent(html, { waitUntil: "networkidle" });
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: outputPath });
+  await page.close();
+}
+
 async function readManifestHotkey(): Promise<string> {
   const manifestPath = path.join(repoRoot, "public", "manifest.json");
   const raw = await fs.readFile(manifestPath, "utf8");
@@ -179,17 +201,7 @@ async function captureAssets(): Promise<void> {
     console.log(`Saved ${path.relative(repoRoot, optionsPath)}`);
 
     const overviewPath = path.join(outputDir, "screenshot-overview-1280x800.png");
-    await renderTemplate(
-      browserContext,
-      "overview.html",
-      {
-        POPUP_IMAGE: toDataUri(popupBuffer),
-        ICON: toDataUri(iconBuffer),
-        HOTKEY: hotkey,
-      },
-      { width: 1280, height: 800 },
-      overviewPath,
-    );
+    await captureOverviewScreenshot(browserContext, popupBuffer, iconBuffer, hotkey, overviewPath);
     console.log(`Saved ${path.relative(repoRoot, overviewPath)}`);
 
     const promoSmallPath = path.join(outputDir, "promo-small-440x280.png");
