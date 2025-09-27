@@ -4,6 +4,7 @@ Reference copy and metadata for the MarkQuote listing. Use this when filling the
 Dashboard or the Publish API payloads.
 
 ## Overview
+
 - **Default language:** en-US
 - **Category:** Productivity → Workflow & Planning
 - **Primary icon:** `public/icons/icon-128.png` (derived from `assets/icon.svg`)
@@ -13,12 +14,14 @@ Dashboard or the Publish API payloads.
   - Popup preview — `docs/assets/chrome-web-store/screenshot-popup-1280x800.png`
 
 ## Short Description (≤132 characters)
-```
+
+```text
 Capture highlighted text as Markdown quotes and copy them with one click.
 ```
 
 ## Detailed Description
-```
+
+```text
 MarkQuote helps researchers collect quotes without leaving the browser. Highlight any text, open the
 MarkQuote popup, and the extension converts the selection into Markdown—ready for docs, notes, and
 code comments.
@@ -35,12 +38,14 @@ not send data to external services.
 ```
 
 ## Additional Listing Fields
+
 - **Language support statement:** “English (US)”
-- **Homepage/Support:** https://github.com/PabloLION/MarkQuote/issues
-- **Privacy policy:** https://pablolion.github.io/markquote/privacy
+- **Homepage/Support:** <https://github.com/PabloLION/MarkQuote/issues>
+- **Privacy policy:** <https://pablolion.github.io/markquote/privacy>
 - **Contact email:** Use the publisher account email on file (no extra copy needed here).
 
 ## Asset Checklist
+
 - ✅ Icon (128×128 PNG)
 - ☐ Promo tile 440×280 PNG (regenerate if brand changes)
 - ☐ 1280×800 Options screenshot (light/dark acceptable)

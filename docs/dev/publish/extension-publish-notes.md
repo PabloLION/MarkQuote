@@ -4,11 +4,13 @@ Chrome assigns a 32-character ID to every extension by hashing the extension's R
 ID is stable as long as the corresponding key pair stays the same.
 
 ## How the ID Is Calculated
+
 1. Chrome obtains the extension's RSA **public key**.
 2. It runs SHA-256 over the key and maps the digest into the lowercase alphabet `a`–`p`, yielding the
    32-character ID shown in `chrome://extensions`.
 
 ## Where the Key Comes From
+
 - **Web Store uploads:** When you upload a ZIP to the Chrome Web Store (via the Developer Dashboard
   or Publish API), Google generates and stores the RSA key pair server-side. Every customer download
   uses that key, so the ID remains consistent across all installs.
@@ -20,6 +22,7 @@ ID is stable as long as the corresponding key pair stays the same.
   folder, a new key/ID pair is created.
 
 ## Implications for MarkQuote
+
 - To obtain the authoritative Web Store ID, create a listing (even with a temporary ZIP). The ID is
   minted immediately and reused for every future upload.
 - Local unpacked builds will usually have a different ID unless you embed the Web Store private key
@@ -28,6 +31,7 @@ ID is stable as long as the corresponding key pair stays the same.
   Dashboard after the first draft upload.
 
 ### Paths for Publishing
+
 - **Manual (dashboard) uploads:** sign in to the Chrome Web Store Developer Dashboard, click **New
   Item**, and upload a ZIP. No Google Cloud credentials are required. This is the workflow we rely on
   today and it immediately produces the permanent extension ID.
@@ -38,5 +42,6 @@ ID is stable as long as the corresponding key pair stays the same.
   `docs/dev/publish/credentials.md`.
 
 ## References
+
 - Chrome team documentation on [Extension identification](https://developer.chrome.com/docs/extensions/mv3/architecture#extension-ids)
 - Chromium source: `GenerateExtensionIdFromHash`
