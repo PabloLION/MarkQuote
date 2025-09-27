@@ -2,13 +2,22 @@
   "name": "markquote",
   "version": "1.0.0",
   "description": "Turn webpage selections into Markdown quotes you can paste anywhere.",
+  "private": true,
   "type": "module",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PabloLION/MarkQuote.git"
+  },
+  "homepage": "https://github.com/PabloLION/MarkQuote",
+  "bugs": {
+    "url": "https://github.com/PabloLION/MarkQuote/issues"
+  },
   "keywords": [
     "chrome-extension",
+    "clipboard",
     "markdown",
-    "quote",
-    "clipboard"
+    "quote"
   ],
   "scripts": {
     "build": "vite build",
@@ -24,7 +33,7 @@
   "directories": {
     "doc": "docs"
   },
-  "author": "",
+  "author": "Pablo LION",
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
     "@playwright/test": "^1.55.0",
