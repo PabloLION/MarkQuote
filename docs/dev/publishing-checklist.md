@@ -21,8 +21,9 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
 
 ## 3. Bundle
 - Preferred: `pnpm bundle` (runs the release bundle script, verifies manifest version, and drops
-  `docs/releases/markquote-v<version>.zip`).
-- If packaging manually, zip the `dist/` folder and copy the archive into `docs/releases/`.
+  `.dev/releases/markquote-v<version>.zip`). The `.dev/` directory is git-ignored, so remember to
+  upload the archive before cleaning your workspace.
+- If packaging manually, zip the `dist/` folder and place the archive under `.dev/releases/`.
 
 ## 4. Store Submission / Automation
 - Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `scripts/publish/chrome-web-store.sh dist/markquote-v<version>.zip`.
