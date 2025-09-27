@@ -24,7 +24,8 @@ async function createZip(version, destinationDir) {
   const outPath = path.join(destinationDir, zipName);
 
   process.stdout.write(`Creating archive: ${outPath}\n`);
-  await require('./zip-folder').zipDirectory('dist', outPath);
+  const { zipDirectory } = require('./zip-folder.cjs');
+  await zipDirectory('dist', outPath);
   return outPath;
 }
 
