@@ -4,7 +4,8 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
 
 ## 1. Pre-flight
 - Confirm you are on a release branch with the correct version bump in `package.json` and `public/manifest.json`.
-- Ensure release assets (icons, screenshots, promo copy) are updated.
+- Ensure release assets are refreshed via `docs/dev/publish/publishing-assets.md`; verify PNGs exist in `docs/assets/chrome-web-store/`.
+- Review credentials plan in `docs/dev/publish/credentials.md` and confirm local `.dev/secrets/chrome-web-store.env` is up to date.
 - Verify the permission set remains `contextMenus`, `activeTab`, `scripting`, `storage` and that no additional host permissions were introduced.
 
 ## 2. Build & QA
@@ -25,13 +26,13 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
   zip -r ../markquote-v<version>.zip .
   cd ..
   ```
-- Stage the ZIP for upload and archive it in release assets.
+- Stage the ZIP for upload and archive it in release assets (`docs/releases/` when approved).
 
-## 4. Store Submission
-- Sign in to the Chrome Web Store Developer Dashboard.
-- Create a draft item (or upload a new version).
-- Upload the packaged ZIP, fill in release notes, and double-check visibility/region settings.
-- Review privacy policy, support URL, and screenshots for accuracy.
+## 4. Store Submission / Automation
+- Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `scripts/publish/chrome-web-store.sh dist/markquote-v<version>.zip`.
+- Inspect the script output; on success capture the JSON response in release notes.
+- If manual submission is required, sign in to the Chrome Web Store Developer Dashboard, upload the ZIP, and publish.
+- Update listing copy, privacy policy, support URL, and release notes as needed.
 
 ## 5. Post-Submission
 - Tag the release in Git (`git tag v<version>` and `git push origin v<version>`).
