@@ -1,55 +1,50 @@
-# Chrome Web Store Listing Content
+# Chrome Web Store Store Listing
 
-Reference copy and metadata for the MarkQuote listing. Use this when filling the Chrome Web Store
-Dashboard or Publish API payloads.
+Use these values in the **Store listing** form for the Chrome Web Store dashboard. Every field below
+maps to an input on the page.
 
-## Overview
+## Product details
 
-- **Default language:** en-US
-- **Category:** Productivity → Workflow & Planning
-- **Primary icon:** `public/icons/icon-128.png` (derived from `assets/icon.svg`)
-- **Promo tile:** `docs/assets/chrome-web-store/promo-small-440x280.png`
-- **Screenshots:**
-  - Options page — `docs/assets/chrome-web-store/screenshot-options-1280x800.png`
-  - Popup preview — `docs/assets/chrome-web-store/screenshot-popup-1280x800.png`
+- **Title:** MarkQuote (comes from `public/manifest.json -> name`).
+- **Summary:** `copy selected text as markdown with source link.` (manifest `description`).
+- **Description (16,000 char max):**
 
-## Short Description (≤132 characters)
+  ```text
+  MarkQuote helps researchers collect quotes without leaving the browser. Highlight any text, open the
+  MarkQuote popup, and the extension converts the selection into Markdown—ready for docs, notes, and
+  code comments.
 
-```text
-Capture highlighted text as Markdown quotes and copy them with one click.
-```
+  **Features**
+  - One-click Markdown copy from the browser toolbar or context menu
+  - Customisable title/URL rules so links stay clean, even on content-heavy sites
+  - Options page with live preview, dark mode support, and default presets for Wikipedia and Amazon
+  - Keyboard shortcut support for faster capture
 
-## Detailed Description
+  **Privacy**
+  MarkQuote only processes the pages you explicitly activate. It stores configuration locally and does
+  not send data to external services.
+  ```
 
-```text
-MarkQuote helps researchers collect quotes without leaving the browser. Highlight any text, open the
-MarkQuote popup, and the extension converts the selection into Markdown—ready for docs, notes, and
-code comments.
+- **Category:** Productivity → Workflow & Planning.
+- **Default language:** English (United States).
 
-**Features**
-- One-click Markdown copy from the browser toolbar or context menu
-- Customisable title/URL rules so links stay clean, even on content-heavy sites
-- Options page with live preview, dark mode support, and default presets for Wikipedia and Amazon
-- Keyboard shortcut support for faster capture
+## Graphic assets
 
-**Privacy**
-MarkQuote only processes the pages you explicitly activate. It stores configuration locally and does
-not send data to external services.
-```
+- **Store icon (128×128):** `public/icons/icon-128.png` (generated from `assets/icon.svg`).
+- **Screenshots (1280×800 or 640×400):**
+  - Options page: `docs/assets/chrome-web-store/screenshot-options-1280x800.png`
+  - Popup preview: `docs/assets/chrome-web-store/screenshot-popup-1280x800.png`
+- **Small promo tile (440×280):** `docs/assets/chrome-web-store/promo-small-440x280.png`
+- **Marquee promo tile (1400×560, optional):** `docs/assets/chrome-web-store/promo-large-1400x560.png`
+- **Promo video (optional):** Leave blank for now.
 
-## Additional Listing Fields
+## Additional fields
 
-- **Language support statement:** “English (US)”
-- **Homepage/Support:** <https://github.com/PabloLION/MarkQuote/issues>
-- **Privacy policy:** <https://pablolion.github.io/markquote/privacy>
-- **Contact email:** Use the publisher account email on file (no extra copy needed here).
+- **Homepage URL:** <https://pablolion.github.io/markquote/>
+- **Support URL:** <https://github.com/PabloLION/MarkQuote/issues>
+- **Official URL:** none (leave unset unless Search Console verification is added).
+- **Mature content:** No (leave unchecked).
+- **Item support visibility:** On (so support contact is visible).
 
-## Asset Checklist
-
-- ✅ Icon (128×128 PNG)
-- ☐ Promo tile 440×280 PNG (regenerate if brand changes)
-- ☐ 1280×800 Options screenshot (light/dark acceptable)
-- ☐ 1280×800 Popup screenshot (showing Markdown preview)
-- ☐ Optional marquee tile (1400×560) if featured placement is pursued
-
-Keep this document updated whenever the UI or messaging evolves so publishing remains copy/paste.
+Update these values if the messaging or assets change so the listing stays consistent with the
+extension. For privacy answers, see `docs/storefront/chrome-web-store/privacy.md`.
