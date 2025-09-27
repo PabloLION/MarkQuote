@@ -14,7 +14,8 @@
     "prepare": "node scripts/package-hooks/prepare.js",
     "check": "biome check --write --unsafe",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png",
-    "dev:playwright": "tsx scripts/dev/playwright-dev.ts"
+    "dev:playwright": "tsx scripts/dev/playwright-dev.ts",
+    "package": "node scripts/package/build-and-zip.js"
   },
   "keywords": [],
   "author": "",
