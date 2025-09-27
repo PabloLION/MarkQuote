@@ -12,20 +12,20 @@ MarkQuote (sourced from `public/manifest.json -> name`).
 `copy selected text as markdown with source link.` (manifest `description`).
 
 ### Description (16,000 char max)
-```
+
+```text
 MarkQuote helps researchers collect quotes without leaving the browser. Highlight any text, open the
 MarkQuote popup, and the extension converts the selection into Markdown—ready for docs, notes, and
 code comments.
 
 **Features**
 - One-click Markdown copy from the browser toolbar or context menu
-- Customisable title/URL rules so links stay clean, even on content-heavy sites
+- Customizable title/URL rules so links stay clean, even on content-heavy sites
 - Options page with live preview, dark mode support, and default presets for Wikipedia and Amazon
 - Keyboard shortcut support for faster capture
 
 **Privacy**
-MarkQuote only processes the pages you explicitly activate. It stores configuration locally and does
-not send data to external services.
+MarkQuote only processes the pages you explicitly activate. It stores configuration locally and does not send data to external services.
 ```
 
 ### Category
@@ -67,6 +67,7 @@ Leave unset unless Search Console verification is added.
 No (leave unchecked).
 
 ### Item support visibility
+
 On (so support contact is visible).
 
 Update these values if the messaging or assets change so the listing stays consistent with the
