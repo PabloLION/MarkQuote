@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      }
+
+      .tile {
+        width: 1400px;
+        height: 560px;
+        border-radius: 36px;
+        background: radial-gradient(circle at top left, #1a73e8 0%, #0b2b64 60%, #08193d 100%);
+        color: #fff;
+        padding: 60px 70px;
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 60px;
+        align-items: center;
+      }
+
+      .headline {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .headline-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        text-transform: uppercase;
+        font-size: 14px;
+        letter-spacing: 0.12em;
+        font-weight: 600;
+      }
+
+      .headline-badge img {
+        width: 24px;
+        height: 24px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 54px;
+        line-height: 1.1;
+      }
+
+      p {
+        margin: 0;
+        font-size: 18px;
+        opacity: 0.9;
+        max-width: 520px;
+      }
+
+      .preview {
+        background: rgba(8, 25, 61, 0.6);
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.5);
+      }
+
+      .preview img {
+        width: 100%;
+        border-radius: 20px;
+      }
+
+      .triggers {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 16px;
+      }
+
+      .triggers span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.14);
+        padding: 6px 12px;
+        border-radius: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tile">
+      <div class="headline">
+        <div class="headline-badge">
+          <img src="{{ICON}}" alt="MarkQuote icon" />
+          <span>MarkQuote</span>
+        </div>
+        <h1>Turn highlights into Markdown quotes</h1>
+        <p>Capture clean, linked quotes in seconds. Right-click, open the toolbar popup, or press {{HOTKEY}} to copy instantly.</p>
+        <div class="triggers">
+          <span>Right-click → Copy as Markdown quote</span>
+          <span>Toolbar popup preview</span>
+          <span>Hotkey {{HOTKEY}}</span>
+        </div>
+      </div>
+      <div class="preview">
+        <img src="{{POPUP_IMAGE}}" alt="MarkQuote popup preview" />
+      </div>
+    </div>
+  </body>
+</html>

@@ -5,10 +5,10 @@ Reference for the assets and metadata the Chrome Web Store expects when submitti
 ## Graphic Assets
 
 - **Icon:** 128×128 PNG (artwork ≈96×96). Source `public/icons/icon-128.png`.
-- **Promo tile (small):** 440×280 PNG/JPEG (`docs/assets/chrome-web-store/promo-small-440x280.png`).
-- **Promo tile (medium):** 920×680 PNG/JPEG (optional) (`promo-medium-920x680.png`).
-- **Promo tile (large/marquee):** 1400×560 PNG/JPEG (optional) (`promo-large-1400x560.png`).
-- **Screenshots:** Minimum one 1280×800 PNG/JPEG for popup and options surfaces (`docs/storefront/chrome-web-store/store-listing.md` lists the exact files).
+- **Promo tile (small):** 440×280 PNG/JPEG (`docs/storefront/chrome-web-store/assets/promo-small-440x280.png`).
+- **Promo tile (medium):** 920×680 PNG/JPEG (optional).
+- **Promo tile (large/marquee):** 1400×560 PNG/JPEG (optional) (`docs/storefront/chrome-web-store/assets/promo-marquee-1400x560.png`).
+- **Screenshots:** Minimum one 1280×800 PNG/JPEG to showcase core flow (see `docs/storefront/chrome-web-store/assets/screenshot-overview-1280x800.png` and `.../screenshot-options-1280x800.png`).
 - **Video:** Optional YouTube demo URL.
 
 ## Listing Copy

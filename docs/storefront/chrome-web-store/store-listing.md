@@ -44,16 +44,16 @@ English (United States).
 
 ### Screenshots (1280×800 or 640×400)
 
-- Options page: `docs/assets/chrome-web-store/screenshot-options-1280x800.png`
-- Popup preview: `docs/assets/chrome-web-store/screenshot-popup-1280x800.png`
+- Overview (context menu, popup, hotkey): `docs/storefront/chrome-web-store/assets/screenshot-overview-1280x800.png`
+- Options page: `docs/storefront/chrome-web-store/assets/screenshot-options-1280x800.png`
 
 ### Small promo tile (440×280)
 
-`docs/assets/chrome-web-store/promo-small-440x280.png`
+`docs/storefront/chrome-web-store/assets/promo-small-440x280.png`
 
 ### Marquee promo tile (1400×560, optional)
 
-`docs/assets/chrome-web-store/promo-large-1400x560.png`
+`docs/storefront/chrome-web-store/assets/promo-marquee-1400x560.png`
 
 ### Promo video (optional)
 

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      }
+
+      .tile {
+        width: 440px;
+        height: 280px;
+        background: linear-gradient(120deg, #0b2b64, #1a73e8);
+        color: #fff;
+        border-radius: 28px;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 16px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+      }
+
+      .brand img {
+        width: 20px;
+        height: 20px;
+      }
+
+      h1 {
+        margin: 16px 0 10px;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.85;
+      }
+
+      .preview {
+        align-self: flex-end;
+        width: 180px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 10px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+      }
+
+      .preview img {
+        width: 100%;
+        border-radius: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tile">
+      <div class="brand">
+        <img src="{{ICON}}" alt="MarkQuote icon" />
+        <span>MarkQuote</span>
+      </div>
+      <div>
+        <h1>Copy Markdown quotes instantly</h1>
+        <p>Right-click, toolbar popup, or press {{HOTKEY}} to save any highlight with links.</p>
+      </div>
+      <div class="preview">
+        <img src="{{POPUP_IMAGE}}" alt="MarkQuote popup preview" />
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f4f5f7;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      }
+
+      .canvas {
+        position: relative;
+        width: 1280px;
+        height: 800px;
+        margin: 0 auto;
+        background: #fcfdff;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+      }
+
+      .browser-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 24px;
+        background: linear-gradient(90deg, #1a73e8, #0b2b64);
+        color: #fff;
+      }
+
+      .browser-tab {
+        font-weight: 600;
+        letter-spacing: 0.02em;
+      }
+
+      .browser-controls {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .hotkey-pill {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.22);
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .toolbar-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.22);
+        display: grid;
+        place-items: center;
+      }
+
+      .toolbar-icon img {
+        width: 24px;
+        height: 24px;
+      }
+
+      .content {
+        position: relative;
+        display: flex;
+        padding: 48px 60px;
+        gap: 36px;
+      }
+
+      .article {
+        flex: 1;
+        max-width: 700px;
+      }
+
+      .article h1 {
+        margin: 0 0 18px;
+        font-size: 38px;
+        color: #1f2937;
+      }
+
+      .article p {
+        margin: 16px 0;
+        line-height: 1.6;
+        color: #374151;
+        font-size: 17px;
+      }
+
+      .selection {
+        background: rgba(26, 115, 232, 0.18);
+        border-radius: 6px;
+        padding: 2px 4px;
+      }
+
+      .popup-frame {
+        position: relative;
+        width: 320px;
+        padding-top: 18px;
+      }
+
+      .popup-frame img {
+        width: 100%;
+        border-radius: 18px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
+      }
+
+      .context-menu {
+        position: absolute;
+        left: 160px;
+        top: 280px;
+        width: 220px;
+        background: #f9fafb;
+        border-radius: 16px;
+        box-shadow: 0 16px 50px rgba(15, 23, 42, 0.25);
+        padding: 16px;
+        font-size: 15px;
+      }
+
+      .context-item {
+        padding: 6px 10px;
+        border-radius: 10px;
+        margin-bottom: 4px;
+        color: #4b5563;
+      }
+
+      .context-item.highlight {
+        background: rgba(26, 115, 232, 0.14);
+        color: #0b2b64;
+        font-weight: 600;
+      }
+
+      .callout {
+        position: absolute;
+        max-width: 220px;
+        background: #fff9eb;
+        border: 1px solid #fcd34d;
+        border-radius: 14px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 1.4;
+        box-shadow: 0 12px 24px rgba(251, 191, 36, 0.2);
+      }
+
+      .callout::before {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        border: 8px solid transparent;
+        border-bottom-color: #fcd34d;
+        top: -16px;
+        left: 20px;
+      }
+
+      .callout.context {
+        left: 120px;
+        top: 210px;
+      }
+
+      .callout.popup {
+        right: 80px;
+        top: 220px;
+      }
+
+      .callout.hotkey {
+        right: 60px;
+        bottom: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="browser-bar">
+        <div class="browser-tab">Example Article – Wikipedia</div>
+        <div class="browser-controls">
+          <div class="hotkey-pill">Hotkey: {{HOTKEY}}</div>
+          <div class="toolbar-icon">
+            <img src="{{ICON}}" alt="MarkQuote icon" />
+          </div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="article">
+          <h1>Markdown</h1>
+          <p>
+            Markdown is a lightweight <span class="selection">markup language for creating formatted
+            text using a plain-text editor</span>. John Gruber created Markdown in 2004 as a markup
+            language that is easy to read in its source code form.
+          </p>
+          <p>
+            Markdown is widely used in blogging, instant messaging, online forums, collaborative
+            software, documentation pages, and readme files. GitHub, Stack Overflow, and other
+            platforms use Markdown to format comments and content.
+          </p>
+        </div>
+        <div class="popup-frame">
+          <img src="{{POPUP_IMAGE}}" alt="MarkQuote popup" />
+        </div>
+        <div class="context-menu">
+          <div class="context-item">Cut</div>
+          <div class="context-item">Copy</div>
+          <div class="context-item highlight">Copy as Markdown quote</div>
+          <div class="context-item">Paste</div>
+        </div>
+        <div class="callout context">Right-click → “Copy as Markdown quote”</div>
+        <div class="callout popup">Toolbar popup shows the Markdown preview</div>
+        <div class="callout hotkey">Press {{HOTKEY}} to copy instantly</div>
+      </div>
+    </div>
+  </body>
+</html>
