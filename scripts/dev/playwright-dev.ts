@@ -1,10 +1,11 @@
-import { execSync, spawn } from 'node:child_process';
-import process from 'node:process';
-import readline from 'node:readline';
-import { chromium, type Browser, type BrowserContext } from 'playwright';
+import { execSync, spawn } from "node:child_process";
+import process from "node:process";
+import readline from "node:readline";
+import { type Browser, type BrowserContext, chromium } from "playwright";
 
-const devPath = process.env.MQ_PLAYWRIGHT_PATH ?? '/dev/index.html';
-const ansiRegex = /\u001b\[[0-9;]*m/g;
+const devPath = process.env.MQ_PLAYWRIGHT_PATH ?? "/dev/index.html";
+// biome-ignore lint/suspicious/noControlCharactersInRegex: We strip ANSI escape codes from Vite output
+const ansiRegex = /\u001B\[[0-9;]*m/g;
 
 const state: {
   serverUrl?: string;
@@ -20,14 +21,14 @@ const state: {
   shuttingDown: false,
 };
 
-const viteArgs = ['dev', '--', '--host', '--open', 'false'];
-const viteProcess = spawn('pnpm', viteArgs, {
-  stdio: ['inherit', 'pipe', 'pipe'],
-  env: { ...process.env, MQ_VITE_NO_OPEN: '1' },
+const viteArgs = ["dev", "--", "--host", "--open", "false"];
+const viteProcess = spawn("pnpm", viteArgs, {
+  stdio: ["inherit", "pipe", "pipe"],
+  env: { ...process.env, MQ_VITE_NO_OPEN: "1" },
 });
 
 function stripAnsi(input: string): string {
-  return input.replace(ansiRegex, '');
+  return input.replace(ansiRegex, "");
 }
 
 function extractServerUrl(line: string): string | undefined {
@@ -41,7 +42,7 @@ async function closeBrowser(): Promise<void> {
     try {
       await state.browserContext.close();
     } catch (error) {
-      console.warn('[playwright] Error closing browser context:', error);
+      console.warn("[playwright] Error closing browser context:", error);
     }
     state.browserContext = null;
   }
@@ -50,81 +51,81 @@ async function closeBrowser(): Promise<void> {
     try {
       await state.browser.close();
     } catch (error) {
-      console.warn('[playwright] Error closing browser:', error);
+      console.warn("[playwright] Error closing browser:", error);
     }
     state.browser = null;
   }
 }
 
-function detectSystemColorScheme(): 'light' | 'dark' | 'no-preference' | undefined {
+function detectSystemColorScheme(): "light" | "dark" | "no-preference" | undefined {
   const override = process.env.MQ_PLAYWRIGHT_COLOR_SCHEME;
-  const allowed = ['light', 'dark', 'no-preference'];
+  const allowed = ["light", "dark", "no-preference"];
   if (override) {
     if (!allowed.includes(override)) {
       console.warn(`[playwright] Ignoring invalid MQ_PLAYWRIGHT_COLOR_SCHEME value: ${override}`);
     } else {
-      return override as 'light' | 'dark' | 'no-preference';
+      return override as "light" | "dark" | "no-preference";
     }
   }
 
   try {
-    if (process.platform === 'darwin') {
+    if (process.platform === "darwin") {
       try {
-        const output = execSync('defaults read -g AppleInterfaceStyle', {
-          stdio: ['ignore', 'pipe', 'ignore'],
+        const output = execSync("defaults read -g AppleInterfaceStyle", {
+          stdio: ["ignore", "pipe", "ignore"],
         })
           .toString()
           .trim()
           .toLowerCase();
-        return output === 'dark' ? 'dark' : 'light';
+        return output === "dark" ? "dark" : "light";
       } catch {
-        return 'light';
+        return "light";
       }
     }
 
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       const query = execSync(
         'reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize" /v AppsUseLightTheme',
-        { stdio: ['ignore', 'pipe', 'ignore'] },
+        { stdio: ["ignore", "pipe", "ignore"] },
       )
         .toString()
         .trim();
       const match = query.match(/AppsUseLightTheme\s+REG_DWORD\s+0x([0-9a-f]+)/i);
       if (match) {
-        return match[1] === '0' ? 'dark' : 'light';
+        return match[1] === "0" ? "dark" : "light";
       }
       return undefined;
     }
 
-    if (process.platform === 'linux') {
+    if (process.platform === "linux") {
       try {
-        const colorScheme = execSync('gsettings get org.gnome.desktop.interface color-scheme', {
-          stdio: ['ignore', 'pipe', 'ignore'],
+        const colorScheme = execSync("gsettings get org.gnome.desktop.interface color-scheme", {
+          stdio: ["ignore", "pipe", "ignore"],
         })
           .toString()
           .trim()
-          .replace(/'/g, '')
+          .replace(/'/g, "")
           .toLowerCase();
-        if (colorScheme.includes('dark')) {
-          return 'dark';
+        if (colorScheme.includes("dark")) {
+          return "dark";
         }
-        if (colorScheme.includes('default') || colorScheme.includes('light')) {
-          return 'light';
+        if (colorScheme.includes("default") || colorScheme.includes("light")) {
+          return "light";
         }
       } catch {
         try {
-          const theme = execSync('gsettings get org.gnome.desktop.interface gtk-theme', {
-            stdio: ['ignore', 'pipe', 'ignore'],
+          const theme = execSync("gsettings get org.gnome.desktop.interface gtk-theme", {
+            stdio: ["ignore", "pipe", "ignore"],
           })
             .toString()
             .trim()
-            .replace(/'/g, '')
+            .replace(/'/g, "")
             .toLowerCase();
-          if (theme.includes('dark')) {
-            return 'dark';
+          if (theme.includes("dark")) {
+            return "dark";
           }
           if (theme) {
-            return 'light';
+            return "light";
           }
         } catch {
           return undefined;
@@ -132,14 +133,14 @@ function detectSystemColorScheme(): 'light' | 'dark' | 'no-preference' | undefin
       }
     }
   } catch (error) {
-    console.warn('[playwright] Unable to detect system color scheme:', error);
+    console.warn("[playwright] Unable to detect system color scheme:", error);
   }
 
   return undefined;
 }
 
 async function launchBrowser(baseUrl: string): Promise<void> {
-  const channel = process.env.MQ_PLAYWRIGHT_CHANNEL ?? 'chrome';
+  const channel = process.env.MQ_PLAYWRIGHT_CHANNEL ?? "chrome";
   const targetUrl = new URL(devPath, baseUrl).toString();
   console.log(`[playwright] Launching ${channel} for ${targetUrl}`);
 
@@ -161,10 +162,10 @@ async function launchBrowser(baseUrl: string): Promise<void> {
       : {},
   );
 
-  state.browser.on('disconnected', () => {
+  state.browser.on("disconnected", () => {
     if (!state.shuttingDown && viteProcess.exitCode === null) {
-      console.log('[playwright] Browser closed, stopping Vite dev server.');
-      terminate('SIGTERM');
+      console.log("[playwright] Browser closed, stopping Vite dev server.");
+      terminate("SIGTERM");
     }
   });
 
@@ -176,8 +177,12 @@ async function launchBrowser(baseUrl: string): Promise<void> {
       console.log(`[playwright] Opened ${targetUrl} (${label})`);
       return true;
     } catch (error) {
-      const message = error?.message ?? String(error);
-      const toleratedErrors = ['ERR_HTTP_RESPONSE_CODE_FAILURE', 'ERR_CONNECTION_REFUSED', 'ERR_FAILED'];
+      const message = error instanceof Error ? error.message : String(error);
+      const toleratedErrors = [
+        "ERR_HTTP_RESPONSE_CODE_FAILURE",
+        "ERR_CONNECTION_REFUSED",
+        "ERR_FAILED",
+      ];
       if (toleratedErrors.some((code) => message.includes(code))) {
         console.warn(`[playwright] Navigation ${label} failed: ${message.trim()}`);
         return false;
@@ -186,14 +191,14 @@ async function launchBrowser(baseUrl: string): Promise<void> {
     }
   }
 
-  const loaded = await attemptNavigation('domcontentloaded', {
-    waitUntil: 'domcontentloaded',
+  const loaded = await attemptNavigation("domcontentloaded", {
+    waitUntil: "domcontentloaded",
   });
 
   if (!loaded) {
     await page.waitForTimeout(1000);
-    await attemptNavigation('retry-load', {
-      waitUntil: 'load',
+    await attemptNavigation("retry-load", {
+      waitUntil: "load",
       timeout: 60_000,
     });
   }
@@ -210,9 +215,9 @@ async function handleServerReady(url: string): Promise<void> {
   try {
     await launchBrowser(url);
   } catch (error) {
-    console.error('[playwright] Failed to launch browser:', error);
+    console.error("[playwright] Failed to launch browser:", error);
     state.shuttingDown = true;
-    terminate('SIGINT');
+    terminate("SIGINT");
   }
 }
 
@@ -222,10 +227,10 @@ async function shutdown(signal?: NodeJS.Signals, code?: number): Promise<void> {
 
   if (viteProcess.exitCode === null) {
     try {
-      viteProcess.kill(signal ?? 'SIGTERM');
+      viteProcess.kill(signal ?? "SIGTERM");
     } catch (error) {
-      if (error && (error as NodeJS.ErrnoException).code !== 'ESRCH') {
-        console.warn('[runner] Failed to terminate Vite process:', error);
+      if (error && (error as NodeJS.ErrnoException).code !== "ESRCH") {
+        console.warn("[runner] Failed to terminate Vite process:", error);
       }
     }
   }
@@ -240,14 +245,14 @@ async function shutdown(signal?: NodeJS.Signals, code?: number): Promise<void> {
 function terminate(signal: NodeJS.Signals): void {
   if (!state.shuttingDown) {
     shutdown(signal).catch((error) => {
-      console.error('[runner] Error during shutdown:', error);
+      console.error("[runner] Error during shutdown:", error);
       process.exit(1);
     });
   }
 }
 
 function registerSignalHandlers(): void {
-  ['SIGINT', 'SIGTERM'].forEach((sig) => {
+  ["SIGINT", "SIGTERM"].forEach((sig) => {
     process.on(sig, () => {
       if (state.shuttingDown) {
         return;
@@ -261,7 +266,7 @@ function registerSignalHandlers(): void {
 function attachViteListeners(): void {
   const stdoutInterface = readline.createInterface({ input: viteProcess.stdout });
 
-  stdoutInterface.on('line', (line) => {
+  stdoutInterface.on("line", (line) => {
     console.log(line);
     if (state.serverUrl || state.launchingBrowser) {
       return;
@@ -272,15 +277,15 @@ function attachViteListeners(): void {
     }
   });
 
-  viteProcess.stderr.setEncoding('utf8');
-  viteProcess.stderr.on('data', (chunk) => {
+  viteProcess.stderr.setEncoding("utf8");
+  viteProcess.stderr.on("data", (chunk) => {
     process.stderr.write(chunk);
   });
 
-  viteProcess.on('exit', (code, signal) => {
+  viteProcess.on("exit", (code, signal) => {
     stdoutInterface.close();
     shutdown(signal ?? undefined, code ?? undefined).catch((error) => {
-      console.error('[runner] Error during shutdown:', error);
+      console.error("[runner] Error during shutdown:", error);
       process.exit(1);
     });
   });
