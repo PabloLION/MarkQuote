@@ -8,13 +8,13 @@ Reference for the assets and metadata the Chrome Web Store expects when submitti
 - **Promo tile (small):** 440×280 PNG/JPEG (`docs/assets/chrome-web-store/promo-small-440x280.png`).
 - **Promo tile (medium):** 920×680 PNG/JPEG (optional) (`promo-medium-920x680.png`).
 - **Promo tile (large/marquee):** 1400×560 PNG/JPEG (optional) (`promo-large-1400x560.png`).
-- **Screenshots:** Minimum one 1280×800 PNG/JPEG for popup and options surfaces (`docs/dev/publish/chrome-web-store-listing.md` lists the exact files).
+- **Screenshots:** Minimum one 1280×800 PNG/JPEG for popup and options surfaces (`docs/storefront/chrome-web-store/listing.md` lists the exact files).
 - **Video:** Optional YouTube demo URL.
 
 ## Listing Copy
 
 - **Short description:** ≤132 characters.
-- **Detailed description:** Markdown allowed; see `docs/dev/publish/chrome-web-store-listing.md` for approved copy.
+- **Detailed description:** Markdown allowed; see `docs/storefront/chrome-web-store/listing.md` for approved copy.
 - **Release notes:** Brief summary per version.
 - **Category:** Productivity → Workflow & Planning (fits MarkQuote usage).
 - **Default language:** en-US (localise copy/screenshots if we add locales).

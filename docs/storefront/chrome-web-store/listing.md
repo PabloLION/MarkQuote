@@ -1,7 +1,7 @@
 # Chrome Web Store Listing Content
 
 Reference copy and metadata for the MarkQuote listing. Use this when filling the Chrome Web Store
-Dashboard or the Publish API payloads.
+Dashboard or Publish API payloads.
 
 ## Overview
 
