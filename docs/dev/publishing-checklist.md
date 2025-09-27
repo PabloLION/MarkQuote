@@ -19,8 +19,8 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
    - Confirm context menu, keyboard shortcut, and popup flows copy markdown on a real HTTPS page.
    - Open the options page and validate rule edits persist.
 
-## 3. Package
-- Preferred: `pnpm package` (runs `pnpm build`, verifies manifest version, and drops
+## 3. Bundle
+- Preferred: `pnpm bundle` (runs the release bundle script, verifies manifest version, and drops
   `docs/releases/markquote-v<version>.zip`).
 - If packaging manually, zip the `dist/` folder and copy the archive into `docs/releases/`.
 

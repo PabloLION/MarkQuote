@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { zipDirectory } from "./zip-folder.js";
+import { zipDirectory } from "./helpers/zip-folder.js";
 
 interface PackageMetadata {
   version?: string;
@@ -83,7 +83,7 @@ async function main(): Promise<void> {
     process.stdout.write(`Done. Package available at: ${zipPath}\n`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`build-and-zip failed: ${message}\n`);
+    process.stderr.write(`bundle failed: ${message}\n`);
     process.exitCode = 1;
   }
 }

@@ -24,7 +24,7 @@
     "check": "biome check --write --unsafe",
     "dev": "vite",
     "dev:playwright": "tsx scripts/dev/playwright-dev.ts",
-    "package": "tsx scripts/package/build-and-zip.ts",
+    "bundle": "tsx scripts/package/bundle.ts",
     "prepare": "tsx scripts/package-hooks/prepare.ts",
     "test": "vitest",
     "test:e2e": "pnpm exec playwright test",
