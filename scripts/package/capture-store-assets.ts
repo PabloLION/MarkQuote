@@ -30,17 +30,9 @@ async function captureAssets(): Promise<void> {
     console.log(`Saved ${path.relative(repoRoot, optionsPath)}`);
   }, getLaunchOptionsForCapture("options"));
 
-  await withExtensionContext(async ({ context, extensionId }) => {
-    const popupBuffer = await capturePopupScreenshot(context, extensionId);
+  await withExtensionContext(async ({ context }) => {
     const overviewPath = path.join(assetsDir, "screenshot-overview-1280x800.png");
-    await captureOverviewScreenshot(
-      context,
-      popupBuffer,
-      iconBuffer,
-      hotkey,
-      overviewPath,
-      confirmScreenshots,
-    );
+    await captureOverviewScreenshot(context, hotkey, overviewPath, confirmScreenshots);
     console.log(`Saved ${path.relative(repoRoot, overviewPath)}`);
   }, getLaunchOptionsForCapture("overview"));
 
