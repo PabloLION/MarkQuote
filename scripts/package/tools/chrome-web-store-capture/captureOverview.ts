@@ -9,7 +9,7 @@ export async function captureOverviewScreenshot(
   context: BrowserContext,
   hotkey: string,
   outputPath: string,
-  confirm: boolean,
+  confirm: boolean
 ): Promise<void> {
   const viewport = getViewportSize("overview");
   const page = await context.newPage();
@@ -18,7 +18,9 @@ export async function captureOverviewScreenshot(
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+  await page
+    .waitForLoadState("networkidle", { timeout: 5_000 })
+    .catch(() => {});
   await page.waitForTimeout(500);
 
   const overlayCss = `
@@ -37,7 +39,7 @@ export async function captureOverviewScreenshot(
       padding: 14px 0;
       list-style: none;
       width: 240px;
-      background: rgba(249, 250, 251, 0.96);
+      background: rgba(249, 250, 251, 0.8);
       border-radius: 18px;
       box-shadow: 0 28px 70px rgba(15, 23, 42, 0.25);
     }
@@ -54,8 +56,8 @@ export async function captureOverviewScreenshot(
     }
 
     .markquote-callout {
-      background: rgba(255, 255, 255, 0.96);
-      border: 1px solid rgba(251, 191, 36, 0.6);
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid rgba(251, 191, 36, 0.75);
       border-radius: 16px;
       box-shadow: 0 20px 45px rgba(251, 191, 36, 0.25);
       padding: 12px 16px;
@@ -69,20 +71,103 @@ export async function captureOverviewScreenshot(
       position: absolute;
       width: 0;
       height: 0;
-      border: 8px solid transparent;
+      border: 10px solid transparent;
     }
 
     .markquote-callout.context::after {
-      border-right-color: rgba(251, 191, 36, 0.6);
-      left: -16px;
-      top: 24px;
+      border-bottom-color: rgba(251, 191, 36, 0.75);
+      left: 50%;
+      transform: translateX(-50%);
+      top: -20px;
     }
 
     .markquote-callout.hotkey::after {
-      border-bottom-color: rgba(251, 191, 36, 0.6);
+      border-top-color: rgba(251, 191, 36, 0.75);
       left: 50%;
       transform: translateX(-50%);
-      bottom: -16px;
+      top: 100%;
+    }
+
+    .markquote-highlight {
+      background: rgba(251, 191, 36, 0.25);
+      box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2);
+      border-radius: 6px;
+      transition: background 0.2s ease;
+    }
+
+    .markquote-copy-heading {
+      position: absolute;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 28px;
+      border-radius: 999px;
+      background: rgba(251, 191, 36, 0.9);
+      color: #0b1120;
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      text-transform: uppercase;
+      box-shadow: 0 18px 45px rgba(251, 191, 36, 0.35);
+    }
+
+    .markquote-toolbar-icon {
+      position: absolute;
+      top: 24px;
+      right: 40px;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(26, 115, 232, 0.9), rgba(63, 81, 181, 0.95));
+      border: 2px solid rgba(26, 115, 232, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      box-shadow: 0 18px 45px rgba(26, 115, 232, 0.35);
+    }
+
+    .markquote-toolbar-icon::before {
+      content: 'M';
+      font-size: 18px;
+    }
+
+    .markquote-callout.toolbar::after {
+      border-bottom-color: rgba(251, 191, 36, 0.75);
+      left: 50%;
+      transform: translateX(-50%);
+      top: -20px;
+    }
+
+    .markquote-callout.hotkey kbd,
+    .markquote-callout.toolbar kbd,
+    .markquote-callout.context kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+      box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.2);
+      margin: 0 2px;
+    }
+
+    .markquote-key-plus {
+      display: inline-block;
+      margin: 0 4px;
+      color: rgba(15, 23, 42, 0.65);
+      font-weight: 700;
+    }
+
+    .markquote-hotkey-note {
+      display: inline-block;
+      margin-left: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(15, 23, 42, 0.7);
     }
   `;
 
@@ -90,12 +175,33 @@ export async function captureOverviewScreenshot(
 
   await page.evaluate(
     ({ hotkey, targetSentence }) => {
-      const paragraphs = Array.from(document.querySelectorAll<HTMLElement>(".mw-parser-output p"));
+      const autoToggle = document.querySelector<HTMLInputElement>(
+        'input[name="mw-color-scheme"][value="auto"]'
+      );
+      try {
+        if (autoToggle && !autoToggle.checked) {
+          autoToggle.click();
+        } else {
+          document.documentElement.setAttribute("data-mw-color-scheme", "auto");
+        }
+      } catch (error) {
+        console.warn(
+          "Unable to switch Wikipedia color scheme to automatic",
+          error
+        );
+      }
+
+      const paragraphs = Array.from(
+        document.querySelectorAll<HTMLElement>(".mw-parser-output p")
+      );
 
       let selectionRange: Range | null = null;
 
       for (const paragraph of paragraphs) {
-        const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
+        const walker = document.createTreeWalker(
+          paragraph,
+          NodeFilter.SHOW_TEXT
+        );
         const textNodes: Array<{ node: Text; start: number; end: number }> = [];
         let aggregate = "";
 
@@ -114,12 +220,16 @@ export async function captureOverviewScreenshot(
 
         const matchEnd = matchIndex + targetSentence.length;
         const startEntry = textNodes.find(
-          (entry) => matchIndex >= entry.start && matchIndex < entry.end,
+          (entry) => matchIndex >= entry.start && matchIndex < entry.end
         );
-        const endEntry = textNodes.find((entry) => matchEnd > entry.start && matchEnd <= entry.end);
+        const endEntry = textNodes.find(
+          (entry) => matchEnd > entry.start && matchEnd <= entry.end
+        );
 
         if (!startEntry || !endEntry) {
-          console.warn("[MarkQuote overview capture] Unable to map highlight range to text nodes.");
+          console.warn(
+            "[MarkQuote overview capture] Unable to map highlight range to text nodes."
+          );
           continue;
         }
 
@@ -127,13 +237,28 @@ export async function captureOverviewScreenshot(
         range.setStart(startEntry.node, matchIndex - startEntry.start);
         range.setEnd(endEntry.node, matchEnd - endEntry.start);
 
-        selectionRange = range;
+        const wrapper = document.createElement("span");
+        wrapper.className = "markquote-highlight";
+
+        try {
+          range.surroundContents(wrapper);
+        } catch (error) {
+          console.warn("Unable to wrap highlight span", error);
+        }
+
+        const newRange = document.createRange();
+        newRange.selectNodeContents(wrapper);
+        selectionRange = newRange;
         paragraph.scrollIntoView({ block: "center" });
         break;
       }
 
-      if (document.body.style.position === "" || document.body.style.position === "static") {
-        document.body.dataset.markquoteOriginalPosition = document.body.style.position;
+      if (
+        document.body.style.position === "" ||
+        document.body.style.position === "static"
+      ) {
+        document.body.dataset.markquoteOriginalPosition =
+          document.body.style.position;
         document.body.style.position = "relative";
       }
 
@@ -154,22 +279,54 @@ export async function captureOverviewScreenshot(
 
       const contextCallout = document.createElement("div");
       contextCallout.className = "markquote-callout context";
-      contextCallout.textContent = 'Right-click → "Copy as Markdown quote"';
+      contextCallout.textContent = "Context menu → Copy as Markdown quote";
       contextCallout.style.position = "absolute";
       contextCallout.style.visibility = "hidden";
       root.appendChild(contextCallout);
 
+      const toolbarIcon = document.createElement("div");
+      toolbarIcon.className = "markquote-toolbar-icon";
+      root.appendChild(toolbarIcon);
+
+      const toolbarCallout = document.createElement("div");
+      toolbarCallout.className = "markquote-callout toolbar";
+      toolbarCallout.textContent = "Toolbar icon → Copy preview";
+      toolbarCallout.style.position = "absolute";
+      toolbarCallout.style.visibility = "hidden";
+      root.appendChild(toolbarCallout);
+
       const hotkeyCallout = document.createElement("div");
       hotkeyCallout.className = "markquote-callout hotkey";
-      hotkeyCallout.textContent = `Press ${hotkey} to copy instantly`;
+      const hotkeyMarkup = hotkey
+        .split("+")
+        .map((segment) => segment.trim())
+        .filter(Boolean)
+        .map((segment) => `<kbd>${segment}</kbd>`)
+        .join('<span class="markquote-key-plus">+</span>');
+
+      const macHotkeyMarkup = ["⌥", "C"]
+        .map((segment) => `<kbd>${segment}</kbd>`)
+        .join('<span class="markquote-key-plus">+</span>');
+
+      hotkeyCallout.innerHTML = `
+        <div>Windows/Linux: ${hotkeyMarkup} <span class="markquote-hotkey-note">copy instantly</span></div>
+        <div>macOS: ${macHotkeyMarkup} <span class="markquote-hotkey-note">copy instantly</span></div>
+      `;
       hotkeyCallout.style.position = "absolute";
       hotkeyCallout.style.visibility = "hidden";
       root.appendChild(hotkeyCallout);
 
+      const heading = document.createElement("div");
+      heading.className = "markquote-copy-heading";
+      heading.textContent = "Three ways to copy";
+      root.appendChild(heading);
+
       document.body.appendChild(root);
 
       if (!selectionRange) {
-        console.error("[MarkQuote overview capture] Unable to find target sentence to highlight.");
+        console.error(
+          "[MarkQuote overview capture] Unable to find target sentence to highlight."
+        );
       } else {
         const selection = window.getSelection();
         if (selection) {
@@ -184,7 +341,10 @@ export async function captureOverviewScreenshot(
         const scrollY = window.scrollY;
 
         const menuTop =
-          scrollY + selectionRect.top + selectionRect.height / 2 - menuRect.height / 2;
+          scrollY +
+          selectionRect.top +
+          selectionRect.height / 2 -
+          menuRect.height / 2;
         const menuLeft = scrollX + selectionRect.right + 40;
         contextMenu.style.top = `${Math.max(menuTop, scrollY + 24)}px`;
         contextMenu.style.left = `${menuLeft}px`;
@@ -198,16 +358,31 @@ export async function captureOverviewScreenshot(
 
         const hotkeyTop = scrollY + selectionRect.top - hotkeyRect.height - 16;
         const hotkeyLeft =
-          scrollX + selectionRect.left + selectionRect.width / 2 - hotkeyRect.width / 2;
+          scrollX +
+          selectionRect.left +
+          selectionRect.width / 2 -
+          hotkeyRect.width / 2;
         hotkeyCallout.style.top = `${Math.max(hotkeyTop, scrollY + 24)}px`;
         hotkeyCallout.style.left = `${hotkeyLeft}px`;
         hotkeyCallout.style.visibility = "visible";
+
+        const toolbarRect = toolbarIcon.getBoundingClientRect();
+        const toolbarCalloutRect = toolbarCallout.getBoundingClientRect();
+        const toolbarTop = scrollY + toolbarRect.bottom + 12;
+        const toolbarLeft =
+          scrollX +
+          toolbarRect.left +
+          toolbarRect.width / 2 -
+          toolbarCalloutRect.width / 2;
+        toolbarCallout.style.top = `${toolbarTop}px`;
+        toolbarCallout.style.left = `${toolbarLeft}px`;
+        toolbarCallout.style.visibility = "visible";
       }
     },
     {
       hotkey,
       targetSentence: OVERVIEW_TARGET_SENTENCE,
-    },
+    }
   );
 
   await waitForConfirmation("Review overview composition", confirm);
