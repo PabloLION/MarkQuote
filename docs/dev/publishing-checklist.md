@@ -25,17 +25,22 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
   upload the archive before cleaning your workspace.
 - If packaging manually, zip the `dist/` folder and place the archive under `.dev/releases/`.
 
-## 4. Store Submission / Automation
+## 4. Refresh Store Assets
+- `pnpm tools:chrome-web-store-capture` (use `--confirm` to review each capture). The script opens the
+  installed extension in Chromium, captures the popup/options flow, and updates the promo tiles under
+  `docs/storefront/chrome-web-store/assets/`.
+
+## 5. Store Submission / Automation
 - Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `scripts/publish/chrome-web-store.sh dist/markquote-v<version>.zip`.
 - Inspect the script output; on success capture the JSON response in release notes.
 - If manual submission is required, sign in to the Chrome Web Store Developer Dashboard, upload the ZIP, and publish.
 - Update listing copy, privacy policy, support URL, and release notes as needed.
 
-## 5. Post-Submission
+## 6. Post-Submission
 - Tag the release in Git (`git tag v<version>` and `git push origin v<version>`).
 - Publish release notes (GitHub Releases or project docs).
 - Monitor store feedback and crash reports for regressions.
 
-## 6. Rollback Plan
+## 7. Rollback Plan
 - Keep the previous ZIP and manifest on hand.
 - If a regression is discovered, yank the newest listing and re-submit the prior build while hotfixing the issue.
