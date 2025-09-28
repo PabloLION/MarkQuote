@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { BrowserContext } from "playwright";
 import type { LaunchOptions } from "./extension.js";
-import { getExtensionId, launchExtensionContext } from "./extension.js";
+import { getExtensionId, launchExtensionContext, pinExtensionToToolbar } from "./extension.js";
 import { assetsDir, iconsDir, repoRoot } from "./paths.js";
 
 export async function runCommand(command: string, args: string[]): Promise<void> {
@@ -51,6 +51,7 @@ export async function withExtensionContext<T>(
 
   try {
     const extensionId = await getExtensionId(context);
+    await pinExtensionToToolbar(context, extensionId);
     return await fn({ context, extensionId, cleanup });
   } finally {
     await cleanup();

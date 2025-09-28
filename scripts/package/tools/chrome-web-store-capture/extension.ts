@@ -54,7 +54,8 @@ export async function getExtensionId(context: BrowserContext): Promise<string> {
     await page.waitForTimeout(500);
   }
 
-  const extensionCard = page.locator("extensions-item").first();
+  const manager = page.locator("extensions-manager");
+  const extensionCard = manager.locator("extensions-item").first();
   await extensionCard.waitFor({ state: "visible" });
   const extensionId = await extensionCard.getAttribute("id");
   await page.close();
@@ -64,6 +65,34 @@ export async function getExtensionId(context: BrowserContext): Promise<string> {
   }
 
   return extensionId;
+}
+
+export async function pinExtensionToToolbar(
+  context: BrowserContext,
+  extensionId: string,
+): Promise<void> {
+  const page = await context.newPage();
+
+  try {
+    await page.goto(`chrome://extensions/?id=${extensionId}`, { waitUntil: "load" });
+
+    const manager = page.locator("extensions-manager");
+    const toggle = manager
+      .locator("extensions-detail-view")
+      .locator("extensions-toggle-row#pin-to-toolbar")
+      .locator("cr-toggle");
+
+    await toggle.waitFor({ state: "visible", timeout: 5_000 });
+    const state = await toggle.getAttribute("aria-pressed");
+    if (state !== "true") {
+      await toggle.click();
+      await page.waitForTimeout(200);
+    }
+  } catch (error) {
+    console.warn(`Unable to pin extension ${extensionId} to toolbar`, error);
+  } finally {
+    await page.close();
+  }
 }
 
 export async function openExtensionPage(
