@@ -23,6 +23,71 @@ export async function captureOverviewScreenshot(
     .catch(() => {});
   await page.waitForTimeout(500);
 
+  await page
+    .waitForSelector('input[name="mw-color-scheme"][value="auto"]', {
+      timeout: 5_000,
+    })
+    .catch(() => {
+      console.warn(
+        "[MarkQuote overview capture] Unable to find Wikipedia color scheme toggle."
+      );
+    });
+
+  await page.evaluate(() => {
+    const colorToggle = document.querySelector<HTMLButtonElement>(
+      "#vector-appearance-toggle"
+    );
+
+    if (colorToggle && colorToggle.getAttribute("aria-expanded") !== "true") {
+      colorToggle.click();
+    }
+
+    let switched = false;
+
+    const autoSelectors = [
+      "#skin-client-pref-skin-theme-value-os",
+      'input[name="mw-color-scheme"][value="auto"]',
+    ];
+
+    let autoRadio: HTMLInputElement | null = null;
+
+    for (const selector of autoSelectors) {
+      autoRadio = document.querySelector<HTMLInputElement>(selector);
+      if (autoRadio) {
+        break;
+      }
+    }
+
+    if (!autoRadio) {
+      console.warn(
+        "[MarkQuote overview capture] Unable to find Wikipedia color scheme radio button." // DO NOT REMOVE: essential for debugging color scheme automation.
+      );
+    }
+
+    if (autoRadio) {
+      if (!autoRadio.checked) {
+        autoRadio.click();
+      }
+      switched = autoRadio.checked;
+    } else {
+      console.warn(
+        "[MarkQuote overview capture] Unable to find Wikipedia color scheme radio button."
+      );
+    }
+
+    if (!switched) {
+      console.warn(
+        "[MarkQuote overview capture] Falling back to forcing automatic color scheme." // DO NOT REMOVE: essential for debugging color scheme automation.
+      );
+      document.documentElement.setAttribute("data-mw-color-scheme", "auto");
+    }
+
+    const autoLabel = document.querySelector<HTMLElement>(
+      "label[for='skin-theme-clientpref-toggle-auto']"
+    );
+    autoLabel?.scrollIntoView({ block: "nearest" });
+  });
+
   const overlayCss = `
     .markquote-overlay-root {
       position: absolute;
