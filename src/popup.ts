@@ -3,9 +3,13 @@ type CopiedTextMessage = {
   text: string;
 };
 
-const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote";
-const INLINE_MODE_DISCUSSION_URL =
-  "https://github.com/PabloLION/MarkQuote/issues?q=is%3Aissue+inline+mode";
+type LoggedExtensionError = {
+  message: string;
+  context: string;
+  timestamp: number;
+};
+
+const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 
 export function initializePopup(): () => void {
   const messageDiv = document.getElementById("message");
@@ -14,6 +18,11 @@ export function initializePopup(): () => void {
   const hotkeysButton = document.getElementById("hotkeys-button");
   const feedbackButton = document.getElementById("feedback-button");
   const inlineModeButton = document.getElementById("inline-mode-button");
+  const problemBadge = document.getElementById("problem-badge");
+  const errorContainer = document.getElementById("error-container");
+  const errorList = document.getElementById("error-list");
+  const reportErrorsButton = document.getElementById("report-errors-button");
+  const dismissErrorsButton = document.getElementById("dismiss-errors-button");
 
   if (!chrome?.runtime) {
     console.warn("chrome.runtime is unavailable; popup interactions are limited.");
@@ -100,12 +109,88 @@ export function initializePopup(): () => void {
   };
 
   const openFeedback = () => openExternal(FEEDBACK_URL);
-  const openInlineModeIssue = () => openExternal(INLINE_MODE_DISCUSSION_URL);
+  const inlineModeLink =
+    inlineModeButton?.getAttribute("data-feedback-link") ??
+    "https://github.com/PabloLION/MarkQuote/issues/3";
+  const openInlineModeIssue = () => openExternal(inlineModeLink);
+
+  const fetchErrors = async (): Promise<LoggedExtensionError[]> => {
+    if (!chrome?.runtime) {
+      return [];
+    }
+
+    try {
+      const response = (await chrome.runtime.sendMessage({ type: "get-error-log" })) as {
+        errors?: LoggedExtensionError[];
+      };
+      return Array.isArray(response?.errors) ? response.errors : [];
+    } catch (error) {
+      console.warn("Failed to load error log", error);
+      return [];
+    }
+  };
+
+  const clearErrors = async () => {
+    if (!chrome?.runtime) {
+      return;
+    }
+
+    try {
+      await chrome.runtime.sendMessage({ type: "clear-error-log" });
+    } catch (error) {
+      console.warn("Failed to clear error log", error);
+    }
+  };
+
+  const renderErrors = (errors: LoggedExtensionError[]) => {
+    if (!errorContainer || !errorList || !problemBadge) {
+      return;
+    }
+
+    if (errors.length === 0) {
+      errorContainer.hidden = true;
+      problemBadge.setAttribute("hidden", "true");
+      problemBadge.textContent = "";
+      errorList.innerHTML = "";
+      return;
+    }
+
+    errorContainer.hidden = false;
+    problemBadge.removeAttribute("hidden");
+    problemBadge.textContent = String(Math.min(errors.length, 99));
+
+    errorList.innerHTML = "";
+    for (const entry of errors) {
+      const item = document.createElement("li");
+      const timestamp = new Date(entry.timestamp).toLocaleString();
+      item.textContent = `[${timestamp}] ${entry.context}: ${entry.message}`;
+      errorList.append(item);
+    }
+  };
+
+  const refreshErrorLog = () => {
+    void fetchErrors().then((errors) => {
+      renderErrors(errors);
+    });
+  };
 
   optionsButton?.addEventListener("click", openOptions);
   hotkeysButton?.addEventListener("click", openShortcuts);
   feedbackButton?.addEventListener("click", openFeedback);
   inlineModeButton?.addEventListener("click", openInlineModeIssue);
+  const handleReportErrors = () => {
+    openFeedback();
+    void clearErrors().then(refreshErrorLog);
+  };
+
+  const handleDismissErrors = () => {
+    void clearErrors().then(refreshErrorLog);
+  };
+
+  reportErrorsButton?.addEventListener("click", handleReportErrors);
+  dismissErrorsButton?.addEventListener("click", handleDismissErrors);
+
+  refreshErrorLog();
 
   return () => {
     chrome.runtime.onMessage.removeListener(messageListener);
@@ -113,5 +198,7 @@ export function initializePopup(): () => void {
     hotkeysButton?.removeEventListener("click", openShortcuts);
     feedbackButton?.removeEventListener("click", openFeedback);
     inlineModeButton?.removeEventListener("click", openInlineModeIssue);
+    reportErrorsButton?.removeEventListener("click", handleReportErrors);
+    dismissErrorsButton?.removeEventListener("click", handleDismissErrors);
   };
 }

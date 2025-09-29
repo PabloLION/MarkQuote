@@ -87,15 +87,84 @@
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
         font-size: 0.9rem;
       }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        padding: 0 6px;
+        margin-left: 6px;
+        border-radius: 12px;
+        background: #d93025;
+        color: #fff;
+        font-size: 0.7rem;
+        font-weight: 700;
+      }
+
+      #error-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+        border-radius: 10px;
+        background: rgba(217, 48, 37, 0.12);
+        border: 1px solid rgba(217, 48, 37, 0.35);
+        margin-bottom: 8px;
+      }
+
+      #error-container[hidden] {
+        display: none;
+      }
+
+      .error-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+      }
+
+      .error-actions {
+        display: inline-flex;
+        gap: 8px;
+      }
+
+      #error-list {
+        margin: 0;
+        padding-left: 18px;
+        color: #5f2120;
+        font-size: 0.85rem;
+        max-height: 160px;
+        overflow-y: auto;
+      }
     </style>
   </head>
   <body>
     <header>
       <button class="primary" id="options-button">Options</button>
       <button id="hotkeys-button">Hotkey</button>
-      <button id="inline-mode-button" data-feedback-link="https://github.com/PabloLION/MarkQuote/issues/3">Copy inline</button>
-      <button id="feedback-button">Feedback</button>
+      <button
+        id="inline-mode-button"
+        data-feedback-link="https://github.com/PabloLION/MarkQuote/issues/3"
+      >
+        Copy inline
+      </button>
+      <button id="feedback-button">
+        Feedback
+        <span id="problem-badge" class="badge" hidden></span>
+      </button>
     </header>
+    <div id="error-container" hidden>
+      <div class="error-header">
+        <span>We hit a problem while copying.</span>
+        <div class="error-actions">
+          <button id="report-errors-button">Report issue</button>
+          <button id="dismiss-errors-button" class="secondary">Dismiss</button>
+        </div>
+      </div>
+      <ul id="error-list"></ul>
+    </div>
     <div id="message"></div>
     <pre id="preview"></pre>
     <script src="popup.js"></script>

@@ -3,10 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { initializePopup } from "../../src/popup";
 
-const INLINE_MODE_ISSUE_QUERY =
-  "https://github.com/PabloLION/MarkQuote/issues?q=is%3Aissue+inline+mode";
+const INLINE_MODE_ISSUE_QUERY = "https://github.com/PabloLION/MarkQuote/issues/3";
 
-const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote";
+const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 
 type CommandsShim = typeof chrome.commands & {
   openShortcutSettings?: () => void;
@@ -20,9 +19,15 @@ function mountPopupDom() {
     <header>
       <button id="options-button"></button>
       <button id="hotkeys-button"></button>
-      <button id="feedback-button"></button>
-      <button id="inline-mode-button"></button>
+      <button id="inline-mode-button" data-feedback-link="${INLINE_MODE_ISSUE_QUERY}"></button>
+      <button id="feedback-button"><span id="problem-badge"></span></button>
     </header>
+    <div id="error-container" hidden>
+      <div class="error-header"></div>
+      <ul id="error-list"></ul>
+      <button id="report-errors-button"></button>
+      <button id="dismiss-errors-button"></button>
+    </div>
     <div id="message"></div>
     <pre id="preview"></pre>
   `;

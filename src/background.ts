@@ -12,6 +12,16 @@ const E2E_SELECTION_MESSAGE = "e2e:selection";
 const E2E_LAST_FORMATTED_MESSAGE = "e2e:get-last-formatted";
 const E2E_SET_OPTIONS_MESSAGE = "e2e:set-options";
 const isE2ETest = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
+const ERROR_STORAGE_KEY = "markquote-error-log";
+const ACTIVE_TAB_PERMISSION_MESSAGE =
+  'Chrome only grants keyboard shortcuts access after you allow the site in the extension\'s "Site access" settings.';
+
+type CopySource = "popup" | "hotkey" | "context-menu" | "e2e" | "unknown";
+type LoggedError = {
+  message: string;
+  context: string;
+  timestamp: number;
+};
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
 let e2eSelectionStub:
@@ -22,10 +32,12 @@ let e2eSelectionStub:
     }
   | undefined;
 
+const pendingCopySources = new Map<number, CopySource>();
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     if (chrome.runtime.lastError) {
-      console.warn("Failed to clear existing context menus:", chrome.runtime.lastError.message);
+      void recordError("contextMenus.removeAll", chrome.runtime.lastError.message);
     }
 
     chrome.contextMenus.create({
@@ -44,10 +56,14 @@ chrome.runtime.onInstalled.addListener(() => {
   void ensureOptionsInitialized();
 });
 
-function triggerCopy(tab: chrome.tabs.Tab | undefined) {
+void initializeBadgeFromStorage();
+
+function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
   if (!tab?.id) {
     return;
   }
+
+  pendingCopySources.set(tab.id, source);
 
   chrome.scripting.executeScript(
     {
@@ -56,7 +72,9 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined) {
     },
     () => {
       if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
+        void recordError("inject-selection-script", chrome.runtime.lastError.message, {
+          tabUrl: tab.url,
+        });
         if (isE2ETest) {
           lastPreviewError = chrome.runtime.lastError.message;
         }
@@ -67,7 +85,7 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined) {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "markquote" && tab) {
-    triggerCopy(tab);
+    triggerCopy(tab, "context-menu");
   } else if (info.menuItemId === "markquote-options") {
     chrome.runtime.openOptionsPage();
   }
@@ -75,26 +93,33 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === "copy-as-markdown-quote") {
-    triggerCopy(tab);
+    triggerCopy(tab, "hotkey");
   }
 });
 
-async function runCopyPipeline(markdown: string, title: string, url: string): Promise<string> {
+async function runCopyPipeline(
+  markdown: string,
+  title: string,
+  url: string,
+  source: CopySource,
+): Promise<string> {
   const formatted = await formatForClipboard(markdown, title, url);
 
-  chrome.runtime
-    .sendMessage({ type: "copied-text-preview", text: formatted })
-    .then(() => {
-      if (isE2ETest) {
-        lastPreviewError = undefined;
-      }
-    })
-    .catch((error) => {
-      console.warn("Failed to notify popup preview.", error);
-      if (isE2ETest) {
-        lastPreviewError = error instanceof Error ? error.message : String(error);
-      }
-    });
+  if (source === "popup") {
+    chrome.runtime
+      .sendMessage({ type: "copied-text-preview", text: formatted })
+      .then(() => {
+        if (isE2ETest) {
+          lastPreviewError = undefined;
+        }
+      })
+      .catch((error) => {
+        void recordError("notify-popup-preview", error);
+        if (isE2ETest) {
+          lastPreviewError = error instanceof Error ? error.message : String(error);
+        }
+      });
+  }
 
   if (isE2ETest) {
     lastFormattedPreview = formatted;
@@ -162,10 +187,103 @@ async function ensureOptionsInitialized(): Promise<void> {
     }
   } catch (error) {
     console.warn("Failed to initialize options storage.", error);
+    void recordError("initialize-options", error);
+  }
+}
+
+async function initializeBadgeFromStorage(): Promise<void> {
+  const errors = await getStoredErrors();
+  updateBadge(errors.length);
+}
+
+async function getStoredErrors(): Promise<LoggedError[]> {
+  const storageArea = chrome.storage?.local;
+  if (!storageArea) {
+    return [];
+  }
+
+  const result = await storageArea.get(ERROR_STORAGE_KEY);
+  const raw = result?.[ERROR_STORAGE_KEY];
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+
+  return raw.filter((entry): entry is LoggedError => Boolean(entry?.message));
+}
+
+async function recordError(
+  context: string,
+  error: unknown,
+  extra?: Record<string, unknown>,
+): Promise<void> {
+  const storageArea = chrome.storage?.local;
+  if (!storageArea) {
+    return;
+  }
+
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : JSON.stringify(error);
+
+  if (message.includes("Receiving end does not exist")) {
+    return;
+  }
+
+  const existing = await getStoredErrors();
+  const contextDetails =
+    message.includes("must request permission") && extra?.tabUrl
+      ? `${message} (tab: ${extra.tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`
+      : message;
+
+  const updated: LoggedError[] = [
+    {
+      message: contextDetails,
+      context,
+      timestamp: Date.now(),
+    },
+    ...existing,
+  ].slice(0, 10);
+
+  await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
+  updateBadge(updated.length);
+}
+
+async function clearStoredErrors(): Promise<void> {
+  const storageArea = chrome.storage?.local;
+  if (!storageArea) {
+    return;
+  }
+
+  await storageArea.set({ [ERROR_STORAGE_KEY]: [] });
+  updateBadge(0);
+}
+
+function updateBadge(count: number): void {
+  const text = count > 0 ? String(Math.min(count, 99)) : "";
+  chrome.action.setBadgeText({ text }).catch(() => {});
+  if (count > 0) {
+    chrome.action.setBadgeBackgroundColor({ color: "#d93025" }).catch(() => {});
   }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request?.type === "get-error-log") {
+    void getStoredErrors().then((errors) => {
+      sendResponse?.({ errors });
+    });
+    return true;
+  }
+
+  if (request?.type === "clear-error-log") {
+    void clearStoredErrors().then(() => {
+      sendResponse?.({ ok: true });
+    });
+    return true;
+  }
+
   console.log("Background script received message:", request, { isE2ETest });
 
   if (request?.type === "request-selection-copy") {
@@ -173,7 +291,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       const stub = e2eSelectionStub;
       e2eSelectionStub = undefined;
       void runCopyPipeline(stub.markdown, stub.title, stub.url).catch((error) => {
-        console.error("Failed to process E2E stub selection.", error);
+        void recordError("e2e-stub-selection", error);
       });
       sendResponse?.({ ok: true });
       return true;
@@ -192,13 +310,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           tabs[0];
 
         if (targetTab) {
-          triggerCopy(targetTab);
+          triggerCopy(targetTab, "popup");
         } else {
-          console.warn("No tab found to trigger copy from popup request.");
+          void recordError("request-selection-copy", "No suitable tab found for copy request.");
         }
       })
       .catch((error) => {
-        console.error("Failed to query tabs for selection copy.", error);
+        void recordError("query-tabs-for-copy", error);
       });
     return false;
   }
@@ -212,7 +330,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const title =
       typeof request.title === "string" && request.title ? request.title : DEFAULT_TITLE;
     const url = typeof request.url === "string" && request.url ? request.url : DEFAULT_URL;
-    void runCopyPipeline(request.markdown, title, url).then((formatted) => {
+    void runCopyPipeline(request.markdown, title, url, "e2e").then((formatted) => {
       sendResponse?.({ formatted });
     });
     return true;
@@ -226,15 +344,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return false;
     }
 
-    void persistOptions({
-      ...candidate,
-      version: CURRENT_OPTIONS_VERSION,
-    })
+    void persistOptions({ ...candidate, version: CURRENT_OPTIONS_VERSION })
       .then(() => {
         sendResponse?.({ ok: true });
       })
       .catch((error) => {
-        console.error("Failed to persist options via E2E message.", error);
+        void recordError("persist-options-e2e", error);
         sendResponse?.({
           ok: false,
           error: error instanceof Error ? error.message : String(error),
@@ -273,6 +388,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.markdown) {
     const title = sender.tab?.title || DEFAULT_TITLE;
     const url = sender.tab?.url || DEFAULT_URL;
-    void runCopyPipeline(request.markdown, title, url);
+    const source = sender.tab?.id
+      ? (pendingCopySources.get(sender.tab.id) ?? "unknown")
+      : "unknown";
+    if (sender.tab?.id) {
+      pendingCopySources.delete(sender.tab.id);
+    }
+    void runCopyPipeline(request.markdown, title, url, source);
   }
 });
