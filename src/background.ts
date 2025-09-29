@@ -1,6 +1,7 @@
 import { formatForClipboard } from "./clipboard.js";
 import {
   CURRENT_OPTIONS_VERSION,
+  DEFAULT_OPTIONS,
   normalizeStoredOptions,
   type OptionsPayload,
 } from "./options-schema.js";
@@ -22,17 +23,25 @@ let e2eSelectionStub:
   | undefined;
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: "markquote",
-    title: "Copy as Markdown Quote",
-    contexts: ["selection"],
+  chrome.contextMenus.removeAll(() => {
+    if (chrome.runtime.lastError) {
+      console.warn("Failed to clear existing context menus:", chrome.runtime.lastError.message);
+    }
+
+    chrome.contextMenus.create({
+      id: "markquote",
+      title: "Copy as Markdown Quote",
+      contexts: ["selection"],
+    });
+
+    chrome.contextMenus.create({
+      id: "markquote-options",
+      title: "Options",
+      contexts: ["action"],
+    });
   });
 
-  chrome.contextMenus.create({
-    id: "markquote-options",
-    title: "Options",
-    contexts: ["action"],
-  });
+  void ensureOptionsInitialized();
 });
 
 function triggerCopy(tab: chrome.tabs.Tab | undefined) {
@@ -108,6 +117,52 @@ async function persistOptions(payload: OptionsPayload): Promise<void> {
     titleRules: normalized.titleRules,
     urlRules: normalized.urlRules,
   });
+}
+
+async function ensureOptionsInitialized(): Promise<void> {
+  const storageArea = chrome.storage?.sync;
+  if (!storageArea) {
+    console.warn("chrome.storage.sync is unavailable; cannot initialize options.");
+    return;
+  }
+
+  try {
+    const snapshot = await storageArea.get([
+      "options",
+      "format",
+      "titleRules",
+      "urlRules",
+      "rules",
+    ]);
+    const hasExistingData = Object.values(snapshot).some((value) => {
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      if (value && typeof value === "object") {
+        return Object.keys(value).length > 0;
+      }
+      return Boolean(value);
+    });
+
+    if (!hasExistingData) {
+      await storageArea.set({
+        options: DEFAULT_OPTIONS,
+        format: DEFAULT_OPTIONS.format,
+        titleRules: DEFAULT_OPTIONS.titleRules,
+        urlRules: DEFAULT_OPTIONS.urlRules,
+      });
+      return;
+    }
+
+    const existingOptions = snapshot.options as { version?: number } | undefined;
+    if (existingOptions?.version !== CURRENT_OPTIONS_VERSION && existingOptions) {
+      await storageArea.set({
+        options: { ...existingOptions, version: CURRENT_OPTIONS_VERSION },
+      });
+    }
+  } catch (error) {
+    console.warn("Failed to initialize options storage.", error);
+  }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
