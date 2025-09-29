@@ -47,6 +47,7 @@ export async function launchExtensionContext(
       `--load-extension=${distDir}`,
       `--window-size=${windowSize.width},${windowSize.height}`,
       "--disable-infobars",
+      "--auto-open-devtools-for-tabs",
     ],
     ignoreDefaultArgs: ["--enable-automation"],
   });
@@ -117,16 +118,29 @@ export async function openExtensionPage(
   extensionId: string,
   relativePath: string,
 ) {
+  for (const page of context.pages()) {
+    if (page.url() === "about:blank") {
+      await page.close().catch(() => {
+        /* ignore */
+      });
+    }
+  }
   const page = await context.newPage();
   await page.goto(`chrome-extension://${extensionId}/${relativePath}`, {
     waitUntil: "domcontentloaded",
   });
+  await page.bringToFront();
   await undockDevtools(page);
   return page;
 }
 
 async function undockDevtools(page: Page): Promise<void> {
-  const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
-  await page.waitForTimeout(200);
-  await page.keyboard.press(shortcut);
+  try {
+    const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
+    await page.waitForTimeout(400);
+    await page.keyboard.press(shortcut);
+    await page.waitForTimeout(200);
+  } catch (error) {
+    console.warn("Unable to toggle DevTools window", error);
+  }
 }

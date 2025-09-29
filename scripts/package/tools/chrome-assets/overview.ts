@@ -35,7 +35,7 @@ async function main(): Promise<void> {
     console.log(`  • Capture the browser window and save it as ${relativeOutput}`);
     console.log("  • Close the Playwright window to finish.\n");
 
-    await page.waitForEvent("close");
+    await page.waitForEvent("close", { timeout: 0 });
     console.log("Overview window closed. Exiting capture helper.");
   }, getLaunchOptionsForCapture("overview"));
 }
