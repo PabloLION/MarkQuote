@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { captureOverviewScreenshot } from "./captureOverview.js";
+import { captureOverviewScreenshot } from "./capture-overview.js";
 import { waitForConfirmation } from "./helpers.js";
 import { assetsDir, repoRoot } from "./paths.js";
 import {

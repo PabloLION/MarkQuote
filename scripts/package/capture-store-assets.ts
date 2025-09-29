@@ -1,9 +1,9 @@
 import path from "node:path";
-import { captureOptionsScreenshot } from "./tools/chrome-assets/captureOptions.js";
-import { captureOverviewScreenshot } from "./tools/chrome-assets/captureOverview.js";
-import { capturePopupScreenshot } from "./tools/chrome-assets/capturePopup.js";
-import { capturePromoMarquee } from "./tools/chrome-assets/capturePromoMarquee.js";
-import { capturePromoSmall } from "./tools/chrome-assets/capturePromoSmall.js";
+import { captureOptionsScreenshot } from "./tools/chrome-assets/capture-options.js";
+import { captureOverviewScreenshot } from "./tools/chrome-assets/capture-overview.js";
+import { capturePopupScreenshot } from "./tools/chrome-assets/capture-popup.js";
+import { capturePromoMarquee } from "./tools/chrome-assets/capture-promo-marquee.js";
+import { capturePromoSmall } from "./tools/chrome-assets/capture-promo-small.js";
 import { waitForConfirmation } from "./tools/chrome-assets/helpers.js";
 import {
   assetsDir,

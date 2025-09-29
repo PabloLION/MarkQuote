@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { capturePopupScreenshot } from "./capturePopup.js";
-import { capturePromoMarquee } from "./capturePromoMarquee.js";
+import { capturePopupScreenshot } from "./capture-popup.js";
+import { capturePromoMarquee } from "./capture-promo-marquee.js";
 import { assetsDir, repoRoot } from "./paths.js";
 import {
   buildExtension,

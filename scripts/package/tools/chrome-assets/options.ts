@@ -1,6 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { captureOptionsScreenshot } from "./captureOptions.js";
+import { captureOptionsScreenshot } from "./capture-options.js";
 import { assetsDir, repoRoot } from "./paths.js";
 import { buildExtension, ensureAssetsDir, withExtensionContext } from "./runner.js";
 import { getLaunchOptionsForCapture } from "./sizing.js";
