@@ -1,7 +1,7 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import type { BrowserContext } from "playwright";
+import type { BrowserContext, Page } from "playwright";
 import { chromium } from "playwright";
 import { distDir } from "./paths.js";
 
@@ -24,6 +24,21 @@ export async function launchExtensionContext(
 
   const windowSize = options.windowSize ?? { width: 1600, height: 1000 };
 
+  const defaultProfileDir = path.join(userDataDir, "Default");
+  await mkdir(defaultProfileDir, { recursive: true });
+  const preferencesPath = path.join(defaultProfileDir, "Preferences");
+  const devtoolsPreferences = {
+    devtools: {
+      preferences: {
+        currentDockState: '"undocked"',
+        previousDockState: '"undocked"',
+        lastDockState: '"undocked"',
+        uiTheme: '"dark"',
+      },
+    },
+  };
+  await writeFile(preferencesPath, JSON.stringify(devtoolsPreferences));
+
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: !headed,
     colorScheme: options.colorScheme ?? "dark",
@@ -31,7 +46,9 @@ export async function launchExtensionContext(
       `--disable-extensions-except=${distDir}`,
       `--load-extension=${distDir}`,
       `--window-size=${windowSize.width},${windowSize.height}`,
+      "--disable-infobars",
     ],
+    ignoreDefaultArgs: ["--enable-automation"],
   });
 
   const cleanup = async () => {
@@ -104,5 +121,12 @@ export async function openExtensionPage(
   await page.goto(`chrome-extension://${extensionId}/${relativePath}`, {
     waitUntil: "domcontentloaded",
   });
+  await undockDevtools(page);
   return page;
+}
+
+async function undockDevtools(page: Page): Promise<void> {
+  const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
+  await page.waitForTimeout(200);
+  await page.keyboard.press(shortcut);
 }
