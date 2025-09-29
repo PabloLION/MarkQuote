@@ -2,8 +2,8 @@
 set -euo pipefail
 
 printf 'Running Playwright end-to-end tests before merge...\n'
-PNPM_BIN=$(command -v pnpm || true)
-if [[ -z "$PNPM_BIN" ]]; then
+
+if ! command -v pnpm >/dev/null 2>&1; then
   printf 'pnpm is not available in PATH. Aborting merge.\n' >&2
   exit 1
 fi

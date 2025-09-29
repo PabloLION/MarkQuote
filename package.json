@@ -30,10 +30,15 @@
     "tools:chrome-web-store-capture:overview": "tsx scripts/package/tools/chrome-web-store-capture/runOverview.ts",
     "tools:chrome-web-store-capture:promo-small": "tsx scripts/package/tools/chrome-web-store-capture/runPromoSmall.ts",
     "tools:chrome-web-store-capture:promo-marquee": "tsx scripts/package/tools/chrome-web-store-capture/runPromoMarquee.ts",
-    "prepare": "tsx scripts/package/prepare.ts",
+    "prepare": "husky",
     "test": "vitest",
     "test:e2e": "pnpm exec playwright test",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "pnpm biome check --write --log-level error"
+    ]
   },
   "directories": {
     "doc": "docs"
@@ -46,7 +51,9 @@
     "@types/node": "^24.5.2",
     "@types/sinon-chrome": "^2.2.16",
     "@types/turndown": "^5.0.5",
+    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
+    "lint-staged": "^16.2.3",
     "playwright": "^1.55.0",
     "sinon-chrome": "^3.0.1",
     "svg2png": "^4.1.1",
