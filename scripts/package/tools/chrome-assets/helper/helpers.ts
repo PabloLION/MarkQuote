@@ -4,6 +4,24 @@ import readline from "node:readline";
 import type { BrowserContext } from "playwright";
 import { templatesDir } from "./paths.js";
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function formatHotkeyHtml(hotkey: string): string {
+  return hotkey
+    .split("+")
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => `<kbd>${escapeHtml(segment)}</kbd>`)
+    .join('<span class="markquote-key-plus">+</span>');
+}
+
 export function toDataUri(buffer: Buffer): string {
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }

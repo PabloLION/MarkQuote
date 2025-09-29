@@ -1,5 +1,5 @@
 import type { BrowserContext } from "playwright";
-import { renderTemplate, toDataUri } from "./helpers.js";
+import { formatHotkeyHtml, renderTemplate, toDataUri } from "./helpers.js";
 import { getViewportSize } from "./sizing.js";
 
 export async function capturePromoMarquee(
@@ -17,6 +17,7 @@ export async function capturePromoMarquee(
       POPUP_IMAGE: toDataUri(popupBuffer),
       ICON: toDataUri(iconBuffer),
       HOTKEY: hotkey,
+      HOTKEY_HTML: formatHotkeyHtml(hotkey),
     },
     getViewportSize("promoMarquee"),
     outputPath,
