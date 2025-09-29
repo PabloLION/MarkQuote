@@ -93,7 +93,12 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === "copy-as-markdown-quote") {
-    triggerCopy(tab, "hotkey");
+    chrome.action.openPopup().catch((error) => {
+      void recordError("open-popup-for-hotkey", error);
+      if (tab) {
+        triggerCopy(tab, "hotkey");
+      }
+    });
   }
 });
 
@@ -290,7 +295,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (isE2ETest && e2eSelectionStub) {
       const stub = e2eSelectionStub;
       e2eSelectionStub = undefined;
-      void runCopyPipeline(stub.markdown, stub.title, stub.url).catch((error) => {
+      void runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e").catch((error) => {
         void recordError("e2e-stub-selection", error);
       });
       sendResponse?.({ ok: true });
