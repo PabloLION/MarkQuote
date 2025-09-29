@@ -12,7 +12,8 @@ export async function captureOptionsScreenshot(
   const viewport = getViewportSize("options");
   const page = await openExtensionPage(context, extensionId, "options.html");
   await page.setViewportSize(viewport);
-  await page.waitForTimeout(300);
+  await page.waitForLoadState("domcontentloaded");
+
   await waitForConfirmation("Review options page", confirm);
   await page.screenshot({ path: outputPath });
   await page.close();
