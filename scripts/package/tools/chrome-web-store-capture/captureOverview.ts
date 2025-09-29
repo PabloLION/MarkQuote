@@ -109,9 +109,10 @@ export async function captureOverviewScreenshot(
     }
 
     .markquote-context-menu li.active {
-      background: rgba(26, 115, 232, 0.14);
-      color: #0b2b64;
-      font-weight: 600;
+      background: rgba(251, 191, 36, 0.32);
+      color: #0b1120;
+      font-weight: 700;
+      box-shadow: inset 0 0 0 1px rgba(234, 179, 8, 0.65);
     }
 
     .markquote-callout {
@@ -349,12 +350,15 @@ export async function captureOverviewScreenshot(
         .map((segment) => `<kbd>${segment}</kbd>`)
         .join('<span class="markquote-key-plus">+</span>');
 
-      const macHotkeyMarkup = ["⌥", "C"]
-        .map((segment) => `<kbd>${segment}</kbd>`)
+      const macHotkeyMarkup = [
+        { symbol: "⌥", label: "Option" },
+        { symbol: "C", label: "C" },
+      ]
+        .map((segment) => `<kbd aria-label="${segment.label}">${segment.symbol}</kbd>`)
         .join('<span class="markquote-key-plus">+</span>');
 
       hotkeyCallout.innerHTML = `
-        <div>Windows/Linux: ${hotkeyMarkup} <span class="markquote-hotkey-note">copy instantly</span></div>
+        <div>Windows/Linux: ${hotkeyMarkup}</div>
         <div>macOS: ${macHotkeyMarkup} <span class="markquote-hotkey-note">copy instantly</span></div>
       `;
       hotkeyCallout.style.position = "absolute";
