@@ -374,7 +374,7 @@ export async function captureOverviewScreenshot(
         hotkeyCallout.style.left = `${hotkeyLeft}px`;
         hotkeyCallout.style.visibility = "visible";
 
-        toolbarCallout.style.top = "800px";
+        toolbarCallout.style.top = "848px";
         toolbarCallout.style.left = "996px";
         toolbarCallout.style.visibility = "visible";
       }

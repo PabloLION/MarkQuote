@@ -29,12 +29,12 @@ export async function launchExtensionContext(
   const preferencesPath = path.join(defaultProfileDir, "Preferences");
   const devtoolsPreferences = {
     devtools: {
-      preferences: {
-        currentDockState: '"undocked"',
-        previousDockState: '"undocked"',
-        lastDockState: '"undocked"',
-        uiTheme: '"dark"',
-      },
+      preferences: JSON.stringify({
+        currentDockState: "undocked",
+        previousDockState: "undocked",
+        lastDockState: "undocked",
+        uiTheme: "dark",
+      }),
     },
   };
   await writeFile(preferencesPath, JSON.stringify(devtoolsPreferences));
@@ -42,12 +42,12 @@ export async function launchExtensionContext(
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: !headed,
     colorScheme: options.colorScheme ?? "dark",
+    viewport: null,
     args: [
       `--disable-extensions-except=${distDir}`,
       `--load-extension=${distDir}`,
       `--window-size=${windowSize.width},${windowSize.height}`,
       "--disable-infobars",
-      "--auto-open-devtools-for-tabs",
     ],
     ignoreDefaultArgs: ["--enable-automation"],
   });
