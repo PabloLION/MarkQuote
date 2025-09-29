@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { captureOverviewScreenshot } from "./captureOverview.js";
+import { waitForConfirmation } from "./helpers.js";
 import { assetsDir, repoRoot } from "./paths.js";
 import {
   buildExtension,
@@ -20,8 +21,22 @@ async function main(): Promise<void> {
 
   await withExtensionContext(async ({ context }) => {
     const outputPath = path.join(assetsDir, "screenshot-overview-1280x800.png");
-    await captureOverviewScreenshot(context, hotkey, outputPath, confirm);
-    console.log(`Saved ${path.relative(repoRoot, outputPath)}`);
+    const relativeOutput = path.relative(repoRoot, outputPath);
+    const page = await captureOverviewScreenshot(context, hotkey);
+
+    if (confirm) {
+      await waitForConfirmation(
+        "Press Enter when the overview window looks correct for capture.",
+        true,
+      );
+    }
+
+    console.log("\nManual capture required:");
+    console.log(`  • Capture the browser window and save it as ${relativeOutput}`);
+    console.log("  • Close the Playwright window to finish.\n");
+
+    await page.waitForEvent("close");
+    console.log("Overview window closed. Exiting capture helper.");
   }, getLaunchOptionsForCapture("overview"));
 }
 

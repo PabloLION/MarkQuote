@@ -1,5 +1,4 @@
-import type { BrowserContext } from "playwright";
-import { waitForConfirmation } from "./helpers.js";
+import type { BrowserContext, Page } from "playwright";
 import { getViewportSize } from "./sizing.js";
 
 const OVERVIEW_TARGET_SENTENCE =
@@ -8,9 +7,7 @@ const OVERVIEW_TARGET_SENTENCE =
 export async function captureOverviewScreenshot(
   context: BrowserContext,
   hotkey: string,
-  outputPath: string,
-  confirm: boolean,
-): Promise<void> {
+): Promise<Page> {
   const viewport = getViewportSize("overview");
   const page = await context.newPage();
   await page.setViewportSize(viewport);
@@ -391,7 +388,5 @@ export async function captureOverviewScreenshot(
     },
   );
 
-  await waitForConfirmation("Review overview composition", confirm);
-  await page.screenshot({ path: outputPath });
-  await page.close();
+  return page;
 }

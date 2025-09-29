@@ -4,6 +4,7 @@ import { captureOverviewScreenshot } from "./tools/chrome-web-store-capture/capt
 import { capturePopupScreenshot } from "./tools/chrome-web-store-capture/capturePopup.js";
 import { capturePromoMarquee } from "./tools/chrome-web-store-capture/capturePromoMarquee.js";
 import { capturePromoSmall } from "./tools/chrome-web-store-capture/capturePromoSmall.js";
+import { waitForConfirmation } from "./tools/chrome-web-store-capture/helpers.js";
 import {
   assetsDir,
   buildExtension,
@@ -32,8 +33,22 @@ async function captureAssets(): Promise<void> {
 
   await withExtensionContext(async ({ context }) => {
     const overviewPath = path.join(assetsDir, "screenshot-overview-1280x800.png");
-    await captureOverviewScreenshot(context, hotkey, overviewPath, confirmScreenshots);
-    console.log(`Saved ${path.relative(repoRoot, overviewPath)}`);
+    const relativeOverviewPath = path.relative(repoRoot, overviewPath);
+    const page = await captureOverviewScreenshot(context, hotkey);
+
+    if (confirmScreenshots) {
+      await waitForConfirmation(
+        "Press Enter when the overview window looks correct for capture.",
+        true,
+      );
+    }
+
+    console.log("\nManual capture required:");
+    console.log(`  • Capture the browser window and save it as ${relativeOverviewPath}`);
+    console.log("  • Close the Playwright window to proceed.\n");
+
+    await page.waitForEvent("close");
+    console.log("Overview window closed. Continuing asset capture.");
   }, getLaunchOptionsForCapture("overview"));
 
   await withExtensionContext(async ({ context, extensionId }) => {
