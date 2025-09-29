@@ -23,6 +23,7 @@ describe("formatWithOptions", () => {
           urlPattern: "example.com",
           titleSearch: "Example",
           titleReplace: "Sample",
+          comment: "",
           continueMatching: false,
         },
       ],
@@ -31,6 +32,7 @@ describe("formatWithOptions", () => {
           urlPattern: "example.com",
           urlSearch: "http",
           urlReplace: "https",
+          comment: "",
           continueMatching: false,
         },
       ],
@@ -69,6 +71,7 @@ describe("formatWithOptions", () => {
         urlPattern: "nytimes",
         titleSearch: "Opinion",
         titleReplace: "Column",
+        comment: "",
         continueMatching: false,
       },
     ];
@@ -78,6 +81,7 @@ describe("formatWithOptions", () => {
         urlPattern: "nytimes",
         urlSearch: "http",
         urlReplace: "https",
+        comment: "",
         continueMatching: false,
       },
     ];
@@ -98,12 +102,14 @@ describe("formatWithOptions", () => {
         urlPattern: "",
         titleSearch: "First",
         titleReplace: "Second",
+        comment: "",
         continueMatching: false,
       },
       {
         urlPattern: "",
         titleSearch: "Second",
         titleReplace: "Third",
+        comment: "",
         continueMatching: true,
       },
     ];
@@ -118,12 +124,14 @@ describe("formatWithOptions", () => {
         urlPattern: "",
         urlSearch: "^http://",
         urlReplace: "https://",
+        comment: "",
         continueMatching: true,
       },
       {
         urlPattern: "",
         urlSearch: "example",
         urlReplace: "sample",
+        comment: "",
         continueMatching: false,
       },
     ];

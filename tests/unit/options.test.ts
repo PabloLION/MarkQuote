@@ -7,6 +7,7 @@ import sinonChrome from "sinon-chrome";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_AMAZON_URL_PATTERN,
   DEFAULT_AMAZON_URL_REPLACE,
@@ -16,7 +17,6 @@ import {
   DEFAULT_CHATGPT_UTM_URL_PATTERN,
   DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
   DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
-  DEFAULT_TEMPLATE,
   DEFAULT_WIKI_TITLE_REPLACE,
   DEFAULT_WIKI_TITLE_SEARCH,
   DEFAULT_WIKI_URL_PATTERN,
@@ -110,6 +110,9 @@ describe("Options Page", () => {
     const titleReplaceInput = firstTitleRow.querySelector<HTMLInputElement>(
       'input[data-field="titleReplace"]',
     );
+    const titleCommentInput = firstTitleRow.querySelector<HTMLInputElement>(
+      'input[data-field="comment"]',
+    );
     const titleContinueToggle = firstTitleRow.querySelector<HTMLInputElement>(
       'input[data-field="continueMatching"]',
     );
@@ -117,6 +120,7 @@ describe("Options Page", () => {
     expect(titlePatternInput?.value).toBe(DEFAULT_WIKI_URL_PATTERN);
     expect(titleSearchInput?.value).toBe(DEFAULT_WIKI_TITLE_SEARCH);
     expect(titleReplaceInput?.value).toBe(DEFAULT_WIKI_TITLE_REPLACE);
+    expect(titleCommentInput?.value).toBe("Format wiki link");
     expect(titleContinueToggle?.checked).toBe(true);
 
     const urlRows = Array.from(
@@ -130,16 +134,18 @@ describe("Options Page", () => {
       const pattern = row.querySelector<HTMLInputElement>('input[data-field="urlPattern"]')?.value;
       const search = row.querySelector<HTMLInputElement>('input[data-field="urlSearch"]')?.value;
       const replace = row.querySelector<HTMLInputElement>('input[data-field="urlReplace"]')?.value;
+      const comment = row.querySelector<HTMLInputElement>('input[data-field="comment"]')?.value;
       const breakAfter = row.querySelector<HTMLInputElement>(
         'input[data-field="continueMatching"]',
       )?.checked;
-      return { pattern, search, replace, breakAfter };
+      return { pattern, search, replace, comment, breakAfter };
     }
 
     expect(readRow(withNextRow)).toEqual({
       pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       search: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+      comment: "Remove ChatGPT UTM",
       breakAfter: false,
     });
 
@@ -147,6 +153,7 @@ describe("Options Page", () => {
       pattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       search: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+      comment: "Remove ChatGPT UTM",
       breakAfter: false,
     });
 
@@ -154,12 +161,13 @@ describe("Options Page", () => {
       pattern: DEFAULT_AMAZON_URL_PATTERN,
       search: DEFAULT_AMAZON_URL_SEARCH,
       replace: DEFAULT_AMAZON_URL_REPLACE,
+      comment: "Canonical Amazon URL",
       breakAfter: true,
     });
   });
 
-  it("loads the saved template and renders a preview", () => {
-    const templateField = document.getElementById("format-template") as HTMLTextAreaElement | null;
+  it("renders a preview using the saved template value", () => {
+    const templateField = document.getElementById("format-template");
     const previewElement = document.getElementById("format-preview");
     const titleSamplePresetSelect = document.getElementById(
       "title-sample-preset",
@@ -173,7 +181,7 @@ describe("Options Page", () => {
     const sampleOutputUrl = document.getElementById("sample-output-url");
     const titleClearStatus = document.getElementById("title-clear-status");
 
-    expect(templateField?.value).toContain("{{TITLE}}");
+    expect(templateField).toBeNull();
     expect(previewElement?.textContent).toContain("Markdown - Wikipedia");
     expect(previewElement?.textContent).toContain("https://www.amazon.com/dp/B01KBIJ53I");
     expect(titleSamplePresetSelect?.value).toBe("wikipedia");
@@ -352,18 +360,20 @@ describe("Options Page", () => {
           urlPattern: string;
           titleSearch: string;
           titleReplace: string;
+          comment: string;
           continueMatching: boolean;
         }>;
         urlRules: Array<{
           urlPattern: string;
           urlSearch: string;
           urlReplace: string;
+          comment: string;
           continueMatching: boolean;
         }>;
       },
     ];
 
-    expect(payload.options.version).toBe(1);
+    expect(payload.options.version).toBe(CURRENT_OPTIONS_VERSION);
     expect(payload.options.titleRules).toHaveLength(2);
 
     const [defaultTitleRule, customTitleRule] = payload.options.titleRules;
@@ -372,6 +382,7 @@ describe("Options Page", () => {
       urlPattern: DEFAULT_WIKI_URL_PATTERN,
       titleSearch: DEFAULT_WIKI_TITLE_SEARCH,
       titleReplace: DEFAULT_WIKI_TITLE_REPLACE,
+      comment: "Format wiki link",
       continueMatching: false,
     });
 
@@ -379,6 +390,7 @@ describe("Options Page", () => {
       urlPattern: "example.com",
       titleSearch: "Example",
       titleReplace: "Sample",
+      comment: "",
       continueMatching: true,
     });
 
@@ -392,6 +404,7 @@ describe("Options Page", () => {
       urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       urlSearch: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
       urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+      comment: "Remove ChatGPT UTM",
       continueMatching: true,
     });
 
@@ -399,6 +412,7 @@ describe("Options Page", () => {
       urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
       urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+      comment: "Remove ChatGPT UTM",
       continueMatching: true,
     });
 
@@ -406,6 +420,7 @@ describe("Options Page", () => {
       urlPattern: DEFAULT_AMAZON_URL_PATTERN,
       urlSearch: DEFAULT_AMAZON_URL_SEARCH,
       urlReplace: DEFAULT_AMAZON_URL_REPLACE,
+      comment: "Canonical Amazon URL",
       continueMatching: false,
     });
 
@@ -413,6 +428,7 @@ describe("Options Page", () => {
       urlPattern: "example.com",
       urlSearch: "http",
       urlReplace: "https",
+      comment: "",
       continueMatching: true,
     });
 
@@ -598,15 +614,8 @@ describe("Options Page", () => {
     expect(status.textContent).toMatch(/invalid regex/i);
   });
 
-  it("restores the default template when requested", () => {
-    const templateField = document.getElementById("format-template") as HTMLTextAreaElement;
-    const restoreButton = document.getElementById("restore-template") as HTMLButtonElement;
-
-    templateField.value = "Custom template";
-    templateField.dispatchEvent(new Event("input", { bubbles: true }));
-
-    restoreButton.click();
-
-    expect(templateField.value).toBe(DEFAULT_TEMPLATE);
+  it("does not render the template editor controls", () => {
+    expect(document.getElementById("format-template")).toBeNull();
+    expect(document.getElementById("restore-template")).toBeNull();
   });
 });

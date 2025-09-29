@@ -39,6 +39,7 @@ test("options UI edits update popup preview", async () => {
         urlPattern: ".*",
         titleSearch: "(.+)",
         titleReplace: "Original:$1",
+        comment: "",
         continueMatching: false,
       },
     ],
@@ -47,6 +48,7 @@ test("options UI edits update popup preview", async () => {
         urlPattern: ".*",
         urlSearch: "^(.+)$",
         urlReplace: "$1?initial=true",
+        comment: "",
         continueMatching: false,
       },
     ],
@@ -110,6 +112,7 @@ test("chained URL rules respect break versus continue", async () => {
       urlPattern: "^https?://",
       urlSearch: "$",
       urlReplace: "&should-not-appear=true",
+      comment: "",
       continueMatching: true,
     },
   ];

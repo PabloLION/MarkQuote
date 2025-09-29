@@ -45,6 +45,7 @@ function sanitizeTitleRule(rule: TitleRule): TitleRule {
     urlPattern: rule.urlPattern.trim(),
     titleSearch: rule.titleSearch.trim(),
     titleReplace: rule.titleReplace,
+    comment: rule.comment.trim(),
     continueMatching: Boolean(rule.continueMatching),
   };
 }
@@ -54,6 +55,7 @@ function sanitizeUrlRule(rule: UrlRule): UrlRule {
     urlPattern: rule.urlPattern.trim(),
     urlSearch: rule.urlSearch.trim(),
     urlReplace: rule.urlReplace,
+    comment: rule.comment.trim(),
     continueMatching: Boolean(rule.continueMatching),
   };
 }
@@ -137,6 +139,7 @@ export function initializeOptions(): () => void {
         { key: "urlPattern", placeholder: "URL pattern" },
         { key: "titleSearch", placeholder: "Title search" },
         { key: "titleReplace", placeholder: "Title replace", trimLeading: false },
+        { key: "comment", placeholder: "Comment (optional)", trimLeading: false },
       ] satisfies RuleFieldDescriptor<TitleRule>[],
       fieldKeys: {
         pattern: "urlPattern",
@@ -147,6 +150,7 @@ export function initializeOptions(): () => void {
         urlPattern: "",
         titleSearch: "",
         titleReplace: "",
+        comment: "",
         continueMatching: false,
       }),
       sanitize: sanitizeTitleRule,
@@ -176,6 +180,7 @@ export function initializeOptions(): () => void {
         { key: "urlPattern", placeholder: "URL pattern" },
         { key: "urlSearch", placeholder: "URL search" },
         { key: "urlReplace", placeholder: "URL replace", trimLeading: false },
+        { key: "comment", placeholder: "Comment (optional)", trimLeading: false },
       ] satisfies RuleFieldDescriptor<UrlRule>[],
       fieldKeys: {
         pattern: "urlPattern",
@@ -186,6 +191,7 @@ export function initializeOptions(): () => void {
         urlPattern: "",
         urlSearch: "",
         urlReplace: "",
+        comment: "",
         continueMatching: false,
       }),
       sanitize: sanitizeUrlRule,
