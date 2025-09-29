@@ -32,7 +32,7 @@ export const CAPTURE_SIZING: Record<CaptureKind, CaptureSizingConfig> = {
     frame: "viewport",
   },
   popup: {
-    viewport: { width: 380, height: 540 },
+    viewport: { width: 320, height: 520 },
     frame: "viewport",
   },
 };
