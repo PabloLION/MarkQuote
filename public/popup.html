@@ -43,6 +43,10 @@
       }
 
       button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         border-radius: 999px;
         border: 1px solid var(--border-color);
         padding: 8px 14px;
@@ -94,12 +98,15 @@
         justify-content: center;
         min-width: 18px;
         padding: 0 6px;
-        margin-left: 6px;
         border-radius: 12px;
         background: #d93025;
         color: #fff;
         font-size: 0.7rem;
         font-weight: 700;
+      }
+
+      .badge[hidden] {
+        display: none;
       }
 
       #error-container {
