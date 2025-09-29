@@ -9,7 +9,7 @@ export async function captureOverviewScreenshot(
   context: BrowserContext,
   hotkey: string,
   outputPath: string,
-  confirm: boolean
+  confirm: boolean,
 ): Promise<void> {
   const viewport = getViewportSize("overview");
   const page = await context.newPage();
@@ -18,9 +18,7 @@ export async function captureOverviewScreenshot(
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page
-    .waitForLoadState("networkidle", { timeout: 5_000 })
-    .catch(() => {});
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
   await page.waitForTimeout(500);
 
   await page
@@ -28,15 +26,11 @@ export async function captureOverviewScreenshot(
       timeout: 5_000,
     })
     .catch(() => {
-      console.warn(
-        "[MarkQuote overview capture] Unable to find Wikipedia color scheme toggle."
-      );
+      console.warn("[MarkQuote overview capture] Unable to find Wikipedia color scheme toggle.");
     });
 
   await page.evaluate(() => {
-    const colorToggle = document.querySelector<HTMLButtonElement>(
-      "#vector-appearance-toggle"
-    );
+    const colorToggle = document.querySelector<HTMLButtonElement>("#vector-appearance-toggle");
 
     if (colorToggle && colorToggle.getAttribute("aria-expanded") !== "true") {
       colorToggle.click();
@@ -60,7 +54,7 @@ export async function captureOverviewScreenshot(
 
     if (!autoRadio) {
       console.warn(
-        "[MarkQuote overview capture] Unable to find Wikipedia color scheme radio button." // DO NOT REMOVE: essential for debugging color scheme automation.
+        "[MarkQuote overview capture] Unable to find Wikipedia color scheme radio button.", // DO NOT REMOVE: essential for debugging color scheme automation.
       );
     }
 
@@ -71,19 +65,19 @@ export async function captureOverviewScreenshot(
       switched = autoRadio.checked;
     } else {
       console.warn(
-        "[MarkQuote overview capture] Unable to find Wikipedia color scheme radio button."
+        "[MarkQuote overview capture] Unable to find Wikipedia color scheme radio button.",
       );
     }
 
     if (!switched) {
       console.warn(
-        "[MarkQuote overview capture] Falling back to forcing automatic color scheme." // DO NOT REMOVE: essential for debugging color scheme automation.
+        "[MarkQuote overview capture] Falling back to forcing automatic color scheme.", // DO NOT REMOVE: essential for debugging color scheme automation.
       );
       document.documentElement.setAttribute("data-mw-color-scheme", "auto");
     }
 
     const autoLabel = document.querySelector<HTMLElement>(
-      "label[for='skin-theme-clientpref-toggle-auto']"
+      "label[for='skin-theme-clientpref-toggle-auto']",
     );
     autoLabel?.scrollIntoView({ block: "nearest" });
   });
@@ -162,18 +156,20 @@ export async function captureOverviewScreenshot(
 
     .markquote-copy-heading {
       position: absolute;
-      top: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 28px;
+      top: 600px;
+      left: 96px;
+      padding: 18px 36px;
       border-radius: 999px;
-      background: rgba(251, 191, 36, 0.9);
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.95), rgba(253, 224, 71, 0.95));
+      border: 3px solid rgba(234, 179, 8, 0.9);
       color: #0b1120;
-      font-size: 18px;
-      letter-spacing: 0.08em;
-      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: 0.14em;
+      font-weight: 800;
       text-transform: uppercase;
-      box-shadow: 0 18px 45px rgba(251, 191, 36, 0.35);
+      text-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+      box-shadow: 0 26px 60px rgba(251, 191, 36, 0.45);
+      white-space: nowrap;
     }
 
     .markquote-toolbar-icon {
@@ -241,7 +237,7 @@ export async function captureOverviewScreenshot(
   await page.evaluate(
     ({ hotkey, targetSentence }) => {
       const autoToggle = document.querySelector<HTMLInputElement>(
-        'input[name="mw-color-scheme"][value="auto"]'
+        'input[name="mw-color-scheme"][value="auto"]',
       );
       try {
         if (autoToggle && !autoToggle.checked) {
@@ -250,23 +246,15 @@ export async function captureOverviewScreenshot(
           document.documentElement.setAttribute("data-mw-color-scheme", "auto");
         }
       } catch (error) {
-        console.warn(
-          "Unable to switch Wikipedia color scheme to automatic",
-          error
-        );
+        console.warn("Unable to switch Wikipedia color scheme to automatic", error);
       }
 
-      const paragraphs = Array.from(
-        document.querySelectorAll<HTMLElement>(".mw-parser-output p")
-      );
+      const paragraphs = Array.from(document.querySelectorAll<HTMLElement>(".mw-parser-output p"));
 
       let selectionRange: Range | null = null;
 
       for (const paragraph of paragraphs) {
-        const walker = document.createTreeWalker(
-          paragraph,
-          NodeFilter.SHOW_TEXT
-        );
+        const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT);
         const textNodes: Array<{ node: Text; start: number; end: number }> = [];
         let aggregate = "";
 
@@ -285,16 +273,12 @@ export async function captureOverviewScreenshot(
 
         const matchEnd = matchIndex + targetSentence.length;
         const startEntry = textNodes.find(
-          (entry) => matchIndex >= entry.start && matchIndex < entry.end
+          (entry) => matchIndex >= entry.start && matchIndex < entry.end,
         );
-        const endEntry = textNodes.find(
-          (entry) => matchEnd > entry.start && matchEnd <= entry.end
-        );
+        const endEntry = textNodes.find((entry) => matchEnd > entry.start && matchEnd <= entry.end);
 
         if (!startEntry || !endEntry) {
-          console.warn(
-            "[MarkQuote overview capture] Unable to map highlight range to text nodes."
-          );
+          console.warn("[MarkQuote overview capture] Unable to map highlight range to text nodes.");
           continue;
         }
 
@@ -318,12 +302,8 @@ export async function captureOverviewScreenshot(
         break;
       }
 
-      if (
-        document.body.style.position === "" ||
-        document.body.style.position === "static"
-      ) {
-        document.body.dataset.markquoteOriginalPosition =
-          document.body.style.position;
+      if (document.body.style.position === "" || document.body.style.position === "static") {
+        document.body.dataset.markquoteOriginalPosition = document.body.style.position;
         document.body.style.position = "relative";
       }
 
@@ -389,9 +369,7 @@ export async function captureOverviewScreenshot(
       document.body.appendChild(root);
 
       if (!selectionRange) {
-        console.error(
-          "[MarkQuote overview capture] Unable to find target sentence to highlight."
-        );
+        console.error("[MarkQuote overview capture] Unable to find target sentence to highlight.");
       } else {
         const selection = window.getSelection();
         if (selection) {
@@ -406,10 +384,7 @@ export async function captureOverviewScreenshot(
         const scrollY = window.scrollY;
 
         const menuTop =
-          scrollY +
-          selectionRect.top +
-          selectionRect.height / 2 -
-          menuRect.height / 2;
+          scrollY + selectionRect.top + selectionRect.height / 2 - menuRect.height / 2;
         const menuLeft = scrollX + selectionRect.right + 40;
         contextMenu.style.top = `${Math.max(menuTop, scrollY + 24)}px`;
         contextMenu.style.left = `${menuLeft}px`;
@@ -423,31 +398,20 @@ export async function captureOverviewScreenshot(
 
         const hotkeyTop = scrollY + selectionRect.top - hotkeyRect.height - 16;
         const hotkeyLeft =
-          scrollX +
-          selectionRect.left +
-          selectionRect.width / 2 -
-          hotkeyRect.width / 2;
+          scrollX + selectionRect.left + selectionRect.width / 2 - hotkeyRect.width / 2;
         hotkeyCallout.style.top = `${Math.max(hotkeyTop, scrollY + 24)}px`;
         hotkeyCallout.style.left = `${hotkeyLeft}px`;
         hotkeyCallout.style.visibility = "visible";
 
-        const toolbarRect = toolbarIcon.getBoundingClientRect();
-        const toolbarCalloutRect = toolbarCallout.getBoundingClientRect();
-        const toolbarTop = scrollY + toolbarRect.bottom + 12;
-        const toolbarLeft =
-          scrollX +
-          toolbarRect.left +
-          toolbarRect.width / 2 -
-          toolbarCalloutRect.width / 2;
-        toolbarCallout.style.top = `${toolbarTop}px`;
-        toolbarCallout.style.left = `${toolbarLeft}px`;
+        toolbarCallout.style.top = "717px";
+        toolbarCallout.style.left = "996px";
         toolbarCallout.style.visibility = "visible";
       }
     },
     {
       hotkey,
       targetSentence: OVERVIEW_TARGET_SENTENCE,
-    }
+    },
   );
 
   await waitForConfirmation("Review overview composition", confirm);
