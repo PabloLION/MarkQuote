@@ -26,7 +26,7 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
 - If packaging manually, zip the `dist/` folder and place the archive under `.dev/releases/`.
 
 ## 4. Refresh Store Assets
-- `pnpm tools:chrome-web-store-capture` (use `--confirm` to review each capture). The script opens the
+- `pnpm tools:chrome-assets` (use `--confirm` to review each capture). The script opens the
   installed extension in Chromium, captures the popup/options flow, and updates the promo tiles under
   `docs/storefront/chrome-web-store/assets/`.
 

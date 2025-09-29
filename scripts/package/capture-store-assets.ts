@@ -1,10 +1,10 @@
 import path from "node:path";
-import { captureOptionsScreenshot } from "./tools/chrome-web-store-capture/captureOptions.js";
-import { captureOverviewScreenshot } from "./tools/chrome-web-store-capture/captureOverview.js";
-import { capturePopupScreenshot } from "./tools/chrome-web-store-capture/capturePopup.js";
-import { capturePromoMarquee } from "./tools/chrome-web-store-capture/capturePromoMarquee.js";
-import { capturePromoSmall } from "./tools/chrome-web-store-capture/capturePromoSmall.js";
-import { waitForConfirmation } from "./tools/chrome-web-store-capture/helpers.js";
+import { captureOptionsScreenshot } from "./tools/chrome-assets/captureOptions.js";
+import { captureOverviewScreenshot } from "./tools/chrome-assets/captureOverview.js";
+import { capturePopupScreenshot } from "./tools/chrome-assets/capturePopup.js";
+import { capturePromoMarquee } from "./tools/chrome-assets/capturePromoMarquee.js";
+import { capturePromoSmall } from "./tools/chrome-assets/capturePromoSmall.js";
+import { waitForConfirmation } from "./tools/chrome-assets/helpers.js";
 import {
   assetsDir,
   buildExtension,
@@ -13,8 +13,8 @@ import {
   loadIconBuffer,
   repoRoot,
   withExtensionContext,
-} from "./tools/chrome-web-store-capture/runner.js";
-import { getLaunchOptionsForCapture } from "./tools/chrome-web-store-capture/sizing.js";
+} from "./tools/chrome-assets/runner.js";
+import { getLaunchOptionsForCapture } from "./tools/chrome-assets/sizing.js";
 
 const confirmScreenshots = process.argv.includes("--confirm");
 
