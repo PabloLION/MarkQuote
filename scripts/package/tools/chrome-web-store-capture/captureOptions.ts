@@ -31,10 +31,10 @@ export async function captureOptionsScreenshot(
   await page.evaluate(() => window.scrollTo(0, 0));
 
   await waitForConfirmation("Review options page", confirm);
-  const clipHeight = Math.min(800, Math.max(0, viewportHeight - 100));
+  const clipHeight = Math.min(800, Math.max(0, viewportHeight - 50));
   await page.screenshot({
     path: outputPath,
-    clip: { x: 0, y: 100, width: viewportWidth, height: clipHeight },
+    clip: { x: 0, y: 50, width: viewportWidth, height: clipHeight },
   });
   await page.close();
 }
