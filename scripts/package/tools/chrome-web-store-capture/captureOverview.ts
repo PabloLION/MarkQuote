@@ -173,29 +173,6 @@ export async function captureOverviewScreenshot(
       white-space: nowrap;
     }
 
-    .markquote-toolbar-icon {
-      position: absolute;
-      top: 24px;
-      right: 40px;
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(26, 115, 232, 0.9), rgba(63, 81, 181, 0.95));
-      border: 2px solid rgba(26, 115, 232, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      box-shadow: 0 18px 45px rgba(26, 115, 232, 0.35);
-    }
-
-    .markquote-toolbar-icon::before {
-      content: 'M';
-      font-size: 18px;
-    }
-
     .markquote-callout.toolbar::after {
       border-bottom-color: rgba(251, 191, 36, 0.75);
       left: 50%;
@@ -329,10 +306,6 @@ export async function captureOverviewScreenshot(
       contextCallout.style.position = "absolute";
       contextCallout.style.visibility = "hidden";
       root.appendChild(contextCallout);
-
-      const toolbarIcon = document.createElement("div");
-      toolbarIcon.className = "markquote-toolbar-icon";
-      root.appendChild(toolbarIcon);
 
       const toolbarCallout = document.createElement("div");
       toolbarCallout.className = "markquote-callout toolbar";
