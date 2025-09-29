@@ -1,16 +1,16 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { capturePopupScreenshot } from "./capture-popup.js";
-import { capturePromoMarquee } from "./capture-promo-marquee.js";
-import { assetsDir, repoRoot } from "./paths.js";
+import { capturePopupScreenshot } from "./helper/capture-popup.js";
+import { capturePromoMarquee } from "./helper/capture-promo-marquee.js";
+import { assetsDir, repoRoot } from "./helper/paths.js";
 import {
   buildExtension,
   ensureAssetsDir,
   getDefaultHotkey,
   loadIconBuffer,
   withExtensionContext,
-} from "./runner.js";
-import { getLaunchOptionsForCapture } from "./sizing.js";
+} from "./helper/runner.js";
+import { getLaunchOptionsForCapture } from "./helper/sizing.js";
 
 const confirm = process.argv.includes("--confirm");
 

@@ -1,15 +1,15 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { captureOverviewScreenshot } from "./capture-overview.js";
-import { waitForConfirmation } from "./helpers.js";
-import { assetsDir, repoRoot } from "./paths.js";
+import { captureOverviewScreenshot } from "./helper/capture-overview.js";
+import { waitForConfirmation } from "./helper/helpers.js";
+import { assetsDir, repoRoot } from "./helper/paths.js";
 import {
   buildExtension,
   ensureAssetsDir,
   getDefaultHotkey,
   withExtensionContext,
-} from "./runner.js";
-import { getLaunchOptionsForCapture } from "./sizing.js";
+} from "./helper/runner.js";
+import { getLaunchOptionsForCapture } from "./helper/sizing.js";
 
 const confirm = process.argv.includes("--confirm");
 
