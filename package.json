@@ -1,7 +1,7 @@
 {
   "name": "markquote",
   "version": "1.0.0",
-  "description": "Turn webpage selections into Markdown quotes you can paste anywhere.",
+  "description": "Copy webpage selections as Markdown quotes with reference source link.",
   "private": true,
   "type": "module",
   "license": "ISC",

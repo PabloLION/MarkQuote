@@ -17,7 +17,7 @@ interface CaptureSizingConfig {
 export const CAPTURE_SIZING: Record<CaptureKind, CaptureSizingConfig> = {
   options: {
     viewport: { width: 1280, height: 800 },
-    frame: "window",
+    frame: "viewport",
   },
   overview: {
     viewport: { width: 1280, height: 800 },

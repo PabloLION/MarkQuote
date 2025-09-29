@@ -1,5 +1,4 @@
 import type { BrowserContext, Page } from "playwright";
-import { getViewportSize } from "./sizing.js";
 
 const OVERVIEW_TARGET_SENTENCE =
   "This was addressed in 2014 when long-standing Markdown contributors released CommonMark, an unambiguous specification and test suite for Markdown.";
@@ -8,9 +7,7 @@ export async function captureOverviewScreenshot(
   context: BrowserContext,
   hotkey: string,
 ): Promise<Page> {
-  const viewport = getViewportSize("overview");
   const page = await context.newPage();
-  await page.setViewportSize(viewport);
   await page.goto("https://en.wikipedia.org/wiki/Markdown", {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
