@@ -22,17 +22,19 @@ export async function captureOptionsScreenshot(
     };
   });
 
-  const viewportWidth = Math.min(Math.max(contentBounds.width, viewport.width), 1600);
-  const viewportHeight = Math.min(
-    Math.max(viewport.height, Math.min(contentBounds.height, 1600)),
-    2400,
-  );
+  const contentHeight = contentBounds.height;
+  const viewportWidth = viewport.width;
+  const viewportHeight = Math.min(Math.max(viewport.height, Math.min(contentHeight, 1600)), 2400);
 
   await page.setViewportSize({ width: viewportWidth, height: viewportHeight });
   await page.waitForTimeout(150);
   await page.evaluate(() => window.scrollTo(0, 0));
 
   await waitForConfirmation("Review options page", confirm);
-  await page.screenshot({ path: outputPath, fullPage: true });
+  const clipHeight = Math.min(800, Math.max(0, viewportHeight - 100));
+  await page.screenshot({
+    path: outputPath,
+    clip: { x: 0, y: 100, width: viewportWidth, height: clipHeight },
+  });
   await page.close();
 }
