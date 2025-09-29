@@ -33,6 +33,14 @@ let e2eSelectionStub:
   | undefined;
 
 const pendingCopySources = new Map<number, CopySource>();
+let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+
+function clearHotkeyPopupFallback(): void {
+  if (hotkeyPopupFallbackTimer !== undefined) {
+    clearTimeout(hotkeyPopupFallbackTimer);
+    hotkeyPopupFallbackTimer = undefined;
+  }
+}
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
@@ -92,14 +100,64 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
-  if (command === "copy-as-markdown-quote") {
-    chrome.action.openPopup().catch((error) => {
-      void recordError("open-popup-for-hotkey", error);
+  if (command !== "copy-as-markdown-quote") {
+    return;
+  }
+
+  const handleHotkey = async () => {
+    clearHotkeyPopupFallback();
+
+    let isPinned = true;
+    try {
+      const settings = await chrome.action.getUserSettings();
+      isPinned = Boolean(settings?.isOnToolbar);
+      console.info("[MarkQuote] Hotkey: action settings", settings);
+    } catch (error) {
+      console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
+      await recordError("hotkey-open-popup", error);
       if (tab) {
         triggerCopy(tab, "hotkey");
       }
-    });
-  }
+      return;
+    }
+
+    if (!isPinned) {
+      await recordError(
+        "hotkey-open-popup",
+        "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
+      );
+      if (tab) {
+        triggerCopy(tab, "hotkey");
+      }
+      return;
+    }
+
+    if (tab?.id) {
+      hotkeyPopupFallbackTimer = setTimeout(() => {
+        hotkeyPopupFallbackTimer = undefined;
+        void recordError(
+          "hotkey-popup-timeout",
+          "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
+        );
+        triggerCopy(tab, "hotkey");
+      }, 1000);
+    }
+
+    chrome.action
+      .openPopup({ windowId: tab?.windowId })
+      .then(() => {
+        console.info("[MarkQuote] Hotkey: openPopup resolved");
+      })
+      .catch((error) => {
+        clearHotkeyPopupFallback();
+        void recordError("open-popup-for-hotkey", error);
+        if (tab) {
+          triggerCopy(tab, "hotkey");
+        }
+      });
+  };
+
+  void handleHotkey();
 });
 
 async function runCopyPipeline(
@@ -301,6 +359,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse?.({ ok: true });
       return true;
     }
+
+    clearHotkeyPopupFallback();
 
     void chrome.tabs
       .query({ lastFocusedWindow: true })
