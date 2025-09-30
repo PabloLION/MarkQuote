@@ -144,10 +144,8 @@ export async function openExtensionPage(
 
 export async function undockDevtools(page: Page): Promise<void> {
   try {
-    const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
-    await page.waitForTimeout(400);
-    await page.keyboard.press(shortcut);
-    await page.waitForTimeout(200);
+    const session = await page.context().newCDPSession(page);
+    await session.send("Page.openDevToolsWindow" as any);
   } catch (error) {
     console.warn("Unable to toggle DevTools window", error);
   }

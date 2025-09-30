@@ -1,4 +1,5 @@
 import type { BrowserContext, Page } from "playwright";
+import { undockDevtools } from "./extension.js";
 
 const OVERVIEW_TARGET_SENTENCE =
   "This was addressed in 2014 when long-standing Markdown contributors released CommonMark, an unambiguous specification and test suite for Markdown.";
@@ -14,6 +15,7 @@ export async function captureOverviewScreenshot(
   });
   await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
   await page.waitForTimeout(500);
+  await undockDevtools(page).catch(() => {});
 
   await page
     .waitForSelector('input[name="mw-color-scheme"][value="auto"]', {
