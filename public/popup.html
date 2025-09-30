@@ -3,33 +3,14 @@
   <head>
     <title>MarkQuote</title>
     <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/shared.css" />
     <style>
       :root {
         --popup-width: 320px;
-        --surface-background: #ffffff;
-        --surface-foreground: #1e1e1e;
-        --panel-background: #f4f4f5;
-        --border-color: #d4d4d8;
-        --accent-color: #2563eb;
-        --accent-foreground: #ffffff;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --surface-background: #111827;
-          --surface-foreground: #e5e7eb;
-          --panel-background: #1f2937;
-          --border-color: #374151;
-          --accent-color: #3b82f6;
-          --accent-foreground: #0b1120;
-        }
       }
 
       body {
-        margin: 0;
         padding: 16px;
-        background: var(--surface-background);
-        color: var(--surface-foreground);
         width: var(--popup-width);
         box-sizing: border-box;
         display: grid;
@@ -47,24 +28,22 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        border-radius: 999px;
-        border: 1px solid var(--border-color);
-        padding: 8px 14px;
-        font-weight: 600;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-        transition: background-color 140ms ease, border-color 140ms ease;
         width: 100%;
+        padding: 8px 14px;
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: inherit;
+        filter: none;
       }
 
       button.primary {
-        background: var(--accent-color);
+        background-color: var(--accent-color);
         border-color: var(--accent-color);
         color: var(--accent-foreground);
       }
 
       button:hover {
+        filter: none;
         background-color: rgba(37, 99, 235, 0.1);
         border-color: var(--accent-color);
       }
