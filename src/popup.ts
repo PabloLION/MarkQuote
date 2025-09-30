@@ -15,6 +15,20 @@ type LoggedExtensionError = {
 };
 
 const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
+const DEFAULT_STATUS_MESSAGE =
+  "Select text on a page, then trigger MarkQuote to copy it as Markdown.";
+
+type PopupDevPreviewApi = {
+  showDefault: () => void;
+  showSuccess: (text: string) => void;
+  showProtected: () => void;
+};
+
+declare global {
+  interface Window {
+    __MARKQUOTE_POPUP_DEV__?: PopupDevPreviewApi;
+  }
+}
 
 export function initializePopup(): () => void {
   const messageDiv = document.getElementById("message");
@@ -63,19 +77,51 @@ export function initializePopup(): () => void {
     return success;
   };
 
+  const setMessage = (
+    text: string,
+    options: { label?: string; variant?: "default" | "success" | "warning" } = {},
+  ) => {
+    if (!messageDiv) {
+      return;
+    }
+
+    if (text.trim().length === 0) {
+      messageDiv.textContent = "";
+      messageDiv.setAttribute("hidden", "true");
+    } else {
+      messageDiv.textContent = text;
+      messageDiv.removeAttribute("hidden");
+    }
+
+    if (options.label) {
+      messageDiv.dataset.label = options.label;
+    } else {
+      delete messageDiv.dataset.label;
+    }
+
+    const variant = options.variant ?? "default";
+    if (variant === "default") {
+      delete messageDiv.dataset.variant;
+    } else {
+      messageDiv.dataset.variant = variant;
+    }
+  };
+
+  setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
+
   const messageListener = (request: RuntimeMessage) => {
     if (request.type === "copied-text-preview") {
       if (previewDiv) {
         previewDiv.textContent = request.text;
       }
 
-      if (messageDiv) {
-        messageDiv.textContent = "Copied!";
-      }
+      setMessage("Markdown copied to clipboard.", { label: "Copied", variant: "success" });
 
       void copyToClipboard(request.text).then((success) => {
-        if (!success && messageDiv) {
-          messageDiv.textContent = "Unable to copy automatically. Text is ready below.";
+        if (!success) {
+          setMessage("Unable to copy automatically. Text is ready below.", {
+            variant: "warning",
+          });
         }
       });
     } else if (request.type === "copy-protected") {
@@ -83,10 +129,13 @@ export function initializePopup(): () => void {
         previewDiv.textContent = "";
       }
 
-      if (messageDiv) {
-        messageDiv.textContent =
-          "This page is protected, so MarkQuote can't access the selection. Try another tab.";
-      }
+      setMessage(
+        "This page is protected, so MarkQuote can't access the selection. Try another tab.",
+        {
+          label: "Protected",
+          variant: "warning",
+        },
+      );
     }
   };
 
@@ -206,6 +255,45 @@ export function initializePopup(): () => void {
 
   refreshErrorLog();
 
+  let devApi: PopupDevPreviewApi | undefined;
+
+  const isDevEnvironment = Boolean((import.meta as any)?.env?.DEV);
+
+  if (isDevEnvironment) {
+    const globalWithDev = window as typeof window & {
+      __MARKQUOTE_POPUP_DEV__?: PopupDevPreviewApi;
+    };
+
+    devApi = {
+      showDefault() {
+        if (previewDiv) {
+          previewDiv.textContent = "";
+        }
+        setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
+      },
+      showSuccess(text: string) {
+        if (previewDiv) {
+          previewDiv.textContent = text;
+        }
+        setMessage("Markdown copied to clipboard.", { label: "Copied", variant: "success" });
+      },
+      showProtected() {
+        if (previewDiv) {
+          previewDiv.textContent = "";
+        }
+        setMessage(
+          "This page is protected, so MarkQuote can't access the selection. Try another tab.",
+          {
+            label: "Protected",
+            variant: "warning",
+          },
+        );
+      },
+    };
+
+    globalWithDev.__MARKQUOTE_POPUP_DEV__ = devApi;
+  }
+
   return () => {
     chrome.runtime.onMessage.removeListener(messageListener);
     optionsButton?.removeEventListener("click", openOptions);
@@ -214,5 +302,15 @@ export function initializePopup(): () => void {
     inlineModeButton?.removeEventListener("click", openInlineModeIssue);
     reportErrorsButton?.removeEventListener("click", handleReportErrors);
     dismissErrorsButton?.removeEventListener("click", handleDismissErrors);
+
+    if (devApi && isDevEnvironment) {
+      const globalWithDev = window as typeof window & {
+        __MARKQUOTE_POPUP_DEV__?: PopupDevPreviewApi;
+      };
+
+      if (globalWithDev.__MARKQUOTE_POPUP_DEV__ === devApi) {
+        delete globalWithDev.__MARKQUOTE_POPUP_DEV__;
+      }
+    }
   };
 }

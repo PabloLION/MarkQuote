@@ -74,8 +74,55 @@
         filter: brightness(1.05);
       }
 
-      #message {
+      .status-message {
+        position: relative;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px;
         font-weight: 600;
+        background: var(--surface-background);
+        line-height: 1.4;
+      }
+
+      .status-message[hidden] {
+        display: none;
+      }
+
+      .status-message[data-variant="success"] {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+      }
+
+      .status-message[data-variant="warning"] {
+        border-color: rgba(217, 119, 6, 0.55);
+        color: #b45309;
+        background: rgba(253, 230, 138, 0.12);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .status-message[data-variant="warning"] {
+          border-color: rgba(251, 191, 36, 0.65);
+          color: #facc15;
+          background: rgba(234, 179, 8, 0.12);
+        }
+      }
+
+      .status-message[data-label]::before {
+        content: attr(data-label);
+        position: absolute;
+        top: -0.7em;
+        left: 14px;
+        padding: 0 6px;
+        font-size: 0.68rem;
+        letter-spacing: 0.02em;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        background: var(--surface-background);
+        text-transform: uppercase;
+      }
+
+      .status-message[data-variant="success"][data-label]::before {
+        color: var(--accent-color);
       }
 
       #preview {
@@ -172,7 +219,7 @@
       </div>
       <ul id="error-list"></ul>
     </div>
-    <div id="message"></div>
+    <div id="message" class="status-message" hidden></div>
     <pre id="preview"></pre>
     <script src="popup.js"></script>
   </body>

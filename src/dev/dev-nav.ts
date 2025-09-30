@@ -1,4 +1,4 @@
-type PageKey = "home" | "options" | "popup";
+type PageKey = "home" | "options" | "popup" | "popup-explorer";
 
 type NavLink = {
   key: PageKey;
@@ -10,6 +10,7 @@ const links: NavLink[] = [
   { key: "home", label: "Overview", href: "/index.html" },
   { key: "options", label: "Options Page", href: "/options.html" },
   { key: "popup", label: "Popup", href: "/popup.html" },
+  { key: "popup-explorer", label: "Popup Explorer", href: "/dev/popup.html" },
 ];
 
 export function mountDevNav(active: PageKey) {
