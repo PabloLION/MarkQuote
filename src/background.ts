@@ -92,6 +92,15 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
     return;
   }
 
+  const targetUrl = tab.url ?? tab.pendingUrl ?? null;
+  if (isSystemUrl(targetUrl)) {
+    console.info("[MarkQuote] Skipping copy for protected page", {
+      source,
+      url: targetUrl,
+    });
+    return;
+  }
+
   pendingCopySources.set(tab.id, source);
 
   chrome.scripting.executeScript(
