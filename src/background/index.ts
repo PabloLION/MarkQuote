@@ -1,26 +1,26 @@
-import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./background/constants.js";
-import { registerContextMenus } from "./background/context-menus.js";
-import {
-  getLastFormattedPreview,
-  getLastPreviewError,
-  runCopyPipeline,
-  setLastPreviewError,
-} from "./background/copy-pipeline.js";
-import { consumeSelectionStub, handleE2eMessage } from "./background/e2e.js";
-import {
-  clearStoredErrors,
-  getStoredErrors,
-  initializeBadgeFromStorage,
-  recordError,
-} from "./background/errors.js";
-import { isUrlProtected } from "./background/protected-urls.js";
-import type { CopySource } from "./background/types.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_OPTIONS,
   normalizeStoredOptions,
   type OptionsPayload,
-} from "./options-schema.js";
+} from "../options-schema.js";
+import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./constants.js";
+import { registerContextMenus } from "./context-menus.js";
+import {
+  getLastFormattedPreview,
+  getLastPreviewError,
+  runCopyPipeline,
+  setLastPreviewError,
+} from "./copy-pipeline.js";
+import { consumeSelectionStub, handleE2eMessage } from "./e2e.js";
+import {
+  clearStoredErrors,
+  getStoredErrors,
+  initializeBadgeFromStorage,
+  recordError,
+} from "./errors.js";
+import { isUrlProtected } from "./protected-urls.js";
+import type { CopySource } from "./types.js";
 
 const pendingCopySources = new Map<number, CopySource>();
 let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;

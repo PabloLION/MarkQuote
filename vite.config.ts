@@ -31,10 +31,10 @@ export default defineConfig(({ command }) => {
       minify: false,
       rollupOptions: {
         input: {
-          background: resolve(__dirname, "src/background.ts"),
-          selection: resolve(__dirname, "src/selection.ts"),
-          options: resolve(__dirname, "src/options-entry.ts"),
-          popup: resolve(__dirname, "src/popup-entry.ts"),
+          background: resolve(__dirname, "src/background/index.ts"),
+          selection: resolve(__dirname, "src/content-scripts/selection.ts"),
+          options: resolve(__dirname, "src/surfaces/options/entry.ts"),
+          popup: resolve(__dirname, "src/surfaces/popup/entry.ts"),
         },
         output: {
           entryFileNames: "[name].js",

@@ -1,11 +1,11 @@
-import { initializePopup } from "./popup.js";
+import { initializePopup } from "./controller.js";
 
 async function bootstrap(): Promise<void> {
   const isDevEnvironment =
     window.location.hostname === "localhost" || window.location.port === "5173";
 
   if (isDevEnvironment) {
-    const { ensureChromeMock } = await import("./dev/chrome-dev-mock.js");
+    const { ensureChromeMock } = await import("../../dev/chrome-dev-mock.js");
     ensureChromeMock();
   }
 

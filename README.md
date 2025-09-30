@@ -29,15 +29,15 @@ MarkQuote requests only the permissions required for its copy workflow:
 
 No host permissions are requested by default; the extension relies on user-initiated actions (toolbar icon, context menu, keyboard shortcut) to operate.
 
-### `src/background.ts` (Service Worker)
+### `src/background/index.ts` (Service Worker)
 
 The `background.ts` script serves as the extension's **Service Worker**. It operates in the background, listening for various browser events and coordinating the extension's functionality.
 
 - **Event-Driven:** It's designed to be event-driven, meaning it wakes up when an event occurs (e.g., a user clicks the extension icon, a context menu item is selected) and goes dormant when idle to conserve system resources.
 - **No Direct DOM Access:** Crucially, the Service Worker does **not** have direct access to the DOM (Document Object Model) of web pages or the extension's own HTML pages. This is a security and performance feature of Manifest V3.
-- **Central Coordinator:** It acts as the hub, managing context menus, toolbar clicks, and messages from scripts like `selection.ts`, then distributing formatted results to the popup.
+- **Central Coordinator:** It acts as the hub, managing context menus, toolbar clicks, and messages from scripts like `content-scripts/selection.ts`, then distributing formatted results to the popup.
 
-### `src/popup.ts` (Extension UI)
+### `src/surfaces/popup/controller.ts` (Extension UI)
 
 The popup receives the formatted markdown from the background worker, renders it for preview, and writes it to the clipboard using the modern Clipboard API. Because the popup runs in a focused extension page, it can interact with the DOM and clipboard without relying on hidden offscreen documents.
 

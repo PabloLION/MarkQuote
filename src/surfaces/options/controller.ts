@@ -1,4 +1,4 @@
-import { applyTitleRules, applyUrlRules, formatWithOptions } from "./formatting.js";
+import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../formatting.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
@@ -8,7 +8,7 @@ import {
   type OptionsPayload,
   type TitleRule,
   type UrlRule,
-} from "./options-schema.js";
+} from "../../options-schema.js";
 
 const DEFAULT_PREVIEW_SAMPLE = {
   text: "Markdown is a lightweight markup language for creating formatted text using a plain-text editor.",
@@ -35,8 +35,8 @@ function cloneOptions(options: OptionsPayload): OptionsPayload {
   return {
     version: CURRENT_OPTIONS_VERSION,
     format: options.format,
-    titleRules: options.titleRules.map((rule) => cloneTitleRule(rule)),
-    urlRules: options.urlRules.map((rule) => cloneUrlRule(rule)),
+    titleRules: options.titleRules.map((rule: TitleRule) => cloneTitleRule(rule)),
+    urlRules: options.urlRules.map((rule: UrlRule) => cloneUrlRule(rule)),
   };
 }
 

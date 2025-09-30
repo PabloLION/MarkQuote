@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getSinonChrome } from "../../src/dev/chrome-dev-mock";
-import { initializePopup } from "../../src/popup";
+import { initializePopup } from "../../src/surfaces/popup/controller";
 
 const sinonChrome = getSinonChrome();
 

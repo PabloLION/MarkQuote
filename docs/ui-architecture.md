@@ -37,11 +37,24 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 │   ├── options.html
 │   └── icons/
 ├── src/                     # TypeScript source code
-│   ├── background.ts        # Background service worker for the extension
+│   ├── background/          # Background service worker and helpers
+│   │   ├── index.ts         # Entry point registered in the manifest
+│   │   ├── constants.ts
+│   │   ├── copy-pipeline.ts
+│   │   └── ...
+│   ├── content-scripts/
+│   │   └── selection.ts     # Injected script that reads the active selection
+│   ├── surfaces/            # UI surfaces for popup/options/etc.
+│   │   ├── popup/
+│   │   │   ├── controller.ts
+│   │   │   └── entry.ts
+│   │   └── options/
+│   │       ├── controller.ts
+│   │       └── entry.ts
 │   ├── clipboard.ts         # Logic for formatting clipboard content
 │   ├── converter.ts         # HTML to Markdown conversion logic
-│   ├── selection.ts         # Script to get the user's selection
-│   └── options.ts           # Logic for the options page
+│   ├── formatting.ts        # Markdown template + rule application helpers
+│   └── options-schema.ts    # Shared schema/types for persisted options
 ├── tests/                   # Test files
 │   └── unit/
 ├── .gitignore
@@ -56,7 +69,7 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 Since we are not using a frontend framework, our "components" will primarily be either plain TypeScript functions that manipulate the DOM or small, self-contained TypeScript classes/functions for the options page.
 
 ```typescript
-// src/options/components/MyComponent.ts
+// src/surfaces/options/components/MyComponent.ts
 
 interface MyComponentProps {
   text: string;
@@ -79,7 +92,7 @@ export function createMyComponent(props: MyComponentProps): HTMLElement {
   return container;
 }
 
-// Usage example in options.ts:
+// Usage example in controller.ts:
 // import { createMyComponent } from './components/MyComponent';
 // const myElement = createMyComponent({
 //   text: 'Hello from component!',
@@ -89,7 +102,7 @@ export function createMyComponent(props: MyComponentProps): HTMLElement {
 
 ```
 
-For `shadcn-svelte` components, they will be copied into `src/options/components/` and adapted to our vanilla TypeScript setup as necessary, following their own internal structure.
+For `shadcn-svelte` components, they will be copied into `src/surfaces/options/components/` and adapted to our vanilla TypeScript setup as necessary, following their own internal structure.
 
 ### Options Page Layout
 
@@ -271,7 +284,7 @@ describe('convertHtmlToMarkdown', () => {
 
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import { describe, it, expect, vi } from 'vitest';
-import OptionsPage from '../../../src/options/OptionsPage.svelte'; // Adjust path as needed
+import OptionsPage from '../../../src/surfaces/options/OptionsPage.svelte'; // Adjust path as needed
 
 describe('OptionsPage', () => {
   it('should render the custom format input', () => {

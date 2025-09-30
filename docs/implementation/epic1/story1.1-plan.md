@@ -31,7 +31,7 @@ To establish a complete project structure with core development dependencies, a 
         *   `permissions: ["contextMenus", "activeTab"]`
         *   `action: { default_popup: "options.html", default_icon: "icons/icon-48.png" }` (placeholder for options page)
         *   `icons` pointing to placeholder icons.
-    *   Create `src/background.ts` (empty for now).
+*   Create `src/background.ts` (empty for now). *(Later renamed to `src/background/index.ts` during Story 3.7 refactor.)*
 *   Create `src/content.ts` (empty for now). *(Removed in Story 3.7 once the placeholder log was no longer needed.)*
     *   Create `public/icons/` directory and add placeholder icon files (e.g., `icon-16.png`, `icon-48.png`, `icon-128.png`).
 *   **Commit Message:** `feat(extension): Add basic Chrome extension manifest and structure`
