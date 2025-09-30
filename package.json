@@ -23,6 +23,7 @@
     "build": "vite build",
     "check": "biome check --write --unsafe",
     "dev": "vite",
+    "dev:browser": "tsx scripts/dev/launch-dev-browser.ts",
     "dev:playwright": "tsx scripts/package/dev/playwright-dev.ts",
     "bundle": "tsx scripts/package/bundle.ts",
     "tools:chrome-assets": "tsx scripts/package/capture-store-assets.ts",
