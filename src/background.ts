@@ -42,6 +42,10 @@ function clearHotkeyPopupFallback(): void {
   }
 }
 
+function getLastErrorMessage(): string {
+  return chrome.runtime.lastError?.message ?? "Unknown Chrome runtime error";
+}
+
 function isUrlProtected(candidate?: string | null): boolean {
   if (!candidate) {
     return false;
@@ -65,7 +69,7 @@ function isUrlProtected(candidate?: string | null): boolean {
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     if (chrome.runtime.lastError) {
-      void recordError("contextMenus.removeAll", chrome.runtime.lastError.message);
+      void recordError("contextMenus.removeAll", getLastErrorMessage());
     }
 
     chrome.contextMenus.create({
@@ -117,14 +121,14 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
     },
     () => {
       if (chrome.runtime.lastError) {
-        const permissionsError =
-          chrome.runtime.lastError.message.includes("must request permission");
+        const lastErrorMessage = getLastErrorMessage();
+        const permissionsError = lastErrorMessage.includes("must request permission");
 
         if (permissionsError) {
           console.info("[MarkQuote] Selection injection blocked by host permissions", {
             url: targetUrl,
             source,
-            error: chrome.runtime.lastError.message,
+            error: lastErrorMessage,
           });
           chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
           void chrome.runtime
@@ -136,12 +140,12 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
           return;
         }
 
-        void recordError("inject-selection-script", chrome.runtime.lastError.message, {
+        void recordError("inject-selection-script", lastErrorMessage, {
           tabUrl: tab.url,
           source,
         });
         if (isE2ETest) {
-          lastPreviewError = chrome.runtime.lastError.message;
+          lastPreviewError = lastErrorMessage;
         }
       }
     },
