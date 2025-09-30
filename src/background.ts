@@ -42,7 +42,7 @@ function clearHotkeyPopupFallback(): void {
   }
 }
 
-function isSystemUrl(candidate?: string | null): boolean {
+function isUrlProtected(candidate?: string | null): boolean {
   if (!candidate) {
     return false;
   }
@@ -93,11 +93,18 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
   }
 
   const targetUrl = tab.url ?? tab.pendingUrl ?? null;
-  if (isSystemUrl(targetUrl)) {
+  if (isUrlProtected(targetUrl)) {
     console.info("[MarkQuote] Skipping copy for protected page", {
       source,
       url: targetUrl,
     });
+    chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
+    void chrome.runtime
+      .sendMessage({
+        type: "copy-protected",
+        url: targetUrl ?? undefined,
+      })
+      .catch(() => {});
     return;
   }
 
@@ -110,8 +117,28 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
     },
     () => {
       if (chrome.runtime.lastError) {
+        const permissionsError =
+          chrome.runtime.lastError.message.includes("must request permission");
+
+        if (permissionsError) {
+          console.info("[MarkQuote] Selection injection blocked by host permissions", {
+            url: targetUrl,
+            source,
+            error: chrome.runtime.lastError.message,
+          });
+          chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
+          void chrome.runtime
+            .sendMessage({
+              type: "copy-protected",
+              url: targetUrl ?? undefined,
+            })
+            .catch(() => {});
+          return;
+        }
+
         void recordError("inject-selection-script", chrome.runtime.lastError.message, {
           tabUrl: tab.url,
+          source,
         });
         if (isE2ETest) {
           lastPreviewError = chrome.runtime.lastError.message;
@@ -144,7 +171,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
       console.info("[MarkQuote] Hotkey: action settings", settings);
     } catch (error) {
       console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
-      await recordError("hotkey-open-popup", error);
+      await recordError("hotkey-open-popup", error, { source: "hotkey" });
       if (tab) {
         triggerCopy(tab, "hotkey");
       }
@@ -155,6 +182,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
       await recordError(
         "hotkey-open-popup",
         "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
+        { source: "hotkey" },
       );
       if (tab) {
         triggerCopy(tab, "hotkey");
@@ -168,6 +196,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
         void recordError(
           "hotkey-popup-timeout",
           "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
+          { source: "hotkey" },
         );
         triggerCopy(tab, "hotkey");
       }, 1000);
@@ -180,7 +209,7 @@ chrome.commands.onCommand.addListener((command, tab) => {
       })
       .catch((error) => {
         clearHotkeyPopupFallback();
-        void recordError("open-popup-for-hotkey", error);
+        void recordError("open-popup-for-hotkey", error, { source: "hotkey" });
         if (tab) {
           triggerCopy(tab, "hotkey");
         }
@@ -326,20 +355,29 @@ async function recordError(
   }
 
   const tabUrl = typeof extra?.tabUrl === "string" ? extra.tabUrl : undefined;
-  if (tabUrl && isSystemUrl(tabUrl) && context === "inject-selection-script") {
+  if (tabUrl && isUrlProtected(tabUrl) && context === "inject-selection-script") {
     console.info("[MarkQuote] Skipping protected-page injection error", { tabUrl, message });
     return;
   }
 
   const existing = await getStoredErrors();
-  const contextDetails =
-    message.includes("must request permission") && tabUrl
-      ? `${message} (tab: ${tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`
-      : message;
+  let contextDetails = message;
+  if (tabUrl) {
+    if (message.includes("must request permission")) {
+      contextDetails = `${message} (tab: ${tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`;
+    } else if (message.includes("Cannot access contents of the page")) {
+      contextDetails = `${message} (tab: ${tabUrl}). Grant host access from the extension action's "Site access" menu.`;
+    }
+  }
+
+  const decoratedMessage =
+    typeof extra?.source === "string" && extra.source.length > 0
+      ? `${contextDetails} [source: ${extra.source}]`
+      : contextDetails;
 
   const updated: LoggedError[] = [
     {
-      message: contextDetails,
+      message: decoratedMessage,
       context,
       timestamp: Date.now(),
     },
@@ -411,13 +449,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           tabs[0];
 
         if (targetTab) {
+          const targetUrl = targetTab.url ?? targetTab.pendingUrl ?? null;
+          if (isUrlProtected(targetUrl)) {
+            void chrome.runtime
+              .sendMessage({
+                type: "copy-protected",
+                url: targetUrl ?? undefined,
+              })
+              .catch(() => {});
+            sendResponse?.({ ok: false, reason: "protected" });
+            return;
+          }
+
           triggerCopy(targetTab, "popup");
+          sendResponse?.({ ok: true });
         } else {
           void recordError("request-selection-copy", "No suitable tab found for copy request.");
+          sendResponse?.({ ok: false });
         }
       })
       .catch((error) => {
         void recordError("query-tabs-for-copy", error);
+        sendResponse?.({ ok: false });
       });
     return false;
   }

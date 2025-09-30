@@ -1,7 +1,12 @@
-type CopiedTextMessage = {
-  type: "copied-text-preview";
-  text: string;
-};
+type RuntimeMessage =
+  | {
+      type: "copied-text-preview";
+      text: string;
+    }
+  | {
+      type: "copy-protected";
+      url?: string;
+    };
 
 type LoggedExtensionError = {
   message: string;
@@ -58,7 +63,7 @@ export function initializePopup(): () => void {
     return success;
   };
 
-  const messageListener = (request: CopiedTextMessage) => {
+  const messageListener = (request: RuntimeMessage) => {
     if (request.type === "copied-text-preview") {
       if (previewDiv) {
         previewDiv.textContent = request.text;
@@ -73,6 +78,15 @@ export function initializePopup(): () => void {
           messageDiv.textContent = "Unable to copy automatically. Text is ready below.";
         }
       });
+    } else if (request.type === "copy-protected") {
+      if (previewDiv) {
+        previewDiv.textContent = "";
+      }
+
+      if (messageDiv) {
+        messageDiv.textContent =
+          "This page is protected, so MarkQuote can't access the selection. Try another tab.";
+      }
     }
   };
 
