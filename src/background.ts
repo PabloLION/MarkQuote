@@ -1,17 +1,12 @@
-import {
-  DEFAULT_TITLE,
-  DEFAULT_URL,
-  E2E_LAST_FORMATTED_MESSAGE,
-  E2E_SELECTION_MESSAGE,
-  E2E_SET_OPTIONS_MESSAGE,
-  isE2ETest,
-} from "./background/constants.js";
+import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./background/constants.js";
+import { registerContextMenus } from "./background/context-menus.js";
 import {
   getLastFormattedPreview,
   getLastPreviewError,
   runCopyPipeline,
   setLastPreviewError,
 } from "./background/copy-pipeline.js";
+import { consumeSelectionStub, handleE2eMessage } from "./background/e2e.js";
 import {
   clearStoredErrors,
   getStoredErrors,
@@ -27,14 +22,6 @@ import {
   type OptionsPayload,
 } from "./options-schema.js";
 
-let e2eSelectionStub:
-  | {
-      markdown: string;
-      title: string;
-      url: string;
-    }
-  | undefined;
-
 const pendingCopySources = new Map<number, CopySource>();
 let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -48,29 +35,6 @@ function clearHotkeyPopupFallback(): void {
 function getLastErrorMessage(): string {
   return chrome.runtime.lastError?.message ?? "Unknown Chrome runtime error";
 }
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.removeAll(() => {
-    if (chrome.runtime.lastError) {
-      void recordError("contextMenus.removeAll", getLastErrorMessage());
-    }
-
-    chrome.contextMenus.create({
-      id: "markquote",
-      title: "Copy as Markdown Quote",
-      contexts: ["selection"],
-    });
-
-    chrome.contextMenus.create({
-      id: "markquote-options",
-      title: "Options",
-      contexts: ["action"],
-    });
-  });
-
-  void ensureOptionsInitialized();
-  void clearStoredErrors();
-});
 
 void initializeBadgeFromStorage();
 
@@ -135,12 +99,13 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
   );
 }
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId === "markquote" && tab) {
-    triggerCopy(tab, "context-menu");
-  } else if (info.menuItemId === "markquote-options") {
-    chrome.runtime.openOptionsPage();
-  }
+registerContextMenus({
+  triggerCopy: (tab, source) => {
+    triggerCopy(tab, source);
+  },
+  ensureOptionsInitialized,
+  clearStoredErrors,
+  recordError,
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
@@ -297,14 +262,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Background script received message:", request, { isE2ETest });
 
   if (request?.type === "request-selection-copy") {
-    if (isE2ETest && e2eSelectionStub) {
-      const stub = e2eSelectionStub;
-      e2eSelectionStub = undefined;
-      void runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e").catch((error) => {
-        void recordError("e2e-stub-selection", error);
-      });
-      sendResponse?.({ ok: true });
-      return true;
+    if (isE2ETest) {
+      const stub = consumeSelectionStub();
+      if (stub) {
+        void runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e").catch((error) => {
+          void recordError("e2e-stub-selection", error);
+        });
+        sendResponse?.({ ok: true });
+        return true;
+      }
     }
 
     clearHotkeyPopupFallback();
@@ -348,68 +314,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return false;
   }
 
-  if (isE2ETest && request?.type === E2E_SELECTION_MESSAGE) {
-    if (typeof request.markdown !== "string" || !request.markdown) {
-      console.warn("E2E selection message missing markdown payload.");
-      return false;
-    }
-
-    const title =
-      typeof request.title === "string" && request.title ? request.title : DEFAULT_TITLE;
-    const url = typeof request.url === "string" && request.url ? request.url : DEFAULT_URL;
-    void runCopyPipeline(request.markdown, title, url, "e2e").then((formatted) => {
-      sendResponse?.({ formatted });
+  if (isE2ETest) {
+    const handled = handleE2eMessage({
+      request,
+      sender,
+      sendResponse,
+      persistOptions,
+      recordError,
     });
-    return true;
-  }
-
-  if (isE2ETest && request?.type === E2E_SET_OPTIONS_MESSAGE) {
-    const candidate = request.options as OptionsPayload | undefined;
-    if (!candidate) {
-      console.warn("E2E set-options message missing payload.");
-      sendResponse?.({ ok: false });
-      return false;
+    if (handled) {
+      return true;
     }
-
-    void persistOptions({ ...candidate, version: CURRENT_OPTIONS_VERSION })
-      .then(() => {
-        sendResponse?.({ ok: true });
-      })
-      .catch((error) => {
-        void recordError("persist-options-e2e", error);
-        sendResponse?.({
-          ok: false,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      });
-    return true;
-  }
-
-  if (isE2ETest && request?.type === E2E_LAST_FORMATTED_MESSAGE) {
-    sendResponse?.({
-      formatted: getLastFormattedPreview(),
-      error: getLastPreviewError(),
-    });
-    return true;
-  }
-
-  if (isE2ETest && request?.type === "e2e:prime-selection") {
-    const markdown = typeof request.markdown === "string" ? request.markdown : "";
-    const title =
-      typeof request.title === "string" && request.title ? request.title : DEFAULT_TITLE;
-    const url = typeof request.url === "string" && request.url ? request.url : DEFAULT_URL;
-
-    if (!markdown) {
-      sendResponse?.({
-        ok: false,
-        error: "Missing markdown payload for stub selection.",
-      });
-      return false;
-    }
-
-    e2eSelectionStub = { markdown, title, url };
-    sendResponse?.({ ok: true });
-    return true;
   }
 
   if (request.markdown) {
