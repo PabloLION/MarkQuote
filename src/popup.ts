@@ -76,7 +76,7 @@ export function initializePopup(): () => void {
   const messageDiv = document.getElementById("message");
   const messageText = document.getElementById("message-text");
   const previewDiv = document.getElementById("preview");
-  const previewCode = previewDiv?.querySelector("code");
+  const previewCode = previewDiv?.querySelector("code") ?? null;
   const optionsButton = document.getElementById("options-button");
   const hotkeysButton = document.getElementById("hotkeys-button");
   const feedbackButton = document.getElementById("feedback-button");
@@ -152,17 +152,25 @@ export function initializePopup(): () => void {
   };
 
   const renderPreview = (text: string | null | undefined) => {
-    if (!previewDiv || !previewCode) {
+    if (!previewDiv) {
       return;
     }
 
+    const target = previewCode ?? previewDiv;
+
     if (typeof text !== "string" || text.trim().length === 0) {
-      previewCode.textContent = "";
+      if (previewCode) {
+        previewCode.textContent = "";
+      } else {
+        previewDiv.textContent = "";
+      }
+      previewDiv.hidden = true;
       previewDiv.setAttribute("hidden", "true");
       return;
     }
 
-    previewCode.textContent = text;
+    target.textContent = text;
+    previewDiv.hidden = false;
     previewDiv.removeAttribute("hidden");
   };
 

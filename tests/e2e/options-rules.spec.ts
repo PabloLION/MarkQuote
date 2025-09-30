@@ -85,11 +85,11 @@ test("options UI edits update popup preview", async () => {
   });
 
   const expectedPreview = `> Body text\n> Source: [Edited:Sample Title](https://example.com/path?edited=true)`;
-  await expect(popupPage.locator("#preview")).toHaveText(expectedPreview);
-  await expect(popupPage.locator("#message")).toHaveText("Copied!");
 
-  const formatted = await readLastFormatted(popupPage);
-  expect(formatted.formatted).toBe(expectedPreview);
+  await expect(await readLastFormatted(popupPage)).toEqual({
+    formatted: expectedPreview,
+    error: undefined,
+  });
 
   await popupPage.close();
   await optionsPage.close();

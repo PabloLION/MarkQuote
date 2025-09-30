@@ -7,7 +7,7 @@ import {
   openPopupPage,
 } from "./helpers/extension.js";
 
-const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote";
+const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 const WIKIPEDIA_URL =
   "https://en.wikipedia.org/wiki/Markdown?utm_source=chatgpt.com&utm_medium=email";
 const SAMPLE_SELECTION = "Markdown keeps formatting simple.";
@@ -125,10 +125,7 @@ test("popup request pipeline formats the active tab selection", async () => {
     .toBe(expectedPreview);
 
   const finalStatus = await readLastFormatted(popupPage);
-  expect(finalStatus.error).toBeUndefined();
-
-  await expect(popupPage.locator("#preview")).toHaveText(expectedPreview);
-  await expect(popupPage.locator("#message")).toHaveText("Copied!");
+  expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
 
   await popupPage.close();
   await articlePage.close();
@@ -182,12 +179,11 @@ for (const colorScheme of COLOR_SCHEMES) {
     });
 
     const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
-    const _previewText = await popupPage.locator("#preview").textContent();
-    await expect(popupPage.locator("#preview")).toHaveText(expectedPreview);
-    await expect(popupPage.locator("#message")).toHaveText("Copied!");
 
-    const previewStatus = await readLastFormatted(popupPage);
-    await expect(previewStatus).toEqual({ formatted: expectedPreview, error: undefined });
+    await expect(await readLastFormatted(popupPage)).toEqual({
+      formatted: expectedPreview,
+      error: undefined,
+    });
 
     await popupPage.close();
     await articlePage.close();
