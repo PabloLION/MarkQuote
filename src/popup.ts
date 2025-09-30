@@ -17,6 +17,13 @@ type LoggedExtensionError = {
 const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 const DEFAULT_STATUS_MESSAGE =
   "Select text on a page, then trigger MarkQuote to copy it as Markdown.";
+const SAMPLE_PREVIEW =
+  "> This was addressed in 2014 when long-standing Markdown contributors released CommonMark, an unambiguous specification and test suite for Markdown.\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown)";
+
+type ForcedPopupState =
+  | { kind: "default" }
+  | { kind: "copied"; preview: string }
+  | { kind: "protected" };
 
 type PopupDevPreviewApi = {
   showDefault: () => void;
@@ -28,6 +35,41 @@ declare global {
   interface Window {
     __MARKQUOTE_POPUP_DEV__?: PopupDevPreviewApi;
   }
+}
+
+function resolveForcedPopupState(): ForcedPopupState | null {
+  const isDev = window.location.hostname === "localhost" || window.location.port === "5173";
+  if (!isDev) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const stateParam = params.get("state");
+
+  if (!stateParam) {
+    return null;
+  }
+
+  const normalized = stateParam.trim().toLowerCase();
+
+  if (normalized === "default") {
+    return { kind: "default" };
+  }
+
+  if (normalized === "protected") {
+    return { kind: "protected" };
+  }
+
+  if (normalized === "copied") {
+    const previewParam = params.get("preview");
+    const preview = previewParam?.trim().length ? previewParam : SAMPLE_PREVIEW;
+    return {
+      kind: "copied",
+      preview,
+    };
+  }
+
+  return null;
 }
 
 export function initializePopup(): () => void {
@@ -109,6 +151,47 @@ export function initializePopup(): () => void {
 
   setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
 
+  const applyForcedPopupState = (forcedState: ForcedPopupState) => {
+    switch (forcedState.kind) {
+      case "default": {
+        if (previewDiv) {
+          previewDiv.textContent = "";
+        }
+        setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
+        break;
+      }
+      case "copied": {
+        if (previewDiv) {
+          previewDiv.textContent = forcedState.preview;
+        }
+        setMessage("Markdown copied to clipboard.", {
+          label: "Copied",
+          variant: "success",
+        });
+        break;
+      }
+      case "protected": {
+        if (previewDiv) {
+          previewDiv.textContent = "";
+        }
+        setMessage(
+          "This page is protected, so MarkQuote can't access the selection. Try another tab.",
+          {
+            label: "Protected",
+            variant: "warning",
+          },
+        );
+        break;
+      }
+      default: {
+        if (previewDiv) {
+          previewDiv.textContent = "";
+        }
+        setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
+      }
+    }
+  };
+
   const messageListener = (request: RuntimeMessage) => {
     if (request.type === "copied-text-preview") {
       if (previewDiv) {
@@ -139,11 +222,17 @@ export function initializePopup(): () => void {
     }
   };
 
-  chrome.runtime.onMessage.addListener(messageListener);
+  const forcedState = resolveForcedPopupState();
 
-  chrome.runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
-    console.warn("Failed to request selection copy.", error);
-  });
+  if (!forcedState) {
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    chrome.runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
+      console.warn("Failed to request selection copy.", error);
+    });
+  } else {
+    applyForcedPopupState(forcedState);
+  }
 
   const openOptions = () => {
     if (chrome.runtime.openOptionsPage) {
@@ -295,7 +384,9 @@ export function initializePopup(): () => void {
   }
 
   return () => {
-    chrome.runtime.onMessage.removeListener(messageListener);
+    if (!forcedState) {
+      chrome.runtime.onMessage.removeListener(messageListener);
+    }
     optionsButton?.removeEventListener("click", openOptions);
     hotkeysButton?.removeEventListener("click", openShortcuts);
     feedbackButton?.removeEventListener("click", openFeedback);
