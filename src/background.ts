@@ -1,14 +1,19 @@
 import {
-  ACTIVE_TAB_PERMISSION_MESSAGE,
   DEFAULT_TITLE,
   DEFAULT_URL,
   E2E_LAST_FORMATTED_MESSAGE,
   E2E_SELECTION_MESSAGE,
   E2E_SET_OPTIONS_MESSAGE,
-  ERROR_STORAGE_KEY,
   isE2ETest,
 } from "./background/constants.js";
-import type { CopySource, LoggedError } from "./background/types.js";
+import {
+  clearStoredErrors,
+  getStoredErrors,
+  initializeBadgeFromStorage,
+  recordError,
+} from "./background/errors.js";
+import { isUrlProtected } from "./background/protected-urls.js";
+import type { CopySource } from "./background/types.js";
 import { formatForClipboard } from "./clipboard.js";
 import {
   CURRENT_OPTIONS_VERSION,
@@ -39,26 +44,6 @@ function clearHotkeyPopupFallback(): void {
 
 function getLastErrorMessage(): string {
   return chrome.runtime.lastError?.message ?? "Unknown Chrome runtime error";
-}
-
-function isUrlProtected(candidate?: string | null): boolean {
-  if (!candidate) {
-    return false;
-  }
-
-  const url = candidate.toLowerCase();
-  return (
-    url.startsWith("chrome://") ||
-    url.startsWith("chrome-error://") ||
-    url.startsWith("chrome-untrusted://") ||
-    url.startsWith("chrome-search://") ||
-    url.startsWith("edge://") ||
-    url.startsWith("opera://") ||
-    url.startsWith("vivaldi://") ||
-    url.startsWith("brave://") ||
-    url.startsWith("devtools://") ||
-    url.startsWith("about:")
-  );
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -319,99 +304,6 @@ async function ensureOptionsInitialized(): Promise<void> {
   } catch (error) {
     console.warn("Failed to initialize options storage.", error);
     void recordError("initialize-options", error);
-  }
-}
-
-async function initializeBadgeFromStorage(): Promise<void> {
-  const errors = await getStoredErrors();
-  updateBadge(errors.length);
-}
-
-async function getStoredErrors(): Promise<LoggedError[]> {
-  const storageArea = chrome.storage?.local;
-  if (!storageArea) {
-    return [];
-  }
-
-  const result = await storageArea.get(ERROR_STORAGE_KEY);
-  const raw = result?.[ERROR_STORAGE_KEY];
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-
-  return raw.filter((entry): entry is LoggedError => Boolean(entry?.message));
-}
-
-async function recordError(
-  context: string,
-  error: unknown,
-  extra?: Record<string, unknown>,
-): Promise<void> {
-  const storageArea = chrome.storage?.local;
-  if (!storageArea) {
-    return;
-  }
-
-  const message =
-    error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : JSON.stringify(error);
-
-  if (message.includes("Receiving end does not exist")) {
-    return;
-  }
-
-  const tabUrl = typeof extra?.tabUrl === "string" ? extra.tabUrl : undefined;
-  if (tabUrl && isUrlProtected(tabUrl) && context === "inject-selection-script") {
-    console.info("[MarkQuote] Skipping protected-page injection error", { tabUrl, message });
-    return;
-  }
-
-  const existing = await getStoredErrors();
-  let contextDetails = message;
-  if (tabUrl) {
-    if (message.includes("must request permission")) {
-      contextDetails = `${message} (tab: ${tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`;
-    } else if (message.includes("Cannot access contents of the page")) {
-      contextDetails = `${message} (tab: ${tabUrl}). Grant host access from the extension action's "Site access" menu.`;
-    }
-  }
-
-  const decoratedMessage =
-    typeof extra?.source === "string" && extra.source.length > 0
-      ? `${contextDetails} [source: ${extra.source}]`
-      : contextDetails;
-
-  const updated: LoggedError[] = [
-    {
-      message: decoratedMessage,
-      context,
-      timestamp: Date.now(),
-    },
-    ...existing,
-  ].slice(0, 10);
-
-  await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
-  updateBadge(updated.length);
-}
-
-async function clearStoredErrors(): Promise<void> {
-  const storageArea = chrome.storage?.local;
-  if (!storageArea) {
-    return;
-  }
-
-  await storageArea.set({ [ERROR_STORAGE_KEY]: [] });
-  updateBadge(0);
-}
-
-function updateBadge(count: number): void {
-  const text = count > 0 ? String(Math.min(count, 99)) : "";
-  chrome.action.setBadgeText({ text }).catch(() => {});
-  if (count > 0) {
-    chrome.action.setBadgeBackgroundColor({ color: "#d93025" }).catch(() => {});
   }
 }
 
