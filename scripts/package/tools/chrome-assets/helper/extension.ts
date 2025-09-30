@@ -10,6 +10,7 @@ export interface LaunchOptions {
   colorScheme?: "light" | "dark";
   windowSize?: { width: number; height: number };
   devtools?: boolean;
+  devtoolsUndocked?: boolean;
 }
 
 export interface ExtensionContextHandle {
@@ -28,14 +29,19 @@ export async function launchExtensionContext(
   const defaultProfileDir = path.join(userDataDir, "Default");
   await mkdir(defaultProfileDir, { recursive: true });
   const preferencesPath = path.join(defaultProfileDir, "Preferences");
+  const devtoolsPreferencePayload: Record<string, string | undefined> = {
+    uiTheme: "dark",
+  };
+
+  if (options.devtoolsUndocked) {
+    devtoolsPreferencePayload.currentDockState = "undocked";
+    devtoolsPreferencePayload.previousDockState = "undocked";
+    devtoolsPreferencePayload.lastDockState = "undocked";
+  }
+
   const devtoolsPreferences = {
     devtools: {
-      preferences: JSON.stringify({
-        currentDockState: "undocked",
-        previousDockState: "undocked",
-        lastDockState: "undocked",
-        uiTheme: "dark",
-      }),
+      preferences: JSON.stringify(devtoolsPreferencePayload),
     },
   };
   await writeFile(preferencesPath, JSON.stringify(devtoolsPreferences));
@@ -44,7 +50,7 @@ export async function launchExtensionContext(
     headless: !headed,
     colorScheme: options.colorScheme ?? "dark",
     viewport: null,
-    devtools: options.devtools ?? true,
+    devtools: options.devtools ?? false,
     args: [
       `--disable-extensions-except=${distDir}`,
       `--load-extension=${distDir}`,

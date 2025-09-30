@@ -50,8 +50,9 @@ export function getLaunchOptionsForCapture(kind: CaptureKind): LaunchOptions {
     return {
       windowSize: getViewportSize(kind),
       devtools: true,
+      devtoolsUndocked: true,
     };
   }
 
-  return { devtools: true };
+  return {};
 }
