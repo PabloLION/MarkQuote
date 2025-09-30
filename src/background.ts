@@ -42,6 +42,26 @@ function clearHotkeyPopupFallback(): void {
   }
 }
 
+function isSystemUrl(candidate?: string | null): boolean {
+  if (!candidate) {
+    return false;
+  }
+
+  const url = candidate.toLowerCase();
+  return (
+    url.startsWith("chrome://") ||
+    url.startsWith("chrome-error://") ||
+    url.startsWith("chrome-untrusted://") ||
+    url.startsWith("chrome-search://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("opera://") ||
+    url.startsWith("vivaldi://") ||
+    url.startsWith("brave://") ||
+    url.startsWith("devtools://") ||
+    url.startsWith("about:")
+  );
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     if (chrome.runtime.lastError) {
@@ -62,6 +82,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 
   void ensureOptionsInitialized();
+  void clearStoredErrors();
 });
 
 void initializeBadgeFromStorage();
@@ -295,10 +316,16 @@ async function recordError(
     return;
   }
 
+  const tabUrl = typeof extra?.tabUrl === "string" ? extra.tabUrl : undefined;
+  if (tabUrl && isSystemUrl(tabUrl) && context === "inject-selection-script") {
+    console.info("[MarkQuote] Skipping protected-page injection error", { tabUrl, message });
+    return;
+  }
+
   const existing = await getStoredErrors();
   const contextDetails =
-    message.includes("must request permission") && extra?.tabUrl
-      ? `${message} (tab: ${extra.tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`
+    message.includes("must request permission") && tabUrl
+      ? `${message} (tab: ${tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`
       : message;
 
   const updated: LoggedError[] = [
