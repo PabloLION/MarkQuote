@@ -1,7 +1,8 @@
-import sinonChrome from "sinon-chrome";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock";
 import { initializePopup } from "../../src/popup";
+
+const sinonChrome = getSinonChrome();
 
 const INLINE_MODE_ISSUE_QUERY = "https://github.com/PabloLION/MarkQuote/issues/3";
 

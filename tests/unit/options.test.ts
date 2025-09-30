@@ -3,9 +3,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import sinonChrome from "sinon-chrome";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
@@ -21,6 +20,8 @@ import {
   DEFAULT_WIKI_TITLE_SEARCH,
   DEFAULT_WIKI_URL_PATTERN,
 } from "../../src/options-schema";
+
+const sinonChrome = getSinonChrome();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
