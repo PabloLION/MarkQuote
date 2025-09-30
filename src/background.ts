@@ -1,3 +1,14 @@
+import {
+  ACTIVE_TAB_PERMISSION_MESSAGE,
+  DEFAULT_TITLE,
+  DEFAULT_URL,
+  E2E_LAST_FORMATTED_MESSAGE,
+  E2E_SELECTION_MESSAGE,
+  E2E_SET_OPTIONS_MESSAGE,
+  ERROR_STORAGE_KEY,
+  isE2ETest,
+} from "./background/constants.js";
+import type { CopySource, LoggedError } from "./background/types.js";
 import { formatForClipboard } from "./clipboard.js";
 import {
   CURRENT_OPTIONS_VERSION,
@@ -6,22 +17,6 @@ import {
   type OptionsPayload,
 } from "./options-schema.js";
 
-const DEFAULT_TITLE = "Page Title";
-const DEFAULT_URL = "https://example.com";
-const E2E_SELECTION_MESSAGE = "e2e:selection";
-const E2E_LAST_FORMATTED_MESSAGE = "e2e:get-last-formatted";
-const E2E_SET_OPTIONS_MESSAGE = "e2e:set-options";
-const isE2ETest = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
-const ERROR_STORAGE_KEY = "markquote-error-log";
-const ACTIVE_TAB_PERMISSION_MESSAGE =
-  'Chrome only grants keyboard shortcuts access after you allow the site in the extension\'s "Site access" settings.';
-
-type CopySource = "popup" | "hotkey" | "context-menu" | "e2e" | "unknown";
-type LoggedError = {
-  message: string;
-  context: string;
-  timestamp: number;
-};
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
 let e2eSelectionStub:
