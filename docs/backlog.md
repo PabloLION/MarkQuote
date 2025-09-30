@@ -9,9 +9,24 @@ This file tracks features and tasks that are planned for future development cycl
 **Goal:** To ensure long-term stability and prevent regressions by creating a comprehensive automated E2E test suite.
 
 **Tasks:**
+
 - Set up and configure the Playwright test runner.
 - Write E2E tests for the core user journeys:
   - Copying a selection and verifying the clipboard content.
   - Verifying the functionality of the options page, including saving and applying title transformation rules.
   - Testing the popup page UI and interactions.
 - Integrate the E2E test suite into a CI/CD pipeline to run automatically.
+
+## Epic 4: Host Access UX
+
+### Story: Streamline Hotkey Permissions
+
+**Goal:** Let users copy without opening the popup by guiding them to grant per-site access for the keyboard shortcut.
+
+**Notes:** Interim behavior opens the popup whenever the hotkey fires so the action gains `activeTab` permissions. Restore the streamlined flow once optional host access is available.
+
+**Tasks:**
+
+- Surface a CTA in the popup error panel to request host access for the current site.
+- Update the background command to skip opening the popup when the site is already authorized.
+- Add automated coverage for the permission request + fallback behavior.

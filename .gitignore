@@ -3,6 +3,7 @@
 /.gemini-clipboard
 /test-results
 /.dev
+.tmp
 
 # Logs
 logs

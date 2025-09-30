@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      }
+
+      .tile {
+        width: 440px;
+        height: 280px;
+        background: linear-gradient(120deg, #0b2b64, #1a73e8);
+        color: #fff;
+        padding: 26px 26px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.16);
+        padding: 6px 11px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .brand img {
+        width: 18px;
+        height: 18px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.25;
+      }
+
+      .content {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1.05fr;
+        gap: 16px;
+        align-items: stretch;
+      }
+
+      .methods {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        justify-content: center;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .methods li {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .methods li::before {
+        content: "•";
+        color: rgba(251, 191, 36, 0.9);
+        font-size: 13px;
+        line-height: 1;
+        margin-right: 6px;
+      }
+
+      .hotkey-line {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .hotkey-line kbd {
+        padding: 4px 8px;
+        border-radius: 6px;
+        background: rgba(8, 25, 61, 0.85);
+        color: #fff;
+        font-size: 11px;
+        box-shadow: inset 0 -2px 0 rgba(255, 255, 255, 0.2);
+      }
+
+      .markquote-key-plus {
+        color: rgba(219, 234, 254, 0.85);
+        font-weight: 700;
+        margin: 0 2px;
+      }
+
+      .quote-markdown {
+        background: rgba(8, 25, 61, 0.55);
+        padding: 16px 18px;
+        box-shadow: 0 24px 60px rgba(8, 25, 61, 0.55);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", Menlo,
+          monospace;
+      }
+
+      .quote-markdown blockquote {
+        margin: 0;
+        font-size: 11px;
+        line-height: 1.45;
+        font-weight: 600;
+        color: #fdf6ec;
+        white-space: wrap;
+        word-break: break-word;
+      }
+
+      .quote-markdown cite {
+        margin: 0;
+        font-size: 9.5px;
+        color: rgba(255, 255, 255, 0.8);
+        font-style: normal;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tile">
+      <div class="brand">
+        <img src="{{ICON}}" alt="MarkQuote icon" />
+        <span>MarkQuote</span>
+      </div>
+      <h1>Copy Markdown quotes instantly</h1>
+      <div class="content">
+        <ul class="methods">
+          <li>
+            <span class="hotkey-line">
+              <kbd>⌥</kbd><span class="markquote-key-plus">+</span><kbd>C</kbd>
+            </span>
+          </li>
+          <li>
+            <span class="hotkey-line">
+              <kbd>Alt</kbd><span class="markquote-key-plus">+</span
+              ><kbd>C</kbd>
+            </span>
+          </li>
+          <li>Right-click → Copy as Markdown quote</li>
+          <li>Toolbar icon copy &amp; preview</li>
+        </ul>
+        <div class="quote-markdown">
+          <blockquote>
+            &gt; This was addressed in 2014 when long-standing Markdown
+            contributors released [CommonMark](#Standardization), an unambiguous
+            specification and test suite for Markdown.
+          </blockquote>
+          <cite
+            >&gt; Source:
+            [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown)</cite
+          >
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

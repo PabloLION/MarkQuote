@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>MarkQuote overview</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+        background: #f3f4f6;
+        color: #111827;
+      }
+
+      .browser-window {
+        width: 1280px;
+        height: 800px;
+        margin: 24px auto;
+        border-radius: 24px;
+        background: #ffffff;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.15);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .browser-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 18px 28px;
+        background: #1f2937;
+        color: #f9fafb;
+      }
+
+      .address-bar {
+        flex: 1;
+        margin-left: 18px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        font-size: 14px;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .toolbar-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.16);
+        display: grid;
+        place-items: center;
+      }
+
+      .toolbar-icon img {
+        width: 24px;
+        height: 24px;
+      }
+
+      .hotkey-pill {
+        background: rgba(255, 255, 255, 0.18);
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: 1fr 340px;
+        gap: 32px;
+        padding: 36px 48px;
+        position: relative;
+        height: calc(100% - 90px);
+      }
+
+      .article {
+        font-size: 17px;
+        line-height: 1.6;
+      }
+
+      .article h1 {
+        font-size: 42px;
+        margin: 0 0 18px;
+      }
+
+      .article p {
+        margin: 18px 0;
+      }
+
+      .highlight {
+        background: rgba(26, 115, 232, 0.18);
+        border-radius: 6px;
+        padding: 2px 4px;
+        box-shadow: 0 0 0 5px rgba(26, 115, 232, 0.12);
+      }
+
+      .context-menu {
+        position: absolute;
+        top: 280px;
+        left: 160px;
+        width: 200px;
+        background: #f9fafb;
+        border-radius: 16px;
+        box-shadow: 0 20px 55px rgba(15, 23, 42, 0.25);
+        padding: 16px 0;
+        list-style: none;
+      }
+
+      .context-menu li {
+        margin: 0;
+        padding: 8px 18px;
+        font-size: 15px;
+        color: #4b5563;
+      }
+
+      .context-menu li.active {
+        background: rgba(26, 115, 232, 0.14);
+        color: #0b2b64;
+        font-weight: 600;
+      }
+
+      .popup-preview {
+        background: #0b1120;
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 30px 70px rgba(8, 25, 61, 0.45);
+        height: fit-content;
+      }
+
+      .popup-preview img {
+        width: 100%;
+        border-radius: 14px;
+        display: block;
+      }
+
+      .callout {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(251, 191, 36, 0.6);
+        border-radius: 16px;
+        padding: 12px 16px;
+        font-size: 14px;
+        line-height: 1.45;
+        box-shadow: 0 18px 40px rgba(251, 191, 36, 0.25);
+        width: 220px;
+      }
+
+      .callout::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 0;
+        border: 8px solid transparent;
+        border-top-color: rgba(251, 191, 36, 0.6);
+        bottom: -16px;
+        left: 24px;
+      }
+
+      .callout.context {
+        top: 210px;
+        left: 140px;
+      }
+
+      .callout.popup {
+        top: 160px;
+        right: 320px;
+      }
+
+      .callout.hotkey {
+        bottom: 140px;
+        right: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="browser-window">
+      <div class="browser-header">
+        <div>Wikipedia — Markdown</div>
+        <div class="address-bar">https://en.wikipedia.org/wiki/Markdown</div>
+        <div class="toolbar">
+          <div class="hotkey-pill">Hotkey: {{HOTKEY}}</div>
+          <div class="toolbar-icon">
+            <img src="{{ICON}}" alt="MarkQuote icon" />
+          </div>
+        </div>
+      </div>
+      <div class="content">
+        <article class="article">
+          <h1>Markdown</h1>
+          <p>
+            Markdown is a lightweight markup language for creating formatted text using a plain-text
+            editor. John Gruber created Markdown in 2004 as a markup language that is easy to read in
+            its source code form. It is commonly used to format README files, for writing messages in
+            online discussion forums, and to create rich text using a plain text editor.
+          </p>
+          <p>
+            Markdown is widely used in blogging, instant messaging, online forums, collaborative
+            software, documentation pages, and readme files.
+            <span class="highlight">GitHub, Stack Overflow, and other platforms use Markdown to format
+            comments and content.</span>
+          </p>
+          <p>
+            Markdown is a markup language that, in plain text, uses symbols like <code>#</code> or
+            <code>*</code> to structure documents. Markdown's key design goal is readability — that the
+            language be readable without looking like it has been marked up.
+          </p>
+        </article>
+        <div class="popup-preview">
+          <img src="{{POPUP_IMAGE}}" alt="MarkQuote popup" />
+        </div>
+        <ul class="context-menu">
+          <li>Cut</li>
+          <li>Copy</li>
+          <li class="active">Copy as Markdown quote</li>
+          <li>Paste</li>
+        </ul>
+        <div class="callout context">Right-click → “Copy as Markdown quote”</div>
+        <div class="callout popup">Toolbar popup shows the Markdown preview</div>
+        <div class="callout hotkey">Press {{HOTKEY}} to copy instantly</div>
+      </div>
+    </div>
+  </body>
+</html>

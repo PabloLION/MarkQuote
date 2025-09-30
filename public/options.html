@@ -67,6 +67,56 @@
         gap: 16px;
       }
 
+      .section-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .section-info {
+        display: grid;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .section-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .section-actions button {
+        white-space: nowrap;
+      }
+
+      .section-actions button[disabled] {
+        cursor: default;
+        opacity: 0.6;
+      }
+
+      .section-actions button[data-loading]::after {
+        content: '';
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        display: inline-block;
+        margin-left: 8px;
+        animation: spin 0.75s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       section h2 {
         margin: 0;
         font-size: 1.25rem;
@@ -246,6 +296,10 @@
         outline-offset: -1px;
       }
 
+      tr.rule-disabled {
+        opacity: 0.55;
+      }
+
       .toggle-cell {
         text-align: center;
       }
@@ -313,6 +367,12 @@
         padding: 4px 6px;
         border-radius: 6px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      }
+
+      .unsaved-indicator {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--danger-color);
       }
 
       .rules-actions {
@@ -388,26 +448,38 @@
         </p>
       </header>
       <form id="options-form">
+        <!--
         <section aria-labelledby="template-heading">
-          <div>
-            <h2 id="template-heading">Template</h2>
-            <p class="token-help">
-              Use multi-line markdown. Tokens expand to the copied text, page title, and page URL.
-            </p>
+          <div class="section-header">
+            <div class="section-info">
+              <h2 id="template-heading">Template</h2>
+              <p class="token-help">
+                Template customization is coming soon. Until then MarkQuote uses the default Markdown
+                format shown in the preview below.
+              </p>
+            </div>
+            <div class="section-actions">
+              <span class="unsaved-indicator" id="template-unsaved" hidden>Unsaved changes</span>
+              <button type="button" class="secondary" id="restore-template">Restore default template</button>
+            </div>
           </div>
           <label for="format-template">Markdown template</label>
           <textarea id="format-template" spellcheck="false"></textarea>
-          <div class="template-actions">
-            <button type="button" class="secondary" id="restore-template">Restore default template</button>
-          </div>
         </section>
+        -->
 
         <section aria-labelledby="title-rules-heading">
-          <div>
-            <h2 id="title-rules-heading">Title Rules</h2>
-            <p class="token-help">
-              When the current page URL matches the pattern, apply the search and replace to the page title.
-            </p>
+          <div class="section-header">
+            <div class="section-info">
+              <h2 id="title-rules-heading">Title Rules</h2>
+              <p class="token-help">
+                When the current page URL matches the pattern, apply the search and replace to the page title.
+              </p>
+            </div>
+            <div class="section-actions">
+              <span class="unsaved-indicator" id="title-unsaved-indicator" hidden>Unsaved changes</span>
+              <button type="button" class="primary" id="save-title-rules" disabled>Save changes</button>
+            </div>
           </div>
           <div class="preview-controls">
             <label for="title-sample-preset">
@@ -437,6 +509,8 @@
                 <th scope="col">URL pattern</th>
                 <th scope="col">Title search</th>
                 <th scope="col">Title replace</th>
+                <th scope="col">Comment</th>
+                <th scope="col">Enabled</th>
                 <th scope="col">Break</th>
                 <th scope="col">Actions</th>
               </tr>
@@ -460,11 +534,17 @@
         </section>
 
         <section aria-labelledby="url-rules-heading">
-          <div>
-            <h2 id="url-rules-heading">URL Rules</h2>
-            <p class="token-help">
-              Use these rules to rewrite the outgoing URL when the current page matches the pattern.
-            </p>
+          <div class="section-header">
+            <div class="section-info">
+              <h2 id="url-rules-heading">URL Rules</h2>
+              <p class="token-help">
+                Use these rules to rewrite the outgoing URL when the current page matches the pattern.
+              </p>
+            </div>
+            <div class="section-actions">
+              <span class="unsaved-indicator" id="url-unsaved-indicator" hidden>Unsaved changes</span>
+              <button type="button" class="primary" id="save-url-rules" disabled>Save changes</button>
+            </div>
           </div>
           <div class="preview-controls">
             <label for="url-sample-preset">
@@ -500,6 +580,8 @@
                 <th scope="col">URL pattern</th>
                 <th scope="col">URL search</th>
                 <th scope="col">URL replace</th>
+                <th scope="col">Comment</th>
+                <th scope="col">Enabled</th>
                 <th scope="col">Break</th>
                 <th scope="col">Actions</th>
               </tr>

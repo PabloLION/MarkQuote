@@ -1,5 +1,13 @@
 import { execSync } from "node:child_process";
-import { chmodSync, lstatSync, mkdirSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  readlinkSync,
+  rmSync,
+  type Stats,
+  symlinkSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,7 +16,7 @@ const hooksSource = join(repoRoot, "scripts", "git-hooks");
 const hooksTarget = join(repoRoot, ".git", "hooks");
 try {
   mkdirSync(join(repoRoot, ".git"), { recursive: true });
-  const existing = (() => {
+  const existing: Stats | undefined = (() => {
     try {
       return lstatSync(hooksTarget);
     } catch {
@@ -18,7 +26,7 @@ try {
 
   const hookNames = ["pre-commit", "pre-merge-commit"];
 
-  const ensureExecutable = (hookName) => {
+  const ensureExecutable = (hookName: string): void => {
     try {
       chmodSync(join(hooksSource, hookName), 0o755);
     } catch (error) {
@@ -59,7 +67,7 @@ try {
     encoding: "utf8",
   }).trim();
   mergeFfDisabled = current === "false";
-} catch (error) {
+} catch (_error) {
   mergeFfDisabled = false;
 }
 
@@ -71,7 +79,7 @@ if (!mergeFfDisabled) {
     });
     mergeFfDisabled = true;
     console.log("Configured git merge.ff=false (no fast-forward merges).");
-  } catch (error) {
+  } catch (_error) {
     console.warn(
       "Warning: unable to set git merge.ff=false automatically. Please run `git config --local merge.ff false` manually.",
     );

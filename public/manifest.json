@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "MarkQuote",
-  "version": "1.0.0",
-  "description": "copy selected text as markdown with source link.",
+  "version": "1.1.0",
+  "description": "Copy webpage selections as Markdown quotes with reference source link.",
   "permissions": [
     "contextMenus",
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "windows"
   ],
   "background": {
     "service_worker": "background.js",

@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Skip if the merge produced a merge commit (pre-merge-commit already ran).
+if git rev-parse HEAD^2 >/dev/null 2>&1; then
+  exit 0
+fi
+
+printf 'Running Playwright end-to-end tests after fast-forward merge...\n'
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  printf 'pnpm is not available in PATH. Please install pnpm and rerun tests (pnpm test:e2e --project=chromium-extension).\n' >&2
+  exit 0
+fi
+
+pnpm test:e2e --project=chromium-extension

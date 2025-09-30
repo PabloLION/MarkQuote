@@ -3,10 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { initializePopup } from "../../src/popup";
 
-const INLINE_MODE_ISSUE_QUERY =
-  "https://github.com/PabloLION/MarkQuote/issues?q=is%3Aissue+inline+mode";
+const INLINE_MODE_ISSUE_QUERY = "https://github.com/PabloLION/MarkQuote/issues/3";
 
-const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote";
+const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 
 type CommandsShim = typeof chrome.commands & {
   openShortcutSettings?: () => void;
@@ -20,11 +19,19 @@ function mountPopupDom() {
     <header>
       <button id="options-button"></button>
       <button id="hotkeys-button"></button>
-      <button id="feedback-button"></button>
-      <button id="inline-mode-button"></button>
+      <button id="inline-mode-button" data-feedback-link="${INLINE_MODE_ISSUE_QUERY}"></button>
+      <button id="feedback-button"><span id="problem-badge"></span></button>
     </header>
-    <div id="message"></div>
-    <pre id="preview"></pre>
+    <div id="error-container" hidden>
+      <div class="error-header"></div>
+      <ul id="error-list"></ul>
+      <button id="report-errors-button"></button>
+      <button id="dismiss-errors-button"></button>
+    </div>
+    <div id="message" class="status-message" hidden>
+      <div id="message-text" class="status-text"></div>
+      <pre id="preview" class="status-preview" hidden><code></code></pre>
+    </div>
   `;
 }
 
@@ -64,13 +71,28 @@ describe("popup", () => {
       sinonChrome.reset();
     });
 
+    it("shows the default message and hides the preview initially", () => {
+      expect(document.getElementById("message")?.hasAttribute("hidden")).toBe(false);
+      expect(document.getElementById("message-text")?.textContent).toBe(
+        "Select text on a page, then trigger MarkQuote to copy it as a Markdown reference.",
+      );
+      expect(document.getElementById("message")?.dataset.label).toBe("Tip");
+      expect(document.getElementById("preview")?.hasAttribute("hidden")).toBe(true);
+    });
+
     it("renders copied message preview when receiving events", () => {
       const payload = { type: "copied-text-preview", text: "Example markdown" } as const;
 
       sinonChrome.runtime.onMessage.dispatch(payload, {} as chrome.runtime.MessageSender, () => {});
 
-      expect(document.getElementById("message")?.textContent).toBe("Copied!");
-      expect(document.getElementById("preview")?.textContent).toBe("Example markdown");
+      expect(document.getElementById("message-text")?.textContent).toBe(
+        "Markdown copied to clipboard.",
+      );
+      expect(document.getElementById("message")?.dataset.label).toBe("Copied");
+      expect(document.getElementById("message")?.dataset.variant).toBe("success");
+      const previewElement = document.getElementById("preview");
+      expect(previewElement?.hasAttribute("hidden")).toBe(false);
+      expect(previewElement?.textContent).toBe("Example markdown");
       expect(clipboardWriteSpy).toHaveBeenCalledWith("Example markdown");
     });
 
