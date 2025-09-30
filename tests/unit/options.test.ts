@@ -113,6 +113,9 @@ describe("Options Page", () => {
     const titleCommentInput = firstTitleRow.querySelector<HTMLInputElement>(
       'input[data-field="comment"]',
     );
+    const titleEnabledToggle = firstTitleRow.querySelector<HTMLInputElement>(
+      'input[data-field="enabled"]',
+    );
     const titleContinueToggle = firstTitleRow.querySelector<HTMLInputElement>(
       'input[data-field="continueMatching"]',
     );
@@ -121,6 +124,7 @@ describe("Options Page", () => {
     expect(titleSearchInput?.value).toBe(DEFAULT_WIKI_TITLE_SEARCH);
     expect(titleReplaceInput?.value).toBe(DEFAULT_WIKI_TITLE_REPLACE);
     expect(titleCommentInput?.value).toBe("Format wiki link");
+    expect(titleEnabledToggle?.checked).toBe(true);
     expect(titleContinueToggle?.checked).toBe(true);
 
     const urlRows = Array.from(
@@ -135,10 +139,11 @@ describe("Options Page", () => {
       const search = row.querySelector<HTMLInputElement>('input[data-field="urlSearch"]')?.value;
       const replace = row.querySelector<HTMLInputElement>('input[data-field="urlReplace"]')?.value;
       const comment = row.querySelector<HTMLInputElement>('input[data-field="comment"]')?.value;
+      const enabled = row.querySelector<HTMLInputElement>('input[data-field="enabled"]')?.checked;
       const breakAfter = row.querySelector<HTMLInputElement>(
         'input[data-field="continueMatching"]',
       )?.checked;
-      return { pattern, search, replace, comment, breakAfter };
+      return { pattern, search, replace, comment, breakAfter, enabled };
     }
 
     expect(readRow(withNextRow)).toEqual({
@@ -146,6 +151,7 @@ describe("Options Page", () => {
       search: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
       comment: "Remove ChatGPT UTM",
+      enabled: true,
       breakAfter: false,
     });
 
@@ -154,6 +160,7 @@ describe("Options Page", () => {
       search: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
       replace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
       comment: "Remove ChatGPT UTM",
+      enabled: true,
       breakAfter: false,
     });
 
@@ -162,6 +169,7 @@ describe("Options Page", () => {
       search: DEFAULT_AMAZON_URL_SEARCH,
       replace: DEFAULT_AMAZON_URL_REPLACE,
       comment: "Canonical Amazon URL",
+      enabled: true,
       breakAfter: true,
     });
   });
@@ -347,12 +355,14 @@ describe("Options Page", () => {
             titleSearch: string;
             titleReplace: string;
             continueMatching: boolean;
+            enabled: boolean;
           }>;
           urlRules: Array<{
             urlPattern: string;
             urlSearch: string;
             urlReplace: string;
             continueMatching: boolean;
+            enabled: boolean;
           }>;
         };
         format: string;
@@ -362,6 +372,7 @@ describe("Options Page", () => {
           titleReplace: string;
           comment: string;
           continueMatching: boolean;
+          enabled: boolean;
         }>;
         urlRules: Array<{
           urlPattern: string;
@@ -369,6 +380,7 @@ describe("Options Page", () => {
           urlReplace: string;
           comment: string;
           continueMatching: boolean;
+          enabled: boolean;
         }>;
       },
     ];
@@ -384,6 +396,7 @@ describe("Options Page", () => {
       titleReplace: DEFAULT_WIKI_TITLE_REPLACE,
       comment: "Format wiki link",
       continueMatching: false,
+      enabled: true,
     });
 
     expect(customTitleRule).toEqual({
@@ -392,6 +405,7 @@ describe("Options Page", () => {
       titleReplace: "Sample",
       comment: "",
       continueMatching: true,
+      enabled: true,
     });
 
     const urlRulesPayload = payload.options.urlRules;
@@ -406,6 +420,7 @@ describe("Options Page", () => {
       urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
       comment: "Remove ChatGPT UTM",
       continueMatching: true,
+      enabled: true,
     });
 
     expect(trailingRule).toEqual({
@@ -414,6 +429,7 @@ describe("Options Page", () => {
       urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
       comment: "Remove ChatGPT UTM",
       continueMatching: true,
+      enabled: true,
     });
 
     expect(amazonRule).toEqual({
@@ -422,6 +438,7 @@ describe("Options Page", () => {
       urlReplace: DEFAULT_AMAZON_URL_REPLACE,
       comment: "Canonical Amazon URL",
       continueMatching: false,
+      enabled: true,
     });
 
     expect(customRule).toEqual({
@@ -430,10 +447,49 @@ describe("Options Page", () => {
       urlReplace: "https",
       comment: "",
       continueMatching: true,
+      enabled: true,
     });
 
     expect(payload.titleRules).toEqual(payload.options.titleRules);
     expect(payload.urlRules).toEqual(payload.options.urlRules);
+  });
+
+  it("allows disabling a title rule without removing it", async () => {
+    const titleEnabledToggle = document.querySelector<HTMLInputElement>(
+      '#title-rules-body tr:first-child input[data-field="enabled"]',
+    );
+    const titleRow = titleEnabledToggle?.closest<HTMLTableRowElement>("tr");
+    const saveTitleRulesButton = document.getElementById("save-title-rules") as HTMLButtonElement;
+
+    if (!titleEnabledToggle || !titleRow) {
+      throw new Error("Expected default title rule toggle to exist.");
+    }
+
+    expect(titleEnabledToggle.checked).toBe(true);
+    expect(titleRow.classList.contains("rule-disabled")).toBe(false);
+
+    titleEnabledToggle.checked = false;
+    titleEnabledToggle.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(titleRow.classList.contains("rule-disabled")).toBe(true);
+    expect(saveTitleRulesButton.disabled).toBe(false);
+
+    saveTitleRulesButton.click();
+
+    await flushMicrotasks();
+    await flushMicrotasks();
+
+    expect(sinonChrome.storage.sync.set.calledOnce).toBe(true);
+
+    const [payload] = sinonChrome.storage.sync.set.firstCall.args as [
+      {
+        titleRules: Array<{ enabled: boolean }>;
+        options: { titleRules: Array<{ enabled: boolean }> };
+      },
+    ];
+
+    expect(payload.titleRules[0].enabled).toBe(false);
+    expect(payload.options.titleRules[0].enabled).toBe(false);
   });
 
   it("requires confirmation before clearing title rules", () => {

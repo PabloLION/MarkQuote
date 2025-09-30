@@ -62,6 +62,10 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
 }
 
 function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplicationResult {
+  if (rule.enabled === false) {
+    return { value: title, matched: false };
+  }
+
   if (!matchesUrlPattern(rule.urlPattern, url)) {
     return { value: title, matched: false };
   }
@@ -89,6 +93,10 @@ export function applyTitleRules(rules: TitleRule[], startingTitle: string, url: 
 }
 
 function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
+  if (rule.enabled === false) {
+    return { value: url, matched: false };
+  }
+
   if (!matchesUrlPattern(rule.urlPattern, url)) {
     return { value: url, matched: false };
   }

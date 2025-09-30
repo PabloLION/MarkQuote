@@ -312,9 +312,13 @@ async function ensureOptionsInitialized(): Promise<void> {
     }
 
     const existingOptions = snapshot.options as { version?: number } | undefined;
-    if (existingOptions?.version !== CURRENT_OPTIONS_VERSION && existingOptions) {
+    if (existingOptions?.version !== CURRENT_OPTIONS_VERSION) {
+      const normalized = normalizeStoredOptions(snapshot);
       await storageArea.set({
-        options: { ...existingOptions, version: CURRENT_OPTIONS_VERSION },
+        options: normalized,
+        format: normalized.format,
+        titleRules: normalized.titleRules,
+        urlRules: normalized.urlRules,
       });
     }
   } catch (error) {

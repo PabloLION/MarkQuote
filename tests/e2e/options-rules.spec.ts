@@ -41,6 +41,7 @@ test("options UI edits update popup preview", async () => {
         titleReplace: "Original:$1",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ],
     urlRules: [
@@ -50,6 +51,7 @@ test("options UI edits update popup preview", async () => {
         urlReplace: "$1?initial=true",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ],
   };
@@ -114,6 +116,7 @@ test("chained URL rules respect break versus continue", async () => {
       urlReplace: "&should-not-appear=true",
       comment: "",
       continueMatching: true,
+      enabled: true,
     },
   ];
 

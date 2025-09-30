@@ -1,4 +1,4 @@
-export const CURRENT_OPTIONS_VERSION = 2;
+export const CURRENT_OPTIONS_VERSION = 3;
 
 export interface TitleRule {
   urlPattern: string;
@@ -6,6 +6,7 @@ export interface TitleRule {
   titleReplace: string;
   comment: string;
   continueMatching: boolean;
+  enabled: boolean;
 }
 
 export interface UrlRule {
@@ -14,6 +15,7 @@ export interface UrlRule {
   urlReplace: string;
   comment: string;
   continueMatching: boolean;
+  enabled: boolean;
 }
 
 export interface OptionsPayload {
@@ -99,6 +101,18 @@ function readBooleanField(
   return false;
 }
 
+function readEnabledField(record: Record<string, unknown>): boolean {
+  if (Object.hasOwn(record, "enabled")) {
+    return sanitizeBoolean(record.enabled);
+  }
+
+  if (Object.hasOwn(record, "disabled")) {
+    return !sanitizeBoolean(record.disabled);
+  }
+
+  return true;
+}
+
 type RuleNormalizer<TRule> = (rawRule: unknown) => TRule | undefined;
 
 function normalizeRuleCollection<TRule>(
@@ -120,6 +134,7 @@ export function createDefaultTitleRules(): TitleRule[] {
       titleReplace: DEFAULT_WIKI_TITLE_REPLACE,
       comment: "Format wiki link",
       continueMatching: false,
+      enabled: true,
     },
   ];
 }
@@ -132,6 +147,7 @@ export function createDefaultUrlRules(): UrlRule[] {
       urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
       comment: "Remove ChatGPT UTM",
       continueMatching: true,
+      enabled: true,
     },
     {
       urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
@@ -139,6 +155,7 @@ export function createDefaultUrlRules(): UrlRule[] {
       urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
       comment: "Remove ChatGPT UTM",
       continueMatching: true,
+      enabled: true,
     },
     {
       urlPattern: DEFAULT_AMAZON_URL_PATTERN,
@@ -146,6 +163,7 @@ export function createDefaultUrlRules(): UrlRule[] {
       urlReplace: DEFAULT_AMAZON_URL_REPLACE,
       comment: "Canonical Amazon URL",
       continueMatching: false,
+      enabled: true,
     },
   ];
 }
@@ -176,6 +194,8 @@ interface RawTitleRuleShape {
   continueMatching?: unknown;
   continue?: unknown;
   fallthrough?: unknown;
+  enabled?: unknown;
+  disabled?: unknown;
 }
 
 interface RawUrlRuleShape {
@@ -186,6 +206,8 @@ interface RawUrlRuleShape {
   continueMatching?: unknown;
   continue?: unknown;
   fallthrough?: unknown;
+  enabled?: unknown;
+  disabled?: unknown;
 }
 
 interface RawCombinedRuleShape extends RawTitleRuleShape, RawUrlRuleShape {}
@@ -210,6 +232,7 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
     "continue",
     "fallthrough",
   ]);
+  const enabled = readEnabledField(record);
 
   if (!urlPattern && !titleSearch && !titleReplace) {
     return undefined;
@@ -221,6 +244,7 @@ function normalizeTitleRule(rawRule: unknown): TitleRule | undefined {
     titleReplace,
     comment,
     continueMatching,
+    enabled,
   };
 }
 
@@ -240,6 +264,7 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
     "continue",
     "fallthrough",
   ]);
+  const enabled = readEnabledField(record);
 
   if (!urlPattern && !urlSearch && !urlReplace) {
     return undefined;
@@ -251,6 +276,7 @@ function normalizeUrlRule(rawRule: unknown): UrlRule | undefined {
     urlReplace,
     comment,
     continueMatching,
+    enabled,
   };
 }
 
@@ -270,6 +296,7 @@ interface CombinedRule {
   urlReplace: string;
   comment: string;
   continueMatching: boolean;
+  enabled: boolean;
 }
 
 function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
@@ -290,6 +317,7 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
     "continue",
     "fallthrough",
   ]);
+  const enabled = readEnabledField(record);
 
   if (!urlPattern && !titleSearch && !urlSearch && !urlReplace) {
     return undefined;
@@ -303,6 +331,7 @@ function normalizeCombinedRule(rawRule: unknown): CombinedRule | undefined {
     urlReplace,
     comment,
     continueMatching,
+    enabled,
   };
 }
 

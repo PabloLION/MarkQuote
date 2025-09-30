@@ -47,6 +47,7 @@ function sanitizeTitleRule(rule: TitleRule): TitleRule {
     titleReplace: rule.titleReplace,
     comment: rule.comment.trim(),
     continueMatching: Boolean(rule.continueMatching),
+    enabled: rule.enabled === false ? false : true,
   };
 }
 
@@ -57,6 +58,7 @@ function sanitizeUrlRule(rule: UrlRule): UrlRule {
     urlReplace: rule.urlReplace,
     comment: rule.comment.trim(),
     continueMatching: Boolean(rule.continueMatching),
+    enabled: rule.enabled === false ? false : true,
   };
 }
 
@@ -158,6 +160,7 @@ export function initializeOptions(): () => void {
         titleReplace: "",
         comment: "",
         continueMatching: false,
+        enabled: true,
       }),
       sanitize: sanitizeTitleRule,
       hasContent: (rule: TitleRule) =>
@@ -201,6 +204,7 @@ export function initializeOptions(): () => void {
         urlReplace: "",
         comment: "",
         continueMatching: false,
+        enabled: true,
       }),
       sanitize: sanitizeUrlRule,
       hasContent: (rule: UrlRule) => Boolean(rule.urlPattern || rule.urlSearch || rule.urlReplace),
@@ -352,7 +356,9 @@ export function initializeOptions(): () => void {
     removed: string;
   }
 
-  interface RuleConfig<TRule extends { continueMatching: boolean }> {
+  type RuleWithFlags = { continueMatching: boolean; enabled: boolean };
+
+  interface RuleConfig<TRule extends RuleWithFlags> {
     scope: DragScope;
     getRules: () => TRule[];
     setRules: (next: TRule[]) => void;
@@ -415,9 +421,7 @@ export function initializeOptions(): () => void {
     confirmClearButton.hidden = true;
   }
 
-  function filteredRulesInternal<TRule extends { continueMatching: boolean }>(
-    config: RuleConfig<TRule>,
-  ): TRule[] {
+  function filteredRulesInternal<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): TRule[] {
     const rules = config.getRules();
     const normalized: TRule[] = [];
 
@@ -501,10 +505,11 @@ export function initializeOptions(): () => void {
     return cell;
   }
 
-  function createToggleCell(
+  function createCheckboxCell(
     field: string,
     index: number,
-    shouldBreak: boolean,
+    checked: boolean,
+    label: string,
   ): HTMLTableCellElement {
     const cell = document.createElement("td");
     cell.classList.add("toggle-cell");
@@ -514,8 +519,8 @@ export function initializeOptions(): () => void {
     input.type = "checkbox";
     input.dataset.index = String(index);
     input.dataset.field = field;
-    input.checked = shouldBreak;
-    input.setAttribute("aria-label", "Break after match");
+    input.checked = checked;
+    input.setAttribute("aria-label", label);
 
     cell.append(input);
 
@@ -555,14 +560,14 @@ export function initializeOptions(): () => void {
     list.splice(insertIndex, 0, item);
   }
 
-  function readRuleField<TRule extends { continueMatching: boolean }>(
+  function readRuleField<TRule extends RuleWithFlags>(
     rule: TRule,
     key: StringFieldKey<TRule>,
   ): string {
     return (rule as Record<StringFieldKey<TRule>, string>)[key] ?? "";
   }
 
-  function setRuleField<TRule extends { continueMatching: boolean }>(
+  function setRuleField<TRule extends RuleWithFlags>(
     rule: TRule,
     key: StringFieldKey<TRule>,
     value: string,
@@ -681,9 +686,7 @@ export function initializeOptions(): () => void {
     }
   }
 
-  function renderRulesFor<TRule extends { continueMatching: boolean }>(
-    config: RuleConfig<TRule>,
-  ): void {
+  function renderRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     const rules = config.getRules();
 
     config.body.innerHTML = "";
@@ -691,6 +694,7 @@ export function initializeOptions(): () => void {
     rules.forEach((rule, index) => {
       const row = document.createElement("tr");
       row.dataset.index = String(index);
+      row.classList.toggle("rule-disabled", rule.enabled === false);
 
       const fieldCells = config.fields.map((descriptor) =>
         createInputCell(
@@ -704,7 +708,8 @@ export function initializeOptions(): () => void {
       row.append(
         createHandleCell(config.scope, index),
         ...fieldCells,
-        createToggleCell("continueMatching", index, !rule.continueMatching),
+        createCheckboxCell("enabled", index, rule.enabled !== false, "Rule enabled"),
+        createCheckboxCell("continueMatching", index, !rule.continueMatching, "Break after match"),
         createRemoveCell(index, config.scope),
       );
 
@@ -725,9 +730,7 @@ export function initializeOptions(): () => void {
     }
   }
 
-  function addRuleFor<TRule extends { continueMatching: boolean }>(
-    config: RuleConfig<TRule>,
-  ): void {
+  function addRuleFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     config.getRules().push(config.createEmpty());
     renderRulesFor(config);
 
@@ -748,7 +751,7 @@ export function initializeOptions(): () => void {
     }
   }
 
-  function handleRuleInputChangeFor<TRule extends { continueMatching: boolean }>(
+  function handleRuleInputChangeFor<TRule extends RuleWithFlags>(
     config: RuleConfig<TRule>,
     target: HTMLInputElement,
   ): void {
@@ -771,6 +774,15 @@ export function initializeOptions(): () => void {
       const previous = rule.continueMatching;
       rule.continueMatching = !target.checked;
       changed = previous !== rule.continueMatching;
+    } else if (field === "enabled") {
+      const previous = rule.enabled !== false;
+      const nextEnabled = target.checked;
+      if (previous !== nextEnabled) {
+        rule.enabled = nextEnabled;
+        const row = target.closest<HTMLTableRowElement>("tr");
+        row?.classList.toggle("rule-disabled", !nextEnabled);
+        changed = true;
+      }
     } else {
       const descriptor = config.fields.find((item) => item.key === field);
       if (!descriptor) {
@@ -803,7 +815,7 @@ export function initializeOptions(): () => void {
     }
   }
 
-  function removeRuleFor<TRule extends { continueMatching: boolean }>(
+  function removeRuleFor<TRule extends RuleWithFlags>(
     config: RuleConfig<TRule>,
     index: number,
   ): void {
@@ -826,9 +838,7 @@ export function initializeOptions(): () => void {
     }
   }
 
-  function promptClearRulesFor<TRule extends { continueMatching: boolean }>(
-    config: RuleConfig<TRule>,
-  ): void {
+  function promptClearRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     setClearStatus(config.scope, "");
     const existingTimeout = clearTimeouts[config.scope];
     if (existingTimeout) {
@@ -853,9 +863,7 @@ export function initializeOptions(): () => void {
     }
   }
 
-  function confirmClearRulesFor<TRule extends { continueMatching: boolean }>(
-    config: RuleConfig<TRule>,
-  ): void {
+  function confirmClearRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     resetClearConfirmation(config.scope);
     config.setRules([]);
     renderRulesFor(config);
@@ -872,7 +880,7 @@ export function initializeOptions(): () => void {
       : validateRulesFor(ruleConfigs.url);
   }
 
-  function validateRulesFor<TRule extends { continueMatching: boolean }>(
+  function validateRulesFor<TRule extends RuleWithFlags>(
     config: RuleConfig<TRule>,
   ): ValidationResult {
     const rules = config.getRules();
