@@ -39,7 +39,6 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 ├── src/                     # TypeScript source code
 │   ├── background.ts        # Background service worker for the extension
 │   ├── clipboard.ts         # Logic for formatting clipboard content
-│   ├── content.ts           # Initial content script (currently minimal)
 │   ├── converter.ts         # HTML to Markdown conversion logic
 │   ├── selection.ts         # Script to get the user's selection
 │   └── options.ts           # Logic for the options page
