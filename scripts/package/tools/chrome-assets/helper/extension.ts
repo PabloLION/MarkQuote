@@ -134,7 +134,7 @@ export async function openExtensionPage(
   return page;
 }
 
-async function undockDevtools(page: Page): Promise<void> {
+export async function undockDevtools(page: Page): Promise<void> {
   try {
     const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
     await page.waitForTimeout(400);
