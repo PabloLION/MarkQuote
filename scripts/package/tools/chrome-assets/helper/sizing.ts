@@ -49,8 +49,9 @@ export function getLaunchOptionsForCapture(kind: CaptureKind): LaunchOptions {
   if (shouldMatchWindow(kind)) {
     return {
       windowSize: getViewportSize(kind),
+      devtools: true,
     };
   }
 
-  return {};
+  return { devtools: true };
 }

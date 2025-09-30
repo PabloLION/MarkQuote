@@ -9,6 +9,7 @@ export interface LaunchOptions {
   headed?: boolean;
   colorScheme?: "light" | "dark";
   windowSize?: { width: number; height: number };
+  devtools?: boolean;
 }
 
 export interface ExtensionContextHandle {
@@ -43,6 +44,7 @@ export async function launchExtensionContext(
     headless: !headed,
     colorScheme: options.colorScheme ?? "dark",
     viewport: null,
+    devtools: options.devtools ?? true,
     args: [
       `--disable-extensions-except=${distDir}`,
       `--load-extension=${distDir}`,
