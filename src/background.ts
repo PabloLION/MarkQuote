@@ -7,6 +7,12 @@ import {
   isE2ETest,
 } from "./background/constants.js";
 import {
+  getLastFormattedPreview,
+  getLastPreviewError,
+  runCopyPipeline,
+  setLastPreviewError,
+} from "./background/copy-pipeline.js";
+import {
   clearStoredErrors,
   getStoredErrors,
   initializeBadgeFromStorage,
@@ -14,7 +20,6 @@ import {
 } from "./background/errors.js";
 import { isUrlProtected } from "./background/protected-urls.js";
 import type { CopySource } from "./background/types.js";
-import { formatForClipboard } from "./clipboard.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_OPTIONS,
@@ -22,8 +27,6 @@ import {
   type OptionsPayload,
 } from "./options-schema.js";
 
-let lastFormattedPreview = "";
-let lastPreviewError: string | undefined;
 let e2eSelectionStub:
   | {
       markdown: string;
@@ -125,7 +128,7 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
           source,
         });
         if (isE2ETest) {
-          lastPreviewError = lastErrorMessage;
+          setLastPreviewError(lastErrorMessage);
         }
       }
     },
@@ -208,37 +211,6 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
   void handleHotkey();
 });
-
-async function runCopyPipeline(
-  markdown: string,
-  title: string,
-  url: string,
-  source: CopySource,
-): Promise<string> {
-  const formatted = await formatForClipboard(markdown, title, url);
-
-  if (source === "popup") {
-    chrome.runtime
-      .sendMessage({ type: "copied-text-preview", text: formatted })
-      .then(() => {
-        if (isE2ETest) {
-          lastPreviewError = undefined;
-        }
-      })
-      .catch((error) => {
-        void recordError("notify-popup-preview", error);
-        if (isE2ETest) {
-          lastPreviewError = error instanceof Error ? error.message : String(error);
-        }
-      });
-  }
-
-  if (isE2ETest) {
-    lastFormattedPreview = formatted;
-  }
-
-  return formatted;
-}
 
 async function persistOptions(payload: OptionsPayload): Promise<void> {
   const storageArea = chrome.storage?.sync;
@@ -415,8 +387,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (isE2ETest && request?.type === E2E_LAST_FORMATTED_MESSAGE) {
     sendResponse?.({
-      formatted: lastFormattedPreview,
-      error: lastPreviewError,
+      formatted: getLastFormattedPreview(),
+      error: getLastPreviewError(),
     });
     return true;
   }
