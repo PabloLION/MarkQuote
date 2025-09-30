@@ -190,6 +190,12 @@ chrome.commands.onCommand.addListener((command, tab) => {
       return;
     }
 
+    if (tab?.windowId !== undefined) {
+      await chrome.windows.update(tab.windowId, { focused: true }).catch((error) => {
+        console.warn("[MarkQuote] Failed to focus window before opening popup", error);
+      });
+    }
+
     if (tab?.id) {
       hotkeyPopupFallbackTimer = setTimeout(() => {
         hotkeyPopupFallbackTimer = undefined;
