@@ -125,18 +125,32 @@
         color: var(--accent-color);
       }
 
-      #preview {
+      .status-text + .status-preview {
+        margin-top: 10px;
+      }
+
+      .status-preview {
         margin: 0;
-        background: var(--panel-background);
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
         padding: 12px;
+        border-radius: 8px;
+        background: var(--panel-background);
         max-height: 420px;
         overflow-y: auto;
         white-space: pre-wrap;
         word-break: break-word;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
         font-size: 0.9rem;
+        color: var(--surface-foreground);
+        font-weight: 400;
+      }
+
+      .status-preview[hidden] {
+        display: none;
+      }
+
+      .status-preview code {
+        display: block;
+        white-space: inherit;
       }
 
       .badge {
@@ -219,22 +233,10 @@
       </div>
       <ul id="error-list"></ul>
     </div>
-    <div id="message" class="status-message" hidden></div>
-    <pre id="preview"></pre>
-    <script type="module">
-      const loadModule = async () => {
-        const isDev = window.location.hostname === 'localhost' || window.location.port === '5173';
-
-        if (isDev) {
-          await import('/src/popup-entry.ts');
-        } else {
-          await import('./popup.js');
-        }
-      };
-
-      loadModule().catch((error) => {
-        console.error('Unable to bootstrap popup entry', error);
-      });
-    </script>
+    <div id="message" class="status-message" hidden>
+      <div id="message-text" class="status-text"></div>
+      <pre id="preview" class="status-preview" hidden aria-label="Copied Markdown preview"><code class="language-markdown"></code></pre>
+    </div>
+    <script type="module" src="./popup-loader.js"></script>
   </body>
 </html>

@@ -16,7 +16,7 @@ type LoggedExtensionError = {
 
 const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 const DEFAULT_STATUS_MESSAGE =
-  "Select text on a page, then trigger MarkQuote to copy it as Markdown.";
+  "Select text on a page, then trigger MarkQuote to copy it as a Markdown reference.";
 const SAMPLE_PREVIEW =
   "> This was addressed in 2014 when long-standing Markdown contributors released CommonMark, an unambiguous specification and test suite for Markdown.\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown)";
 
@@ -74,7 +74,9 @@ function resolveForcedPopupState(): ForcedPopupState | null {
 
 export function initializePopup(): () => void {
   const messageDiv = document.getElementById("message");
+  const messageText = document.getElementById("message-text");
   const previewDiv = document.getElementById("preview");
+  const previewCode = previewDiv?.querySelector("code");
   const optionsButton = document.getElementById("options-button");
   const hotkeysButton = document.getElementById("hotkeys-button");
   const feedbackButton = document.getElementById("feedback-button");
@@ -123,15 +125,15 @@ export function initializePopup(): () => void {
     text: string,
     options: { label?: string; variant?: "default" | "success" | "warning" } = {},
   ) => {
-    if (!messageDiv) {
+    if (!messageDiv || !messageText) {
       return;
     }
 
     if (text.trim().length === 0) {
-      messageDiv.textContent = "";
+      messageText.textContent = "";
       messageDiv.setAttribute("hidden", "true");
     } else {
-      messageDiv.textContent = text;
+      messageText.textContent = text;
       messageDiv.removeAttribute("hidden");
     }
 
@@ -149,21 +151,33 @@ export function initializePopup(): () => void {
     }
   };
 
+  const renderPreview = (text: string | null | undefined) => {
+    if (!previewDiv || !previewCode) {
+      return;
+    }
+
+    if (typeof text !== "string" || text.trim().length === 0) {
+      previewCode.textContent = "";
+      previewDiv.setAttribute("hidden", "true");
+      return;
+    }
+
+    previewCode.textContent = text;
+    previewDiv.removeAttribute("hidden");
+  };
+
   setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
+  renderPreview(null);
 
   const applyForcedPopupState = (forcedState: ForcedPopupState) => {
     switch (forcedState.kind) {
       case "default": {
-        if (previewDiv) {
-          previewDiv.textContent = "";
-        }
+        renderPreview(null);
         setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
         break;
       }
       case "copied": {
-        if (previewDiv) {
-          previewDiv.textContent = forcedState.preview;
-        }
+        renderPreview(forcedState.preview);
         setMessage("Markdown copied to clipboard.", {
           label: "Copied",
           variant: "success",
@@ -171,9 +185,7 @@ export function initializePopup(): () => void {
         break;
       }
       case "protected": {
-        if (previewDiv) {
-          previewDiv.textContent = "";
-        }
+        renderPreview(null);
         setMessage(
           "This page is protected, so MarkQuote can't access the selection. Try another tab.",
           {
@@ -184,9 +196,7 @@ export function initializePopup(): () => void {
         break;
       }
       default: {
-        if (previewDiv) {
-          previewDiv.textContent = "";
-        }
+        renderPreview(null);
         setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
       }
     }
@@ -194,9 +204,7 @@ export function initializePopup(): () => void {
 
   const messageListener = (request: RuntimeMessage) => {
     if (request.type === "copied-text-preview") {
-      if (previewDiv) {
-        previewDiv.textContent = request.text;
-      }
+      renderPreview(request.text);
 
       setMessage("Markdown copied to clipboard.", { label: "Copied", variant: "success" });
 
@@ -208,9 +216,7 @@ export function initializePopup(): () => void {
         }
       });
     } else if (request.type === "copy-protected") {
-      if (previewDiv) {
-        previewDiv.textContent = "";
-      }
+      renderPreview(null);
 
       setMessage(
         "This page is protected, so MarkQuote can't access the selection. Try another tab.",
@@ -355,21 +361,15 @@ export function initializePopup(): () => void {
 
     devApi = {
       showDefault() {
-        if (previewDiv) {
-          previewDiv.textContent = "";
-        }
+        renderPreview(null);
         setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
       },
       showSuccess(text: string) {
-        if (previewDiv) {
-          previewDiv.textContent = text;
-        }
+        renderPreview(text);
         setMessage("Markdown copied to clipboard.", { label: "Copied", variant: "success" });
       },
       showProtected() {
-        if (previewDiv) {
-          previewDiv.textContent = "";
-        }
+        renderPreview(null);
         setMessage(
           "This page is protected, so MarkQuote can't access the selection. Try another tab.",
           {
