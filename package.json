@@ -25,6 +25,7 @@
     "dev": "vite",
     "dev:browser": "tsx scripts/dev/launch-dev-browser.ts",
     "dev:playwright": "tsx scripts/package/dev/playwright-dev.ts",
+    "publish:chrome": "tsx scripts/publish/chrome-web-store.ts",
     "bundle": "tsx scripts/package/bundle.ts",
     "tools:chrome-assets": "tsx scripts/package/capture-store-assets.ts",
     "tools:chrome-assets:options": "tsx scripts/package/tools/chrome-assets/options.ts",

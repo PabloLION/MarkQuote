@@ -29,7 +29,7 @@ Reference for the assets and metadata the Chrome Web Store expects when submitti
 
 1. Confirm manifest version matches `package.json` version.
 2. Build ZIP via `pnpm build` and archive as `dist/markquote-v<version>.zip`.
-3. Run `scripts/publish/chrome-web-store.sh` (or upload manually) and monitor response.
+3. Run `pnpm publish:chrome` (or upload manually) and monitor response.
 4. Update listing metadata and assets as needed.
 5. After approval, archive assets + response JSON under `docs/releases/`.
 

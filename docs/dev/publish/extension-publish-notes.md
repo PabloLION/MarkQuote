@@ -37,7 +37,7 @@ ID is stable as long as the corresponding key pair stays the same.
   today and it immediately produces the permanent extension ID.
 - **Publish API uploads:** enable the Chrome Web Store API in Google Cloud Console, create an OAuth
   client, obtain a refresh token, and use the REST endpoints (e.g., via
-  `scripts/publish/chrome-web-store.sh`) to automate packaging and uploads. This path requires the
+  `pnpm publish:chrome`) to automate packaging and uploads. This path requires the
   additional `CLIENT_ID`, `CLIENT_SECRET`, and `REFRESH_TOKEN` secrets described in
   `docs/dev/publish/credentials.md`.
 
