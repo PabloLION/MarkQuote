@@ -1,35 +1,13 @@
-type RuntimeMessage =
-  | {
-      type: "copied-text-preview";
-      text: string;
-    }
-  | {
-      type: "copy-protected";
-      url?: string;
-    };
-
-type LoggedExtensionError = {
-  message: string;
-  context: string;
-  timestamp: number;
-};
-
-const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
-const DEFAULT_STATUS_MESSAGE =
-  "Select text on a page, then trigger MarkQuote to copy it as a Markdown reference.";
-const SAMPLE_PREVIEW =
-  "> This was addressed in 2014 when long-standing Markdown contributors released CommonMark, an unambiguous specification and test suite for Markdown.\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown)";
-
-type ForcedPopupState =
-  | { kind: "default" }
-  | { kind: "copied"; preview: string }
-  | { kind: "protected" };
-
-type PopupDevPreviewApi = {
-  showDefault: () => void;
-  showSuccess: (text: string) => void;
-  showProtected: () => void;
-};
+import { loadPopupDom } from "./dom.js";
+import {
+  DEFAULT_STATUS_MESSAGE,
+  FEEDBACK_URL,
+  type ForcedPopupState,
+  type LoggedExtensionError,
+  type PopupDevPreviewApi,
+  type RuntimeMessage,
+  SAMPLE_PREVIEW,
+} from "./state.js";
 
 declare global {
   interface Window {
@@ -73,19 +51,21 @@ function resolveForcedPopupState(): ForcedPopupState | null {
 }
 
 export function initializePopup(): () => void {
-  const messageDiv = document.getElementById("message");
-  const messageText = document.getElementById("message-text");
-  const previewDiv = document.getElementById("preview");
-  const previewCode = previewDiv?.querySelector("code") ?? null;
-  const optionsButton = document.getElementById("options-button");
-  const hotkeysButton = document.getElementById("hotkeys-button");
-  const feedbackButton = document.getElementById("feedback-button");
-  const inlineModeButton = document.getElementById("inline-mode-button");
-  const problemBadge = document.getElementById("problem-badge");
-  const errorContainer = document.getElementById("error-container");
-  const errorList = document.getElementById("error-list");
-  const reportErrorsButton = document.getElementById("report-errors-button");
-  const dismissErrorsButton = document.getElementById("dismiss-errors-button");
+  const {
+    message: messageDiv,
+    messageText,
+    preview: previewDiv,
+    previewCode,
+    optionsButton,
+    hotkeysButton,
+    feedbackButton,
+    inlineModeButton,
+    problemBadge,
+    errorContainer,
+    errorList,
+    reportErrorsButton,
+    dismissErrorsButton,
+  } = loadPopupDom();
 
   if (!chrome?.runtime) {
     console.warn("chrome.runtime is unavailable; popup interactions are limited.");

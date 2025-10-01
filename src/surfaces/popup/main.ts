@@ -1,4 +1,4 @@
-import { initializePopup } from "./controller.js";
+import { initializePopup } from "./page.js";
 
 async function bootstrap(): Promise<void> {
   const isDevEnvironment =

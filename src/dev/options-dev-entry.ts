@@ -1,10 +1,10 @@
-import type { initializeOptions as InitializeOptions } from "../surfaces/options/controller.js";
+import type { initializeOptions as InitializeOptions } from "../surfaces/options/page.js";
 import { bootstrapDevSurface } from "./dev-surface.js";
 
 bootstrapDevSurface<{ initializeOptions: typeof InitializeOptions }>({
   navKey: "options",
   markupPath: "../../public/options.html",
-  hotModulePath: "../surfaces/options/controller.js",
-  loadModule: () => import("../surfaces/options/controller.js"),
+  hotModulePath: "../surfaces/options/page.js",
+  loadModule: () => import("../surfaces/options/page.js"),
   resolveInitializer: (module) => module.initializeOptions,
 });

@@ -52,7 +52,7 @@ describe("Options Page", () => {
     });
     sinonChrome.storage.sync.set.resolves();
 
-    const { initializeOptions } = await import("../../src/surfaces/options/controller");
+    const { initializeOptions } = await import("../../src/surfaces/options/page");
     disposeOptions = initializeOptions();
 
     await flushMicrotasks();
@@ -71,7 +71,7 @@ describe("Options Page", () => {
 
     sinonChrome.storage.sync.get.resolves({});
 
-    const { initializeOptions } = await import("../../src/surfaces/options/controller");
+    const { initializeOptions } = await import("../../src/surfaces/options/page");
     disposeOptions = initializeOptions();
 
     await flushMicrotasks();

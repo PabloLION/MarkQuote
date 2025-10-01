@@ -46,11 +46,16 @@ The PRD allows for the potential use of a lightweight library (such as Preact or
 │   │   └── selection.ts     # Injected script that reads the active selection
 │   ├── surfaces/            # UI surfaces for popup/options/etc.
 │   │   ├── popup/
-│   │   │   ├── controller.ts
-│   │   │   └── entry.ts
+│   │   │   ├── main.ts      # Entry + HMR glue
+│   │   │   ├── page.ts      # Runtime logic orchestrating the popup
+│   │   │   ├── dom.ts       # DOM access helpers
+│   │   │   └── state.ts     # Runtime constants & message typing
 │   │   └── options/
-│   │       ├── controller.ts
-│   │       └── entry.ts
+│   │       ├── main.ts
+│   │       ├── page.ts
+│   │       ├── dom.ts
+│   │       ├── state.ts
+│   │       └── rules-types.ts
 │   ├── clipboard.ts         # Logic for formatting clipboard content
 │   ├── converter.ts         # HTML to Markdown conversion logic
 │   ├── formatting.ts        # Markdown template + rule application helpers
@@ -92,7 +97,7 @@ export function createMyComponent(props: MyComponentProps): HTMLElement {
   return container;
 }
 
-// Usage example in controller.ts:
+// Usage example in page.ts:
 // import { createMyComponent } from './components/MyComponent';
 // const myElement = createMyComponent({
 //   text: 'Hello from component!',

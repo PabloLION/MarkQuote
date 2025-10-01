@@ -1,6 +1,6 @@
 (async () => {
   const isExtensionContext = Boolean(globalThis.chrome?.runtime?.id);
-  const modulePath = isExtensionContext ? "./options.js" : "/src/surfaces/options/entry.ts";
+  const modulePath = isExtensionContext ? "./options.js" : "/src/surfaces/options/main.ts";
 
   try {
     await import(modulePath);

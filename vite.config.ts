@@ -33,8 +33,8 @@ export default defineConfig(({ command }) => {
         input: {
           background: resolve(__dirname, "src/background/index.ts"),
           selection: resolve(__dirname, "src/content-scripts/selection.ts"),
-          options: resolve(__dirname, "src/surfaces/options/entry.ts"),
-          popup: resolve(__dirname, "src/surfaces/popup/entry.ts"),
+          options: resolve(__dirname, "src/surfaces/options/main.ts"),
+          popup: resolve(__dirname, "src/surfaces/popup/main.ts"),
         },
         output: {
           entryFileNames: "[name].js",

@@ -37,7 +37,7 @@ The `background.ts` script serves as the extension's **Service Worker**. It oper
 - **No Direct DOM Access:** Crucially, the Service Worker does **not** have direct access to the DOM (Document Object Model) of web pages or the extension's own HTML pages. This is a security and performance feature of Manifest V3.
 - **Central Coordinator:** It acts as the hub, managing context menus, toolbar clicks, and messages from scripts like `content-scripts/selection.ts`, then distributing formatted results to the popup.
 
-### `src/surfaces/popup/controller.ts` (Extension UI)
+### `src/surfaces/popup/page.ts` (Extension UI)
 
 The popup receives the formatted markdown from the background worker, renders it for preview, and writes it to the clipboard using the modern Clipboard API. Because the popup runs in a focused extension page, it can interact with the DOM and clipboard without relying on hidden offscreen documents.
 

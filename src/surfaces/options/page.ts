@@ -1,134 +1,73 @@
 import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../formatting.js";
 import {
-  CURRENT_OPTIONS_VERSION,
-  DEFAULT_AMAZON_SAMPLE_URL,
-  DEFAULT_OPTIONS,
-  DEFAULT_TEMPLATE,
   normalizeStoredOptions,
   type OptionsPayload,
   type TitleRule,
   type UrlRule,
 } from "../../options-schema.js";
-
-const DEFAULT_PREVIEW_SAMPLE = {
-  text: "Markdown is a lightweight markup language for creating formatted text using a plain-text editor.",
-  title: "Markdown - Wikipedia",
-  url: DEFAULT_AMAZON_SAMPLE_URL,
-};
-
-const STATUS_TIMEOUT_MS = 3000;
+import { clearValidationState, loadDom, markInvalidField } from "./dom.js";
+import type {
+  DragScope,
+  RuleConfig,
+  RuleFieldDescriptor,
+  RuleFieldKeys,
+  RuleMessages,
+  RuleWithFlags,
+  StringFieldKey,
+} from "./rules-types.js";
+import {
+  cloneOptions,
+  cloneTitleRule,
+  cloneUrlRule,
+  createDraft,
+  DEFAULT_PREVIEW_SAMPLE,
+  DEFAULT_TEMPLATE,
+  normalizeFormat,
+  OPTIONS_VERSION,
+  STATUS_TIMEOUT_MS,
+  sanitizeTitleRule,
+  sanitizeUrlRule,
+  validateRegex,
+} from "./state.js";
 
 interface ValidationResult {
   valid: boolean;
   message?: string;
 }
 
-function cloneTitleRule(rule: TitleRule): TitleRule {
-  return { ...rule };
-}
-
-function cloneUrlRule(rule: UrlRule): UrlRule {
-  return { ...rule };
-}
-
-function cloneOptions(options: OptionsPayload): OptionsPayload {
-  return {
-    version: CURRENT_OPTIONS_VERSION,
-    format: options.format,
-    titleRules: options.titleRules.map((rule: TitleRule) => cloneTitleRule(rule)),
-    urlRules: options.urlRules.map((rule: UrlRule) => cloneUrlRule(rule)),
-  };
-}
-
-function sanitizeTitleRule(rule: TitleRule): TitleRule {
-  return {
-    urlPattern: rule.urlPattern.trim(),
-    titleSearch: rule.titleSearch.trim(),
-    titleReplace: rule.titleReplace,
-    comment: rule.comment.trim(),
-    continueMatching: Boolean(rule.continueMatching),
-    enabled: rule.enabled === false ? false : true,
-  };
-}
-
-function sanitizeUrlRule(rule: UrlRule): UrlRule {
-  return {
-    urlPattern: rule.urlPattern.trim(),
-    urlSearch: rule.urlSearch.trim(),
-    urlReplace: rule.urlReplace,
-    comment: rule.comment.trim(),
-    continueMatching: Boolean(rule.continueMatching),
-    enabled: rule.enabled === false ? false : true,
-  };
-}
-
-function clearValidationState(container: HTMLElement): void {
-  container.querySelectorAll('[aria-invalid="true"]').forEach((element) => {
-    element.removeAttribute("aria-invalid");
-  });
-}
-
-function _markInvalidField(input: HTMLInputElement): void {
-  input.setAttribute("aria-invalid", "true");
-}
-
-function validateRegex(pattern: string): boolean {
-  if (!pattern) {
-    return false;
-  }
-
-  try {
-    new RegExp(pattern);
-    return true;
-  } catch (error) {
-    console.error("Invalid regex pattern.", { pattern, error });
-    return false;
-  }
-}
-
-function requireElement<T extends HTMLElement>(id: string): T {
-  const element = document.getElementById(id);
-  if (!element) {
-    throw new Error(`Options page is missing required element: #${id}`);
-  }
-  return element as T;
-}
-
-function optionalElement<T extends HTMLElement>(id: string): T | null {
-  return document.getElementById(id) as T | null;
-}
-
 export function initializeOptions(): () => void {
-  const form = requireElement<HTMLFormElement>("options-form");
-  const templateField = optionalElement<HTMLTextAreaElement>("format-template");
-  const restoreTemplateButton = optionalElement<HTMLButtonElement>("restore-template");
-  const previewElement = requireElement<HTMLElement>("format-preview");
-  const statusElement = requireElement<HTMLElement>("status");
+  const dom = loadDom();
+  if (!dom) {
+    return () => {};
+  }
 
-  const titleSamplePresetSelect = requireElement<HTMLSelectElement>("title-sample-preset");
-  const urlSamplePresetSelect = requireElement<HTMLSelectElement>("url-sample-preset");
-  const sampleTitleInput = requireElement<HTMLInputElement>("sample-title");
-  const sampleUrlInput = requireElement<HTMLInputElement>("sample-url");
-  const sampleOutputTitle = requireElement<HTMLElement>("sample-output-title");
-  const sampleOutputUrl = requireElement<HTMLElement>("sample-output-url");
-
-  const titleRulesBody = requireElement<HTMLTableSectionElement>("title-rules-body");
-  const addTitleRuleButton = requireElement<HTMLButtonElement>("add-title-rule");
-  const clearTitleRulesButton = requireElement<HTMLButtonElement>("clear-title-rules");
-  const confirmClearTitleRulesButton = requireElement<HTMLButtonElement>(
-    "confirm-clear-title-rules",
-  );
-  const titleClearStatusElement = requireElement<HTMLElement>("title-clear-status");
-  const saveTitleRuleButton = requireElement<HTMLButtonElement>("save-title-rules");
-  const titleUnsavedIndicator = requireElement<HTMLElement>("title-unsaved-indicator");
-
-  const urlRulesBody = requireElement<HTMLTableSectionElement>("url-rules-body");
-  const addUrlRuleButton = requireElement<HTMLButtonElement>("add-url-rule");
-  const clearUrlRulesButton = requireElement<HTMLButtonElement>("clear-url-rules");
-  const confirmClearUrlRulesButton = requireElement<HTMLButtonElement>("confirm-clear-url-rules");
-  const urlClearStatusElement = requireElement<HTMLElement>("url-clear-status");
-  const saveUrlRuleButton = requireElement<HTMLButtonElement>("save-url-rules");
-  const urlUnsavedIndicator = requireElement<HTMLElement>("url-unsaved-indicator");
+  const {
+    form,
+    templateField,
+    restoreTemplateButton,
+    previewElement,
+    statusElement,
+    titleSamplePresetSelect,
+    urlSamplePresetSelect,
+    sampleTitleInput,
+    sampleUrlInput,
+    sampleOutputTitle,
+    sampleOutputUrl,
+    titleRulesBody,
+    addTitleRuleButton,
+    clearTitleRulesButton,
+    confirmClearTitleRulesButton,
+    titleClearStatusElement,
+    saveTitleRuleButton,
+    titleUnsavedIndicator,
+    urlRulesBody,
+    addUrlRuleButton,
+    clearUrlRulesButton,
+    confirmClearUrlRulesButton,
+    urlClearStatusElement,
+    saveUrlRuleButton,
+    urlUnsavedIndicator,
+  } = dom;
 
   const ruleConfigs = {
     title: {
@@ -281,31 +220,6 @@ export function initializeOptions(): () => void {
   setDirty("title", false);
   setDirty("url", false);
 
-  if (
-    !(form instanceof HTMLFormElement) ||
-    !(previewElement instanceof HTMLElement) ||
-    !(statusElement instanceof HTMLElement) ||
-    !(titleSamplePresetSelect instanceof HTMLSelectElement) ||
-    !(urlSamplePresetSelect instanceof HTMLSelectElement) ||
-    !(sampleTitleInput instanceof HTMLInputElement) ||
-    !(sampleUrlInput instanceof HTMLInputElement) ||
-    !(sampleOutputTitle instanceof HTMLElement) ||
-    !(sampleOutputUrl instanceof HTMLElement) ||
-    !(titleRulesBody instanceof HTMLTableSectionElement) ||
-    !(addTitleRuleButton instanceof HTMLButtonElement) ||
-    !(clearTitleRulesButton instanceof HTMLButtonElement) ||
-    !(confirmClearTitleRulesButton instanceof HTMLButtonElement) ||
-    !(titleClearStatusElement instanceof HTMLElement) ||
-    !(urlRulesBody instanceof HTMLTableSectionElement) ||
-    !(addUrlRuleButton instanceof HTMLButtonElement) ||
-    !(clearUrlRulesButton instanceof HTMLButtonElement) ||
-    !(confirmClearUrlRulesButton instanceof HTMLButtonElement) ||
-    !(urlClearStatusElement instanceof HTMLElement)
-  ) {
-    console.warn("Options UI is missing expected elements; aborting initialization.");
-    return () => {};
-  }
-
   const storageArea = globalThis.chrome?.storage?.sync;
 
   const abortController = new AbortController();
@@ -313,13 +227,11 @@ export function initializeOptions(): () => void {
 
   let statusTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  let draft: OptionsPayload = cloneOptions(DEFAULT_OPTIONS);
+  let draft: OptionsPayload = createDraft();
   const previewSample = {
     title: DEFAULT_PREVIEW_SAMPLE.title,
     url: DEFAULT_PREVIEW_SAMPLE.url,
   };
-
-  type DragScope = "title" | "url";
 
   let draggingState:
     | {
@@ -330,51 +242,6 @@ export function initializeOptions(): () => void {
     | undefined;
 
   const clearTimeouts: Partial<Record<DragScope, ReturnType<typeof setTimeout>>> = {};
-
-  type StringFieldKey<TRule> = {
-    [TKey in keyof TRule]: TRule[TKey] extends string ? TKey : never;
-  }[keyof TRule];
-
-  interface RuleFieldDescriptor<TRule> {
-    key: StringFieldKey<TRule> & string;
-    placeholder: string;
-    trimLeading?: boolean;
-  }
-
-  interface RuleFieldKeys<TRule> {
-    pattern: StringFieldKey<TRule> & string;
-    search: StringFieldKey<TRule> & string;
-    replace: StringFieldKey<TRule> & string;
-  }
-
-  interface RuleMessages {
-    missingPattern: string;
-    invalidPattern: string;
-    missingSearchForReplace: string;
-    invalidSearch: string;
-    cleared: string;
-    removed: string;
-  }
-
-  type RuleWithFlags = { continueMatching: boolean; enabled: boolean };
-
-  interface RuleConfig<TRule extends RuleWithFlags> {
-    scope: DragScope;
-    getRules: () => TRule[];
-    setRules: (next: TRule[]) => void;
-    body: HTMLTableSectionElement;
-    clearButton: HTMLButtonElement;
-    confirmClearButton: HTMLButtonElement;
-    clearStatusElement: HTMLElement;
-    saveButton: HTMLButtonElement;
-    unsavedIndicator: HTMLElement;
-    fields: RuleFieldDescriptor<TRule>[];
-    fieldKeys: RuleFieldKeys<TRule>;
-    createEmpty: () => TRule;
-    sanitize: (rule: TRule) => TRule;
-    hasContent: (rule: TRule) => boolean;
-    messages: RuleMessages;
-  }
 
   function scheduleStatusClear(): void {
     if (statusTimeout) {
@@ -449,8 +316,8 @@ export function initializeOptions(): () => void {
     const urlRules = filteredRules("url");
 
     const options: OptionsPayload = {
-      version: CURRENT_OPTIONS_VERSION,
-      format: templateField?.value ?? draft.format ?? DEFAULT_TEMPLATE,
+      version: OPTIONS_VERSION,
+      format: normalizeFormat(templateField, draft),
       titleRules,
       urlRules,
     };
@@ -913,23 +780,31 @@ export function initializeOptions(): () => void {
       if (!patternValue) {
         valid = false;
         message = message ?? config.messages.missingPattern;
-        patternInput?.setAttribute("aria-invalid", "true");
+        if (patternInput) {
+          markInvalidField(patternInput);
+        }
       } else if (!validateRegex(patternValue)) {
         valid = false;
         message = message ?? config.messages.invalidPattern;
-        patternInput?.setAttribute("aria-invalid", "true");
+        if (patternInput) {
+          markInvalidField(patternInput);
+        }
       }
 
       if (replaceValue && !searchValue) {
         valid = false;
         message = message ?? config.messages.missingSearchForReplace;
-        searchInput?.setAttribute("aria-invalid", "true");
+        if (searchInput) {
+          markInvalidField(searchInput);
+        }
       }
 
       if (searchValue && !validateRegex(searchValue)) {
         valid = false;
         message = message ?? config.messages.invalidSearch;
-        searchInput?.setAttribute("aria-invalid", "true");
+        if (searchInput) {
+          markInvalidField(searchInput);
+        }
       }
 
       replaceInput?.removeAttribute("aria-invalid");
@@ -943,8 +818,8 @@ export function initializeOptions(): () => void {
     const urlRules = filteredRules("url");
 
     return {
-      version: CURRENT_OPTIONS_VERSION,
-      format: templateField?.value ?? draft.format ?? DEFAULT_TEMPLATE,
+      version: OPTIONS_VERSION,
+      format: normalizeFormat(templateField, draft),
       titleRules,
       urlRules,
     };
@@ -1031,7 +906,7 @@ export function initializeOptions(): () => void {
   async function loadOptions(): Promise<void> {
     if (!storageArea) {
       setStatus("Chrome storage is unavailable; using defaults.", "error");
-      draft = cloneOptions(DEFAULT_OPTIONS);
+      draft = createDraft();
       if (templateField) {
         templateField.value = draft.format;
       }
@@ -1066,7 +941,7 @@ export function initializeOptions(): () => void {
       setDirty("url", false);
     } catch (error) {
       console.error("Failed to load options; fallback to defaults.", error);
-      draft = cloneOptions(DEFAULT_OPTIONS);
+      draft = createDraft();
       if (templateField) {
         templateField.value = draft.format;
       }
@@ -1342,6 +1217,6 @@ export function initializeOptions(): () => void {
         clearTimeout(timeout);
       }
     });
-    draft = cloneOptions(DEFAULT_OPTIONS);
+    draft = createDraft();
   };
 }
