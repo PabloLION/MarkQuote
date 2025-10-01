@@ -49,7 +49,7 @@ access_token() {
 ```
 
 Source the file and call `TOKEN=$(access_token)` before invoking the API. The repository ships
-`scripts/publish/chrome-web-store.ts` (exposed via `pnpm publish:chrome`) which wraps these steps when the environment variables are set.
+`scripts/package/publish/chrome-web-store.ts` (exposed via `pnpm publish:chrome`) which wraps these steps when the environment variables are set.
 
 ## 4. Upload ZIP
 

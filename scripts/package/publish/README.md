@@ -12,7 +12,7 @@ pnpm publish:chrome dist/markquote-v<version>.zip
 The script is a TypeScript CLI, so you can also run it directly with `tsx`:
 
 ```bash
-pnpm tsx scripts/publish/chrome-web-store.ts dist/markquote-v<version>.zip
+pnpm tsx scripts/package/publish/chrome-web-store.ts dist/markquote-v<version>.zip
 ```
 
 The script automatically sources `.dev/secrets/chrome-web-store.env` when present.

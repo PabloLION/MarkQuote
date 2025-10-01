@@ -13,7 +13,7 @@ The Chrome Web Store Publish API relies on four values that are stored outside o
 
 - Store credentials in the shared 1Password vault (entry: **MarkQuote / Chrome Web Store Publish**).
 - Developers needing release access copy values into `.dev/secrets/chrome-web-store.env` (ignored by git).
-- Use `scripts/publish/chrome-web-store.env.example` as the onboarding template.
+- Use `scripts/package/publish/chrome-web-store.env.example` as the onboarding template.
 - Rotate secrets whenever a maintainer leaves or quarterly—update 1Password and regenerate refresh
   token via the OAuth flow described in `chrome-web-store-publish-api.md`.
 
@@ -26,7 +26,7 @@ For a fresh setup:
 3. **Generate `REFRESH_TOKEN`:** follow the consent flow in `chrome-web-store-publish-api.md` using the newly created client.
 
 Place the four values in `.dev/secrets/chrome-web-store.env` (template in
-`scripts/publish/chrome-web-store.env.example`). The publish script automatically sources it when
+`scripts/package/publish/chrome-web-store.env.example`). The publish script automatically sources it when
 present; extra variables can still be exported manually before invocation when needed.
 
 ## Access Control
