@@ -124,7 +124,10 @@ function notifyCopyProtected(
   });
 
   if (tab?.windowId !== undefined) {
-    chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
+    chrome.action.openPopup({ windowId: tab.windowId }).catch((error) => {
+      // Some pages block popup focus; surface context but continue with fallback copy.
+      console.debug("[MarkQuote] Unable to open popup during protected-page fallback", error);
+    });
   }
 
   void chrome.runtime
@@ -132,7 +135,10 @@ function notifyCopyProtected(
       type: "copy-protected",
       url: url ?? undefined,
     })
-    .catch(() => {});
+    .catch((error) => {
+      // The popup might already be closed; log at debug level so we can diagnose silently.
+      console.debug("[MarkQuote] Unable to notify popup about protected page", error);
+    });
 }
 
 function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void {

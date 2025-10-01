@@ -12,7 +12,9 @@ export async function captureOptionsScreenshot(
   const viewport = getViewportSize("options");
   const page = await openExtensionPage(context, extensionId, "options.html");
   await page.setViewportSize(viewport);
-  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForLoadState("networkidle").catch((error) => {
+    console.debug("[MarkQuote capture] Options page never reached network idle", error);
+  });
 
   const contentBounds = await page.evaluate(() => {
     const doc = document.documentElement;

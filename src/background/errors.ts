@@ -90,8 +90,13 @@ export async function clearStoredErrors(): Promise<void> {
 
 function updateBadge(count: number): void {
   const text = count > 0 ? String(Math.min(count, 99)) : "";
-  chrome.action.setBadgeText({ text }).catch(() => {});
+  chrome.action.setBadgeText({ text }).catch((error) => {
+    // Badge updates can fail when the action is unavailable (e.g. during browser shutdown).
+    console.debug("[MarkQuote] Failed to update badge text", error);
+  });
   if (count > 0) {
-    chrome.action.setBadgeBackgroundColor({ color: "#d93025" }).catch(() => {});
+    chrome.action.setBadgeBackgroundColor({ color: "#d93025" }).catch((error) => {
+      console.debug("[MarkQuote] Failed to update badge background", error);
+    });
   }
 }

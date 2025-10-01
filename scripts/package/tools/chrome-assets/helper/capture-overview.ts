@@ -149,9 +149,13 @@ async function navigateToMarkdown(page: Page): Promise<void> {
     waitUntil: "domcontentloaded",
     timeout: 60_000,
   });
-  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {});
+  await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch((error) => {
+    console.debug("[MarkQuote capture] Wikipedia page never reached network idle", error);
+  });
   await page.waitForTimeout(500);
-  await undockDevtools(page).catch(() => {});
+  await undockDevtools(page).catch((error) => {
+    console.debug("[MarkQuote capture] Unable to undock DevTools", error);
+  });
 }
 
 async function ensureAutomaticTheme(page: Page): Promise<void> {
