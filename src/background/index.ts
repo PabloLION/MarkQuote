@@ -6,12 +6,7 @@ import {
 } from "../options-schema.js";
 import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
-import {
-  getLastFormattedPreview,
-  getLastPreviewError,
-  runCopyPipeline,
-  setLastPreviewError,
-} from "./copy-pipeline.js";
+import { runCopyPipeline, setLastPreviewError } from "./copy-pipeline.js";
 import { consumeSelectionStub, handleE2eMessage } from "./e2e.js";
 import {
   clearStoredErrors,
@@ -22,40 +17,64 @@ import {
 import { isUrlProtected } from "./protected-urls.js";
 import type { CopySource } from "./types.js";
 
+type RuntimeMessageListener = Parameters<typeof chrome.runtime.onMessage.addListener>[0];
+type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
+
 const pendingCopySources = new Map<number, CopySource>();
 let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
 
-function clearHotkeyPopupFallback(): void {
-  if (hotkeyPopupFallbackTimer !== undefined) {
-    clearTimeout(hotkeyPopupFallbackTimer);
-    hotkeyPopupFallbackTimer = undefined;
+void initializeBadgeFromStorage();
+
+function cancelHotkeyFallback(): void {
+  if (hotkeyPopupFallbackTimer === undefined) {
+    return;
   }
+
+  clearTimeout(hotkeyPopupFallbackTimer);
+  hotkeyPopupFallbackTimer = undefined;
 }
 
-function getLastErrorMessage(): string {
+function getRuntimeLastErrorMessage(): string {
   return chrome.runtime.lastError?.message ?? "Unknown Chrome runtime error";
 }
 
-void initializeBadgeFromStorage();
+function getTabUrl(tab: chrome.tabs.Tab | undefined): string | null {
+  if (!tab) {
+    return null;
+  }
+  return tab.url ?? tab.pendingUrl ?? null;
+}
 
-function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
+function notifyCopyProtected(
+  tab: chrome.tabs.Tab | undefined,
+  source: CopySource,
+  url: string | null,
+): void {
+  console.info("[MarkQuote] Skipping copy for protected page", {
+    source,
+    url,
+  });
+
+  if (tab?.windowId !== undefined) {
+    chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
+  }
+
+  void chrome.runtime
+    .sendMessage({
+      type: "copy-protected",
+      url: url ?? undefined,
+    })
+    .catch(() => {});
+}
+
+function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void {
   if (!tab?.id) {
     return;
   }
 
-  const targetUrl = tab.url ?? tab.pendingUrl ?? null;
+  const targetUrl = getTabUrl(tab);
   if (isUrlProtected(targetUrl)) {
-    console.info("[MarkQuote] Skipping copy for protected page", {
-      source,
-      url: targetUrl,
-    });
-    chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
-    void chrome.runtime
-      .sendMessage({
-        type: "copy-protected",
-        url: targetUrl ?? undefined,
-      })
-      .catch(() => {});
+    notifyCopyProtected(tab, source, targetUrl);
     return;
   }
 
@@ -67,33 +86,23 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource) {
       files: ["selection.js"],
     },
     () => {
-      if (chrome.runtime.lastError) {
-        const lastErrorMessage = getLastErrorMessage();
-        const permissionsError = lastErrorMessage.includes("must request permission");
+      if (!chrome.runtime.lastError) {
+        return;
+      }
 
-        if (permissionsError) {
-          console.info("[MarkQuote] Selection injection blocked by host permissions", {
-            url: targetUrl,
-            source,
-            error: lastErrorMessage,
-          });
-          chrome.action.openPopup({ windowId: tab.windowId }).catch(() => {});
-          void chrome.runtime
-            .sendMessage({
-              type: "copy-protected",
-              url: targetUrl ?? undefined,
-            })
-            .catch(() => {});
-          return;
-        }
+      const lastErrorMessage = getRuntimeLastErrorMessage();
+      if (lastErrorMessage.includes("must request permission")) {
+        notifyCopyProtected(tab, source, targetUrl);
+        return;
+      }
 
-        void recordError("inject-selection-script", lastErrorMessage, {
-          tabUrl: tab.url,
-          source,
-        });
-        if (isE2ETest) {
-          setLastPreviewError(lastErrorMessage);
-        }
+      void recordError("inject-selection-script", lastErrorMessage, {
+        tabUrl: tab.url,
+        source,
+      });
+
+      if (isE2ETest) {
+        setLastPreviewError(lastErrorMessage);
       }
     },
   );
@@ -113,69 +122,76 @@ chrome.commands.onCommand.addListener((command, tab) => {
     return;
   }
 
-  const handleHotkey = async () => {
-    clearHotkeyPopupFallback();
-
-    let isPinned = true;
-    try {
-      const settings = await chrome.action.getUserSettings();
-      isPinned = Boolean(settings?.isOnToolbar);
-      console.info("[MarkQuote] Hotkey: action settings", settings);
-    } catch (error) {
-      console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
-      await recordError("hotkey-open-popup", error, { source: "hotkey" });
-      if (tab) {
-        triggerCopy(tab, "hotkey");
-      }
-      return;
-    }
-
-    if (!isPinned) {
-      await recordError(
-        "hotkey-open-popup",
-        "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
-        { source: "hotkey" },
-      );
-      if (tab) {
-        triggerCopy(tab, "hotkey");
-      }
-      return;
-    }
-
-    if (tab?.windowId !== undefined) {
-      await chrome.windows.update(tab.windowId, { focused: true }).catch((error) => {
-        console.warn("[MarkQuote] Failed to focus window before opening popup", error);
-      });
-    }
-
-    if (tab?.id) {
-      hotkeyPopupFallbackTimer = setTimeout(() => {
-        hotkeyPopupFallbackTimer = undefined;
-        void recordError(
-          "hotkey-popup-timeout",
-          "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
-          { source: "hotkey" },
-        );
-        triggerCopy(tab, "hotkey");
-      }, 1000);
-    }
-
-    chrome.action
-      .openPopup({ windowId: tab?.windowId })
-      .then(() => {
-        console.info("[MarkQuote] Hotkey: openPopup resolved");
-      })
-      .catch((error) => {
-        clearHotkeyPopupFallback();
-        void recordError("open-popup-for-hotkey", error, { source: "hotkey" });
-        if (tab) {
-          triggerCopy(tab, "hotkey");
-        }
-      });
-  };
-
-  void handleHotkey();
+  void handleHotkeyCommand(tab);
 });
+
+async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<void> {
+  cancelHotkeyFallback();
+  const source: CopySource = "hotkey";
+
+  let isPinned = true;
+  try {
+    const settings = await chrome.action.getUserSettings();
+    isPinned = Boolean(settings?.isOnToolbar);
+    console.info("[MarkQuote] Hotkey: action settings", settings);
+  } catch (error) {
+    console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
+    await recordError("hotkey-open-popup", error, { source });
+    if (tab) {
+      triggerCopy(tab, source);
+    }
+    return;
+  }
+
+  if (!isPinned) {
+    await recordError(
+      "hotkey-open-popup",
+      "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
+      { source },
+    );
+    if (tab) {
+      triggerCopy(tab, source);
+    }
+    return;
+  }
+
+  if (tab?.windowId !== undefined) {
+    await chrome.windows.update(tab.windowId, { focused: true }).catch((error) => {
+      console.warn("[MarkQuote] Failed to focus window before opening popup", error);
+    });
+  }
+
+  if (tab?.id) {
+    scheduleHotkeyFallback(tab);
+  }
+
+  chrome.action
+    .openPopup({ windowId: tab?.windowId })
+    .then(() => {
+      console.info("[MarkQuote] Hotkey: openPopup resolved");
+    })
+    .catch((error) => {
+      cancelHotkeyFallback();
+      void recordError("open-popup-for-hotkey", error, { source });
+      if (tab) {
+        triggerCopy(tab, source);
+      }
+    });
+}
+
+function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
+  cancelHotkeyFallback();
+
+  hotkeyPopupFallbackTimer = setTimeout(() => {
+    hotkeyPopupFallbackTimer = undefined;
+    void recordError(
+      "hotkey-popup-timeout",
+      "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
+      { source: "hotkey" },
+    );
+    triggerCopy(tab, "hotkey");
+  }, 1000);
+}
 
 async function persistOptions(payload: OptionsPayload): Promise<void> {
   const storageArea = chrome.storage?.sync;
@@ -208,6 +224,7 @@ async function ensureOptionsInitialized(): Promise<void> {
       "urlRules",
       "rules",
     ]);
+
     const hasExistingData = Object.values(snapshot).some((value) => {
       if (Array.isArray(value)) {
         return value.length > 0;
@@ -245,21 +262,9 @@ async function ensureOptionsInitialized(): Promise<void> {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request?.type === "get-error-log") {
-    void getStoredErrors().then((errors) => {
-      sendResponse?.({ errors });
-    });
+  if (handleErrorLogRequests(request, sendResponse)) {
     return true;
   }
-
-  if (request?.type === "clear-error-log") {
-    void clearStoredErrors().then(() => {
-      sendResponse?.({ ok: true });
-    });
-    return true;
-  }
-
-  console.log("Background script received message:", request, { isE2ETest });
 
   if (request?.type === "request-selection-copy") {
     if (isE2ETest) {
@@ -269,49 +274,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           void recordError("e2e-stub-selection", error);
         });
         sendResponse?.({ ok: true });
-        return true;
+        return false;
       }
     }
 
-    clearHotkeyPopupFallback();
-
-    void chrome.tabs
-      .query({ lastFocusedWindow: true })
-      .then((tabs) => {
-        const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
-        const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith("chrome-extension://");
-
-        const targetTab =
-          tabs.find((tab) => tab.active && isHttpTab(tab)) ??
-          tabs.find((tab) => isHttpTab(tab)) ??
-          tabs.find((tab) => !isExtensionTab(tab)) ??
-          tabs[0];
-
-        if (targetTab) {
-          const targetUrl = targetTab.url ?? targetTab.pendingUrl ?? null;
-          if (isUrlProtected(targetUrl)) {
-            void chrome.runtime
-              .sendMessage({
-                type: "copy-protected",
-                url: targetUrl ?? undefined,
-              })
-              .catch(() => {});
-            sendResponse?.({ ok: false, reason: "protected" });
-            return;
-          }
-
-          triggerCopy(targetTab, "popup");
-          sendResponse?.({ ok: true });
-        } else {
-          void recordError("request-selection-copy", "No suitable tab found for copy request.");
-          sendResponse?.({ ok: false });
-        }
-      })
-      .catch((error) => {
-        void recordError("query-tabs-for-copy", error);
-        sendResponse?.({ ok: false });
-      });
-    return false;
+    return handleSelectionCopyRequest(sendResponse);
   }
 
   if (isE2ETest) {
@@ -327,15 +294,82 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   }
 
-  if (request.markdown) {
+  if (request?.markdown) {
     const title = sender.tab?.title || DEFAULT_TITLE;
     const url = sender.tab?.url || DEFAULT_URL;
-    const source = sender.tab?.id
-      ? (pendingCopySources.get(sender.tab.id) ?? "unknown")
-      : "unknown";
-    if (sender.tab?.id) {
-      pendingCopySources.delete(sender.tab.id);
+    const tabId = sender.tab?.id;
+    const source = tabId ? (pendingCopySources.get(tabId) ?? "unknown") : "unknown";
+
+    if (tabId) {
+      pendingCopySources.delete(tabId);
     }
+
     void runCopyPipeline(request.markdown, title, url, source);
   }
+
+  return false;
 });
+
+function handleErrorLogRequests(request: unknown, sendResponse: RuntimeSendResponse): boolean {
+  const typedRequest = request as { type?: string } | undefined;
+
+  if (typedRequest?.type === "get-error-log") {
+    void getStoredErrors().then((errors) => {
+      sendResponse?.({ errors });
+    });
+    return true;
+  }
+
+  if (typedRequest?.type === "clear-error-log") {
+    void clearStoredErrors().then(() => {
+      sendResponse?.({ ok: true });
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean {
+  cancelHotkeyFallback();
+
+  chrome.tabs
+    .query({ lastFocusedWindow: true })
+    .then((tabs) => {
+      const targetTab = pickBestTab(tabs);
+
+      if (!targetTab) {
+        void recordError("request-selection-copy", "No suitable tab found for copy request.");
+        sendResponse?.({ ok: false });
+        return;
+      }
+
+      const targetUrl = getTabUrl(targetTab);
+      if (isUrlProtected(targetUrl)) {
+        notifyCopyProtected(targetTab, "popup", targetUrl);
+        sendResponse?.({ ok: false, reason: "protected" });
+        return;
+      }
+
+      triggerCopy(targetTab, "popup");
+      sendResponse?.({ ok: true });
+    })
+    .catch((error) => {
+      void recordError("query-tabs-for-copy", error);
+      sendResponse?.({ ok: false });
+    });
+
+  return true;
+}
+
+function pickBestTab(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab | undefined {
+  const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
+  const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith("chrome-extension://");
+
+  return (
+    tabs.find((tab) => tab.active && isHttpTab(tab)) ??
+    tabs.find((tab) => isHttpTab(tab)) ??
+    tabs.find((tab) => !isExtensionTab(tab)) ??
+    tabs[0]
+  );
+}
