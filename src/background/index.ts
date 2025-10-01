@@ -497,7 +497,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           clearPendingSource(tabId);
         }
 
-        void runCopyPipeline(request.markdown, title, url, source);
+        void runCopyPipeline(request.markdown, title, url, source, sender.tab?.id);
       });
   }
 

@@ -13,6 +13,15 @@ describe("background/copy-pipeline", () => {
     sinonChrome.reset();
     sinonChrome.runtime.sendMessage.resolves();
     sinonChrome.storage.sync.get.resolves({});
+    const sinonWithScripting = sinonChrome as unknown as {
+      scripting?: { executeScript: ReturnType<typeof vi.fn> };
+    };
+    if (!sinonWithScripting.scripting) {
+      sinonWithScripting.scripting = { executeScript: vi.fn() };
+    } else {
+      sinonWithScripting.scripting.executeScript = vi.fn();
+    }
+    sinonWithScripting.scripting.executeScript.mockResolvedValue([]);
     globalThis.chrome = sinonChrome as unknown as typeof chrome;
   });
 
@@ -22,11 +31,18 @@ describe("background/copy-pipeline", () => {
   });
 
   it("formats selection and notifies popup when source is popup", async () => {
+    (
+      sinonChrome as unknown as {
+        scripting: { executeScript: ReturnType<typeof vi.fn> };
+      }
+    ).scripting.executeScript.mockResolvedValue([{ result: true }]);
+
     const result = await runCopyPipeline(
       "Sample text",
       "Sample Title",
       "https://example.com",
       "popup",
+      123,
     );
 
     expect(result).toContain("Sample text");
@@ -44,7 +60,13 @@ describe("background/copy-pipeline", () => {
     sinonChrome.runtime.sendMessage.rejects(failure);
     const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
 
-    await runCopyPipeline("Body", "Title", "https://example.com", "popup");
+    (
+      sinonChrome as unknown as {
+        scripting: { executeScript: ReturnType<typeof vi.fn> };
+      }
+    ).scripting.executeScript.mockResolvedValue([{ result: true }]);
+
+    await runCopyPipeline("Body", "Title", "https://example.com", "popup", 321);
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(recordErrorSpy).toHaveBeenCalled();

@@ -20,6 +20,7 @@ export async function runCopyPipeline(
   title: string,
   url: string,
   source: CopySource,
+  tabId?: number,
 ): Promise<string> {
   const formatted = await formatForClipboard(markdown, title, url);
 
@@ -33,6 +34,9 @@ export async function runCopyPipeline(
       })
       .catch((error) => {
         void recordError(ERROR_CONTEXT.NotifyPopupPreview, error);
+        if (typeof tabId === "number") {
+          void fallbackCopyToTab(tabId, formatted);
+        }
         if (isE2ETest) {
           lastPreviewError = error instanceof Error ? error.message : String(error);
         }
@@ -44,6 +48,51 @@ export async function runCopyPipeline(
   }
 
   return formatted;
+}
+
+async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  try {
+    const [injection] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: async (value: string) => {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(value);
+            return true;
+          }
+        } catch (error) {
+          // Ignore and fall back to execCommand approach below.
+        }
+
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        textarea.select();
+
+        let success = false;
+        try {
+          success = document.execCommand("copy");
+        } finally {
+          textarea.remove();
+        }
+
+        return success;
+      },
+      args: [text],
+    });
+
+    const success = Boolean(injection?.result);
+    if (!success) {
+      await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Failed to copy via fallback", {
+        tabId,
+      });
+    }
+  } catch (error) {
+    await recordError(ERROR_CONTEXT.PopupClipboardFallback, error, { tabId });
+  }
 }
 
 /** Returns the last formatted preview (test-only helper). */

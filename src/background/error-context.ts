@@ -10,7 +10,9 @@ export const ERROR_CONTEXT = {
   RestorePendingSources: "restore-pending-copy-sources",
   PersistPendingSources: "persist-pending-copy-sources",
   ContextMenusRemoveAll: "context-menus-remove-all",
+  ContextMenusCreate: "context-menus-create",
   NotifyPopupPreview: "notify-popup-preview",
+  PopupClipboardFallback: "popup-clipboard-fallback",
   PersistOptionsE2E: "persist-options-e2e",
   InvalidOptionsPayload: "invalid-options-payload",
 } as const;
