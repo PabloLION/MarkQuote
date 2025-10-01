@@ -84,8 +84,14 @@ export async function recordError(
     ...existing,
   ].slice(0, 10); // Keep the 10 most recent entries to avoid unbounded growth.
 
-  await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
-  updateBadge(updated.length);
+  try {
+    await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
+    updateBadge(updated.length);
+  } catch (storageError) {
+    console.error("[MarkQuote] Failed to persist error log", storageError, {
+      originalError: error,
+    });
+  }
 }
 
 /** Clears the stored error log and resets the badge. */
@@ -95,8 +101,12 @@ export async function clearStoredErrors(): Promise<void> {
     return;
   }
 
-  await storageArea.set({ [ERROR_STORAGE_KEY]: [] });
-  updateBadge(0);
+  try {
+    await storageArea.set({ [ERROR_STORAGE_KEY]: [] });
+    updateBadge(0);
+  } catch (storageError) {
+    console.error("[MarkQuote] Failed to clear error log", storageError);
+  }
 }
 
 function updateBadge(count: number): void {

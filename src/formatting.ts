@@ -77,6 +77,10 @@ function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplic
   return safeApplyRegex(title, rule.titleSearch, rule.titleReplace);
 }
 
+/**
+ * Applies the provided title rules to the starting value, respecting `continueMatching` flags and
+ * returning the transformed title.
+ */
 export function applyTitleRules(rules: TitleRule[], startingTitle: string, url: string): string {
   let currentTitle = startingTitle;
 
@@ -108,6 +112,10 @@ function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
   return safeApplyRegex(url, rule.urlSearch, rule.urlReplace);
 }
 
+/**
+ * Runs URL rules against the captured link and returns the rewritten value. Rules short-circuit when
+ * `continueMatching` is false.
+ */
 export function applyUrlRules(rules: UrlRule[], startingUrl: string): string {
   let currentUrl = startingUrl;
 
@@ -144,6 +152,10 @@ function replaceTokens(template: string, tokens: Record<string, string>): string
   }, template);
 }
 
+/**
+ * Formats clipboard output by applying title/URL rules and replacing template placeholders with the
+ * supplied tokens.
+ */
 export function formatWithOptions(options: OptionsPayload, tokens: TemplateTokens): string {
   const title = applyTitleRules(options.titleRules, tokens.title, tokens.url);
   const url = applyUrlRules(options.urlRules, tokens.url);

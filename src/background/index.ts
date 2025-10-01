@@ -31,9 +31,10 @@ type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
 const pendingCopySources = new Map<number, CopySource>();
 let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
 const PENDING_COPY_SESSION_KEY = "markquote/pending-copy-sources";
+const HOTKEY_POPUP_TIMEOUT_MS = 1000; // 1 second mirrors Chrome's own popup warm-up before falling back.
 
 void initializeBadgeFromStorage();
-void restorePendingCopySources();
+const pendingSourcesRestored = restorePendingCopySources();
 
 function cancelHotkeyFallback(): void {
   if (hotkeyPopupFallbackTimer === undefined) {
@@ -181,7 +182,7 @@ function notifyCopyProtected(
  * Injects the selection script for a tab when the host is permitted. Protected pages are handled
  * gracefully by notifying the popup instead.
  */
-function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void {
+async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): Promise<void> {
   if (tab?.id === undefined) {
     return;
   }
@@ -195,40 +196,35 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void
 
   setPendingSource(tabId, source);
 
-  chrome.scripting.executeScript(
-    {
+  try {
+    await chrome.scripting.executeScript({
       target: { tabId },
       files: ["selection.js"],
-    },
-    () => {
-      if (!chrome.runtime.lastError) {
-        return;
-      }
-
-      const lastErrorMessage = getRuntimeLastErrorMessage();
-      if (lastErrorMessage.includes("must request permission")) {
-        notifyCopyProtected(tab, source, targetUrl);
-        clearPendingSource(tabId);
-        return;
-      }
-
-      void recordError(ERROR_CONTEXT.InjectSelectionScript, lastErrorMessage, {
-        tabUrl: tab.url,
-        source,
-      });
-
+    });
+  } catch (error) {
+    const lastErrorMessage = getRuntimeLastErrorMessage();
+    if (lastErrorMessage.includes("must request permission")) {
+      notifyCopyProtected(tab, source, targetUrl);
       clearPendingSource(tabId);
+      return;
+    }
 
-      if (isE2ETest) {
-        setLastPreviewError(lastErrorMessage);
-      }
-    },
-  );
+    void recordError(ERROR_CONTEXT.InjectSelectionScript, lastErrorMessage, {
+      tabUrl: tab.url,
+      source,
+    });
+
+    clearPendingSource(tabId);
+
+    if (isE2ETest) {
+      setLastPreviewError(lastErrorMessage);
+    }
+  }
 }
 
 registerContextMenus({
-  triggerCopy: (tab, source) => {
-    triggerCopy(tab, source);
+  triggerCopy: async (tab, source) => {
+    await triggerCopy(tab, source);
   },
   ensureOptionsInitialized,
   clearStoredErrors,
@@ -260,7 +256,7 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
     console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
     await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
     if (tab) {
-      triggerCopy(tab, source);
+      await triggerCopy(tab, source);
     }
     return;
   }
@@ -272,7 +268,7 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
       { source },
     );
     if (tab) {
-      triggerCopy(tab, source);
+      await triggerCopy(tab, source);
     }
     return;
   }
@@ -315,8 +311,8 @@ function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
       "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
       { source: "hotkey" },
     );
-    triggerCopy(tab, "hotkey");
-  }, 1000);
+    void triggerCopy(tab, "hotkey");
+  }, HOTKEY_POPUP_TIMEOUT_MS);
 }
 
 /**
@@ -450,16 +446,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request?.markdown) {
-    const title = sender.tab?.title || DEFAULT_TITLE;
-    const url = sender.tab?.url || DEFAULT_URL;
-    const tabId = sender.tab?.id;
-    const source = tabId ? (pendingCopySources.get(tabId) ?? "unknown") : "unknown";
+    pendingSourcesRestored
+      .catch((error) => {
+        console.debug(
+          "[MarkQuote] Pending copy sources were not restored before handling message",
+          error,
+        );
+      })
+      .finally(() => {
+        const title = sender.tab?.title || DEFAULT_TITLE;
+        const url = sender.tab?.url || DEFAULT_URL;
+        const tabId = sender.tab?.id;
+        const source = tabId ? (pendingCopySources.get(tabId) ?? "unknown") : "unknown";
 
-    if (tabId) {
-      clearPendingSource(tabId);
-    }
+        if (tabId) {
+          clearPendingSource(tabId);
+        }
 
-    void runCopyPipeline(request.markdown, title, url, source);
+        void runCopyPipeline(request.markdown, title, url, source);
+      });
   }
 
   return false;
