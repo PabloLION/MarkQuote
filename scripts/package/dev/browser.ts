@@ -1,3 +1,4 @@
+// Launches a Chromium instance with the built MarkQuote extension loaded for manual QA.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
