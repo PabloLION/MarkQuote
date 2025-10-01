@@ -1,12 +1,20 @@
+import { copyMarkdownToClipboard } from "./clipboard.js";
 import { loadPopupDom } from "./dom.js";
+import { createErrorController } from "./errors.js";
 import {
+  applyForcedPopupState,
+  createDevPreviewApi,
+  resolveForcedPopupState,
+} from "./forced-state.js";
+import { createMessageController } from "./message.js";
+import { createPreviewController } from "./preview.js";
+import {
+  COPIED_STATUS_MESSAGE,
   DEFAULT_STATUS_MESSAGE,
   FEEDBACK_URL,
-  type ForcedPopupState,
-  type LoggedExtensionError,
   type PopupDevPreviewApi,
+  PROTECTED_STATUS_MESSAGE,
   type RuntimeMessage,
-  SAMPLE_PREVIEW,
 } from "./state.js";
 
 declare global {
@@ -15,222 +23,28 @@ declare global {
   }
 }
 
-function resolveForcedPopupState(): ForcedPopupState | null {
-  const isDev = window.location.hostname === "localhost" || window.location.port === "5173";
-  if (!isDev) {
-    return null;
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const stateParam = params.get("state");
-
-  if (!stateParam) {
-    return null;
-  }
-
-  const normalized = stateParam.trim().toLowerCase();
-
-  if (normalized === "default") {
-    return { kind: "default" };
-  }
-
-  if (normalized === "protected") {
-    return { kind: "protected" };
-  }
-
-  if (normalized === "copied") {
-    const previewParam = params.get("preview");
-    const preview = previewParam?.trim().length ? previewParam : SAMPLE_PREVIEW;
-    return {
-      kind: "copied",
-      preview,
-    };
-  }
-
-  return null;
-}
-
 export function initializePopup(): () => void {
-  const {
-    message: messageDiv,
-    messageText,
-    preview: previewDiv,
-    previewCode,
-    optionsButton,
-    hotkeysButton,
-    feedbackButton,
-    inlineModeButton,
-    problemBadge,
-    errorContainer,
-    errorList,
-    reportErrorsButton,
-    dismissErrorsButton,
-  } = loadPopupDom();
+  const dom = loadPopupDom();
+  const runtime = globalThis.chrome?.runtime;
 
-  if (!chrome?.runtime) {
+  if (!runtime) {
     console.warn("chrome.runtime is unavailable; popup interactions are limited.");
     return () => {};
   }
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (error) {
-      console.warn("navigator.clipboard.writeText failed; falling back to execCommand.", error);
-    }
+  const messages = createMessageController(dom);
+  const preview = createPreviewController(dom);
 
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "true");
-    textarea.style.position = "absolute";
-    textarea.style.left = "-9999px";
-    document.body.append(textarea);
-    textarea.select();
+  messages.set(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
+  preview.clear();
 
-    let success = false;
-    try {
-      success = document.execCommand("copy");
-    } catch (error) {
-      console.warn('document.execCommand("copy") failed.', error);
-    }
-
-    textarea.remove();
-    return success;
+  const openExternal = (url: string, features = "noopener") => {
+    window.open(url, "_blank", features);
   };
-
-  const setMessage = (
-    text: string,
-    options: { label?: string; variant?: "default" | "success" | "warning" } = {},
-  ) => {
-    if (!messageDiv || !messageText) {
-      return;
-    }
-
-    if (text.trim().length === 0) {
-      messageText.textContent = "";
-      messageDiv.setAttribute("hidden", "true");
-    } else {
-      messageText.textContent = text;
-      messageDiv.removeAttribute("hidden");
-    }
-
-    if (options.label) {
-      messageDiv.dataset.label = options.label;
-    } else {
-      delete messageDiv.dataset.label;
-    }
-
-    const variant = options.variant ?? "default";
-    if (variant === "default") {
-      delete messageDiv.dataset.variant;
-    } else {
-      messageDiv.dataset.variant = variant;
-    }
-  };
-
-  const renderPreview = (text: string | null | undefined) => {
-    if (!previewDiv) {
-      return;
-    }
-
-    const target = previewCode ?? previewDiv;
-
-    if (typeof text !== "string" || text.trim().length === 0) {
-      if (previewCode) {
-        previewCode.textContent = "";
-      } else {
-        previewDiv.textContent = "";
-      }
-      previewDiv.hidden = true;
-      previewDiv.setAttribute("hidden", "true");
-      return;
-    }
-
-    target.textContent = text;
-    previewDiv.hidden = false;
-    previewDiv.removeAttribute("hidden");
-  };
-
-  setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
-  renderPreview(null);
-
-  const applyForcedPopupState = (forcedState: ForcedPopupState) => {
-    switch (forcedState.kind) {
-      case "default": {
-        renderPreview(null);
-        setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
-        break;
-      }
-      case "copied": {
-        renderPreview(forcedState.preview);
-        setMessage("Markdown copied to clipboard.", {
-          label: "Copied",
-          variant: "success",
-        });
-        break;
-      }
-      case "protected": {
-        renderPreview(null);
-        setMessage(
-          "This page is protected, so MarkQuote can't access the selection. Try another tab.",
-          {
-            label: "Protected",
-            variant: "warning",
-          },
-        );
-        break;
-      }
-      default: {
-        renderPreview(null);
-        setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
-      }
-    }
-  };
-
-  const messageListener = (request: RuntimeMessage) => {
-    if (request.type === "copied-text-preview") {
-      renderPreview(request.text);
-
-      setMessage("Markdown copied to clipboard.", { label: "Copied", variant: "success" });
-
-      void copyToClipboard(request.text).then((success) => {
-        if (!success) {
-          setMessage("Unable to copy automatically. Text is ready below.", {
-            variant: "warning",
-          });
-        }
-      });
-    } else if (request.type === "copy-protected") {
-      renderPreview(null);
-
-      setMessage(
-        "This page is protected, so MarkQuote can't access the selection. Try another tab.",
-        {
-          label: "Protected",
-          variant: "warning",
-        },
-      );
-    }
-  };
-
-  const forcedState = resolveForcedPopupState();
-
-  if (!forcedState) {
-    chrome.runtime.onMessage.addListener(messageListener);
-
-    chrome.runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
-      console.warn("Failed to request selection copy.", error);
-    });
-  } else {
-    applyForcedPopupState(forcedState);
-  }
 
   const openOptions = () => {
-    if (chrome.runtime.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
+    if (runtime.openOptionsPage) {
+      runtime.openOptionsPage();
       return;
     }
 
@@ -238,151 +52,109 @@ export function initializePopup(): () => void {
   };
 
   const openShortcuts = () => {
-    const openShortcutSettings = (
-      chrome.commands as typeof chrome.commands & { openShortcutSettings?: () => void }
-    ).openShortcutSettings;
+    const commands = chrome.commands as typeof chrome.commands & {
+      openShortcutSettings?: () => void;
+    };
 
-    if (typeof openShortcutSettings === "function") {
-      openShortcutSettings();
+    if (typeof commands.openShortcutSettings === "function") {
+      commands.openShortcutSettings();
       return;
     }
 
     window.open("chrome://extensions/shortcuts", "_blank");
   };
 
-  const openExternal = (url: string) => {
-    window.open(url, "_blank", "noopener");
-  };
+  function openFeedback(): void {
+    openExternal(FEEDBACK_URL, "noopener");
+  }
 
-  const openFeedback = () => openExternal(FEEDBACK_URL);
   const inlineModeLink =
-    inlineModeButton?.getAttribute("data-feedback-link") ??
+    dom.inlineModeButton?.getAttribute("data-feedback-link") ??
     "https://github.com/PabloLION/MarkQuote/issues/3";
-  const openInlineModeIssue = () => openExternal(inlineModeLink);
+  const openInlineModeIssue = () => openExternal(inlineModeLink, "noopener");
 
-  const fetchErrors = async (): Promise<LoggedExtensionError[]> => {
-    if (!chrome?.runtime) {
-      return [];
-    }
+  const errorController = createErrorController(dom, runtime, openFeedback);
 
-    try {
-      const response = (await chrome.runtime.sendMessage({ type: "get-error-log" })) as {
-        errors?: LoggedExtensionError[];
-      };
-      return Array.isArray(response?.errors) ? response.errors : [];
-    } catch (error) {
-      console.warn("Failed to load error log", error);
-      return [];
-    }
-  };
+  const forcedState = resolveForcedPopupState();
 
-  const clearErrors = async () => {
-    if (!chrome?.runtime) {
-      return;
-    }
+  const messageListener: Parameters<typeof runtime.onMessage.addListener>[0] = (
+    request: RuntimeMessage,
+  ) => {
+    if (request.type === "copied-text-preview") {
+      preview.render(request.text);
+      messages.set(COPIED_STATUS_MESSAGE, { label: "Copied", variant: "success" });
 
-    try {
-      await chrome.runtime.sendMessage({ type: "clear-error-log" });
-    } catch (error) {
-      console.warn("Failed to clear error log", error);
+      void copyMarkdownToClipboard(request.text).then((success) => {
+        if (!success) {
+          messages.set("Unable to copy automatically. Text is ready below.", {
+            variant: "warning",
+          });
+        }
+      });
+    } else if (request.type === "copy-protected") {
+      preview.clear();
+      messages.set(PROTECTED_STATUS_MESSAGE, { label: "Protected", variant: "warning" });
     }
   };
 
-  const renderErrors = (errors: LoggedExtensionError[]) => {
-    if (!errorContainer || !errorList || !problemBadge) {
-      return;
-    }
-
-    if (errors.length === 0) {
-      errorContainer.hidden = true;
-      problemBadge.setAttribute("hidden", "true");
-      problemBadge.textContent = "";
-      errorList.innerHTML = "";
-      return;
-    }
-
-    errorContainer.hidden = false;
-    problemBadge.removeAttribute("hidden");
-    problemBadge.textContent = String(Math.min(errors.length, 99));
-
-    errorList.innerHTML = "";
-    for (const entry of errors) {
-      const item = document.createElement("li");
-      const timestamp = new Date(entry.timestamp).toLocaleString();
-      item.textContent = `[${timestamp}] ${entry.context}: ${entry.message}`;
-      errorList.append(item);
-    }
-  };
-
-  const refreshErrorLog = () => {
-    void fetchErrors().then((errors) => {
-      renderErrors(errors);
+  if (!forcedState) {
+    runtime.onMessage.addListener(messageListener);
+    runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
+      console.warn("Failed to request selection copy.", error);
     });
-  };
+  } else {
+    applyForcedPopupState(forcedState, preview, messages);
+  }
 
-  optionsButton?.addEventListener("click", openOptions);
-  hotkeysButton?.addEventListener("click", openShortcuts);
-  feedbackButton?.addEventListener("click", openFeedback);
-  inlineModeButton?.addEventListener("click", openInlineModeIssue);
-  const handleReportErrors = () => {
-    openFeedback();
-    void clearErrors().then(refreshErrorLog);
-  };
+  const cleanupFns: Array<() => void> = [];
 
-  const handleDismissErrors = () => {
-    void clearErrors().then(refreshErrorLog);
-  };
+  if (dom.optionsButton) {
+    dom.optionsButton.addEventListener("click", openOptions);
+    cleanupFns.push(() => dom.optionsButton?.removeEventListener("click", openOptions));
+  }
 
-  reportErrorsButton?.addEventListener("click", handleReportErrors);
-  dismissErrorsButton?.addEventListener("click", handleDismissErrors);
+  if (dom.hotkeysButton) {
+    dom.hotkeysButton.addEventListener("click", openShortcuts);
+    cleanupFns.push(() => dom.hotkeysButton?.removeEventListener("click", openShortcuts));
+  }
 
-  refreshErrorLog();
+  if (dom.feedbackButton) {
+    dom.feedbackButton.addEventListener("click", openFeedback);
+    cleanupFns.push(() => dom.feedbackButton?.removeEventListener("click", openFeedback));
+  }
+
+  if (dom.inlineModeButton) {
+    dom.inlineModeButton.addEventListener("click", openInlineModeIssue);
+    cleanupFns.push(() => dom.inlineModeButton?.removeEventListener("click", openInlineModeIssue));
+  }
+
+  void errorController.refresh();
+
+  const devEnvironment = Boolean(
+    (import.meta as ImportMeta & { env?: { DEV?: boolean } }).env?.DEV,
+  );
 
   let devApi: PopupDevPreviewApi | undefined;
 
-  const isDevEnvironment = Boolean((import.meta as any)?.env?.DEV);
-
-  if (isDevEnvironment) {
+  if (devEnvironment) {
+    devApi = createDevPreviewApi(preview, messages);
     const globalWithDev = window as typeof window & {
       __MARKQUOTE_POPUP_DEV__?: PopupDevPreviewApi;
     };
-
-    devApi = {
-      showDefault() {
-        renderPreview(null);
-        setMessage(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
-      },
-      showSuccess(text: string) {
-        renderPreview(text);
-        setMessage("Markdown copied to clipboard.", { label: "Copied", variant: "success" });
-      },
-      showProtected() {
-        renderPreview(null);
-        setMessage(
-          "This page is protected, so MarkQuote can't access the selection. Try another tab.",
-          {
-            label: "Protected",
-            variant: "warning",
-          },
-        );
-      },
-    };
-
     globalWithDev.__MARKQUOTE_POPUP_DEV__ = devApi;
   }
 
   return () => {
     if (!forcedState) {
-      chrome.runtime.onMessage.removeListener(messageListener);
+      runtime.onMessage.removeListener(messageListener);
     }
-    optionsButton?.removeEventListener("click", openOptions);
-    hotkeysButton?.removeEventListener("click", openShortcuts);
-    feedbackButton?.removeEventListener("click", openFeedback);
-    inlineModeButton?.removeEventListener("click", openInlineModeIssue);
-    reportErrorsButton?.removeEventListener("click", handleReportErrors);
-    dismissErrorsButton?.removeEventListener("click", handleDismissErrors);
 
-    if (devApi && isDevEnvironment) {
+    for (const fn of cleanupFns) {
+      fn();
+    }
+    errorController.dispose();
+
+    if (devApi && devEnvironment) {
       const globalWithDev = window as typeof window & {
         __MARKQUOTE_POPUP_DEV__?: PopupDevPreviewApi;
       };
