@@ -13,20 +13,24 @@ describe("background/errors", () => {
     sinonChrome.reset();
     sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
     sinonChrome.storage.local.set.resolves();
-    if (!sinonChrome.action) {
-      (
-        sinonChrome as unknown as {
-          action: { setBadgeText: unknown; setBadgeBackgroundColor: unknown };
-        }
-      ).action = {
+
+    const chromeWithAction = sinonChrome as unknown as {
+      action?: {
+        setBadgeText: ReturnType<typeof vi.fn>;
+        setBadgeBackgroundColor: ReturnType<typeof vi.fn>;
+      };
+    };
+    if (!chromeWithAction.action) {
+      chromeWithAction.action = {
         setBadgeText: vi.fn().mockResolvedValue(undefined),
         setBadgeBackgroundColor: vi.fn().mockResolvedValue(undefined),
       };
     } else {
-      sinonChrome.action.setBadgeText.resolves();
-      sinonChrome.action.setBadgeBackgroundColor.resolves();
+      chromeWithAction.action.setBadgeText.mockResolvedValue(undefined);
+      chromeWithAction.action.setBadgeBackgroundColor.mockResolvedValue(undefined);
     }
-    globalThis.chrome = sinonChrome as unknown as typeof chrome;
+
+    globalThis.chrome = chromeWithAction as unknown as typeof chrome;
   });
 
   afterEach(() => {

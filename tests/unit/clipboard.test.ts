@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { formatForClipboard } from "../../src/clipboard.js";
-import { getSinonChrome } from "../../src/dev/chrome-dev-mock";
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock.js";
 
 const sinonChrome = getSinonChrome();
 

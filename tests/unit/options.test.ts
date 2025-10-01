@@ -3,8 +3,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { MockInstance } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getSinonChrome } from "../../src/dev/chrome-dev-mock";
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
@@ -19,7 +20,7 @@ import {
   DEFAULT_WIKI_TITLE_REPLACE,
   DEFAULT_WIKI_TITLE_SEARCH,
   DEFAULT_WIKI_URL_PATTERN,
-} from "../../src/options-schema";
+} from "../../src/options-schema.js";
 
 const sinonChrome = getSinonChrome();
 
@@ -34,8 +35,8 @@ function flushMicrotasks(): Promise<void> {
 
 describe("Options Page", () => {
   let disposeOptions: (() => void) | undefined;
-  let requestAnimationFrameSpy: ReturnType<typeof vi.spyOn> | undefined;
-  let cancelAnimationFrameSpy: ReturnType<typeof vi.spyOn> | undefined;
+  let requestAnimationFrameSpy: MockInstance | undefined;
+  let cancelAnimationFrameSpy: MockInstance | undefined;
 
   beforeEach(async () => {
     document.body.innerHTML = html;
@@ -44,7 +45,7 @@ describe("Options Page", () => {
 
     requestAnimationFrameSpy = vi
       .spyOn(window, "requestAnimationFrame")
-      .mockImplementation((callback: FrameRequestCallback) => {
+      .mockImplementation((callback) => {
         callback(0);
         return 0;
       });
@@ -62,7 +63,7 @@ describe("Options Page", () => {
     });
     sinonChrome.storage.sync.set.resolves();
 
-    const { initializeOptions } = await import("../../src/surfaces/options/page");
+    const { initializeOptions } = await import("../../src/surfaces/options/page.js");
     disposeOptions = initializeOptions();
 
     await flushMicrotasks();
@@ -83,7 +84,7 @@ describe("Options Page", () => {
 
     sinonChrome.storage.sync.get.resolves({});
 
-    const { initializeOptions } = await import("../../src/surfaces/options/page");
+    const { initializeOptions } = await import("../../src/surfaces/options/page.js");
     disposeOptions = initializeOptions();
 
     await flushMicrotasks();

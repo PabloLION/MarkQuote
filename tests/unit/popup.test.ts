@@ -1,6 +1,7 @@
+import type { MockInstance } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getSinonChrome } from "../../src/dev/chrome-dev-mock";
-import { initializePopup } from "../../src/surfaces/popup/page";
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock.js";
+import { initializePopup } from "../../src/surfaces/popup/page.js";
 
 const sinonChrome = getSinonChrome();
 
@@ -39,7 +40,7 @@ function mountPopupDom() {
 describe("popup", () => {
   describe("with chrome runtime", () => {
     let dispose: (() => void) | undefined;
-    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+    let windowOpenSpy: MockInstance;
     let clipboardWriteSpy: ReturnType<typeof vi.fn>;
     const originalShortcutOpener = getSinonCommands().openShortcutSettings;
     let openShortcutSettingsSpy: ReturnType<typeof vi.fn>;
@@ -135,7 +136,7 @@ describe("popup", () => {
 
   describe("fallback behaviour", () => {
     let dispose: (() => void) | undefined;
-    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+    let windowOpenSpy: MockInstance;
 
     beforeEach(() => {
       mountPopupDom();

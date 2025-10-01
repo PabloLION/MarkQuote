@@ -1,5 +1,5 @@
 import { beforeEach } from "vitest";
-import { ensureChromeMock } from "../../src/dev/chrome-dev-mock";
+import { ensureChromeMock } from "../../src/dev/chrome-dev-mock.js";
 
 beforeEach(async () => {
   ensureChromeMock({ persistence: "memory" });

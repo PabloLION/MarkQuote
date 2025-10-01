@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import type { OptionsPayload } from "../../src/options-schema";
+import type { OptionsPayload } from "../../../src/options-schema.js";
 
 export async function sendSelectionMessage(
   page: Page,
