@@ -1,3 +1,7 @@
+/**
+ * Manages the popup's error log UI, wiring the background diagnostics into the visible badge list
+ * and providing affordances to clear/report issues.
+ */
 import type { PopupDom } from "./dom.js";
 import type { LoggedExtensionError } from "./state.js";
 
@@ -6,6 +10,10 @@ export interface PopupErrorController {
   dispose(): void;
 }
 
+/**
+ * Creates a controller that keeps the popup's error log UI in sync with the background worker and
+ * wires report/dismiss actions.
+ */
 export function createErrorController(
   dom: PopupDom,
   runtime: typeof chrome.runtime | undefined,
@@ -39,6 +47,8 @@ export function createErrorController(
     problemBadge.removeAttribute("hidden");
     problemBadge.textContent = String(Math.min(errors.length, 99));
 
+    // Re-render the limited (≤99) list each refresh; the volume is small and keeps the DOM logic
+    // straightforward when entries are cleared or reordered.
     errorList.innerHTML = "";
     errors.forEach((entry) => {
       const item = document.createElement("li");

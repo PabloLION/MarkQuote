@@ -1,6 +1,11 @@
+/** Formats captured markdown using stored options, falling back to defaults when sync storage is unavailable. */
 import { formatWithOptions } from "./formatting.js";
 import { DEFAULT_OPTIONS, normalizeStoredOptions } from "./options-schema.js";
 
+/**
+ * Returns formatted markdown ready for clipboard usage. The user's saved template/rules are
+ * applied when available; otherwise we use the built-in defaults.
+ */
 export async function formatForClipboard(
   markdown: string,
   title: string,

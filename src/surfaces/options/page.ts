@@ -1,3 +1,7 @@
+/**
+ * Options surface entry point. Coordinates DOM wiring, rule editing helpers, preview updates, and
+ * persistence so the giant template can stay modular.
+ */
 import {
   normalizeStoredOptions,
   type OptionsPayload,
@@ -50,6 +54,7 @@ interface RuleSavingState {
 
 type ClearConfirmationTimers = Partial<Record<DragScope, ReturnType<typeof setTimeout>>>;
 
+/** Bootstraps the options UI and returns a disposer for tests/HMR. */
 export function initializeOptions(): () => void {
   const dom = loadDom();
   if (!dom) {

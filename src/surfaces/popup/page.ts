@@ -1,3 +1,7 @@
+/**
+ * Popup surface entry point. Wires DOM handles to controllers for messaging, preview rendering,
+ * clipboard fallbacks, and error log management.
+ */
 import { copyMarkdownToClipboard } from "./clipboard.js";
 import { loadPopupDom } from "./dom.js";
 import { createErrorController } from "./errors.js";
@@ -23,6 +27,7 @@ declare global {
   }
 }
 
+/** Bootstraps the popup surface and returns a disposer for hot module reloading/tests. */
 export function initializePopup(): () => void {
   const dom = loadPopupDom();
   const runtime = globalThis.chrome?.runtime;

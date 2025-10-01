@@ -1,3 +1,7 @@
+/**
+ * Returns true when the URL points to a browser-internal or privileged surface where content script
+ * execution is disallowed. This mirrors Chrome's own restrictions so we can fail gracefully.
+ */
 export function isUrlProtected(candidate?: string | null): boolean {
   if (!candidate) {
     return false;

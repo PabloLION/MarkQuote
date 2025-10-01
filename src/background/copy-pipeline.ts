@@ -1,3 +1,7 @@
+/**
+ * Helpers for formatting captured selections and relaying preview/error information back to the
+ * popup. The module doubles as an instrumentation point for end-to-end tests.
+ */
 import { formatForClipboard } from "../clipboard.js";
 import { isE2ETest } from "./constants.js";
 import { ERROR_CONTEXT } from "./error-context.js";
@@ -7,6 +11,10 @@ import type { CopySource } from "./types.js";
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
 
+/**
+ * Formats the captured markdown for clipboard usage. When the popup initiated the copy we notify it
+ * with the formatted preview, falling back to default copy behaviour if the message fails.
+ */
 export async function runCopyPipeline(
   markdown: string,
   title: string,
@@ -38,14 +46,17 @@ export async function runCopyPipeline(
   return formatted;
 }
 
+/** Returns the last formatted preview (test-only helper). */
 export function getLastFormattedPreview(): string {
   return lastFormattedPreview;
 }
 
+/** Returns the last preview error encountered (test-only helper). */
 export function getLastPreviewError(): string | undefined {
   return lastPreviewError;
 }
 
+/** Overrides the stored preview error (test helper used by E2E suite). */
 export function setLastPreviewError(message: string | undefined): void {
   lastPreviewError = message;
 }

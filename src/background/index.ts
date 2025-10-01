@@ -1,3 +1,9 @@
+/**
+ * Background entry point that orchestrates copy flows, hotkey behaviour, option persistence, and
+ * diagnostic telemetry. Centralising these responsibilities keeps chrome API usage contained,
+ * which simplifies testing and documents design choices (e.g. session persistence for pending
+ * copy sources).
+ */
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_OPTIONS,
@@ -48,6 +54,11 @@ function isCopySource(candidate: unknown): candidate is CopySource {
   );
 }
 
+/**
+ * Restores the pending copy source map from session storage. The map is tiny (at most one entry
+ * per active tab) and this recovery only runs when the background service worker wakes, so the
+ * overhead is negligible.
+ */
 async function restorePendingCopySources(): Promise<void> {
   const sessionStorage = chrome.storage?.session;
   if (!sessionStorage) {
@@ -73,6 +84,11 @@ async function restorePendingCopySources(): Promise<void> {
   }
 }
 
+/**
+ * Persists the pending copy sources to session storage. Copy requests happen infrequently and only
+ * on user gesture, so writing the small map here keeps state resilient without impacting runtime
+ * performance.
+ */
 async function persistPendingCopySources(): Promise<void> {
   const sessionStorage = chrome.storage?.session;
   if (!sessionStorage) {
@@ -91,21 +107,37 @@ async function persistPendingCopySources(): Promise<void> {
   }
 }
 
+/**
+ * Records the source that initiated a copy request for the given tab so we can attribute results
+ * (or failures) even if the popup closes or the service worker restarts.
+ */
 function setPendingSource(tabId: number, source: CopySource): void {
   pendingCopySources.set(tabId, source);
   void persistPendingCopySources();
 }
 
+/**
+ * Removes the tracked source for the given tab and persists the pending map if an entry was
+ * cleared.
+ */
 function clearPendingSource(tabId: number): void {
   if (pendingCopySources.delete(tabId)) {
     void persistPendingCopySources();
   }
 }
 
+/**
+ * Helper that normalises chrome runtime errors into a human-readable string. Chrome occasionally
+ * returns undefined messages, so we supply a fallback.
+ */
 function getRuntimeLastErrorMessage(): string {
   return chrome.runtime.lastError?.message ?? "Unknown Chrome runtime error";
 }
 
+/**
+ * Resolves the URL for a tab, accounting for pending navigation states. Returns null when the tab
+ * information is unavailable (e.g. background pages).
+ */
 function getTabUrl(tab: chrome.tabs.Tab | undefined): string | null {
   if (!tab) {
     return null;
@@ -113,6 +145,10 @@ function getTabUrl(tab: chrome.tabs.Tab | undefined): string | null {
   return tab.url ?? tab.pendingUrl ?? null;
 }
 
+/**
+ * Opens the popup (when possible) and notifies the UI that a protected page prevented selection
+ * access. The popup will fall back to manual copy messaging.
+ */
 function notifyCopyProtected(
   tab: chrome.tabs.Tab | undefined,
   source: CopySource,
@@ -141,6 +177,10 @@ function notifyCopyProtected(
     });
 }
 
+/**
+ * Injects the selection script for a tab when the host is permitted. Protected pages are handled
+ * gracefully by notifying the popup instead.
+ */
 function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void {
   if (tab?.id === undefined) {
     return;
@@ -203,6 +243,10 @@ chrome.commands.onCommand.addListener((command, tab) => {
   void handleHotkeyCommand(tab);
 });
 
+/**
+ * Handles the keyboard shortcut flow. Chrome requires the action to be pinned before the popup can
+ * open, so we detect that case and fall back to direct copying.
+ */
 async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
@@ -257,6 +301,10 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
     });
 }
 
+/**
+ * Schedules a timeout that will copy directly if the popup fails to respond to the hotkey. The
+ * popup cancels this timer via the "popup-ready" message once it is fully initialised.
+ */
 function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
   cancelHotkeyFallback();
 
@@ -271,6 +319,10 @@ function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
   }, 1000);
 }
 
+/**
+ * Persists the latest options payload to sync storage while retaining backwards compatibility with
+ * earlier schema versions.
+ */
 async function persistOptions(payload: OptionsPayload): Promise<void> {
   const storageArea = chrome.storage?.sync;
   if (!storageArea) {
@@ -287,6 +339,10 @@ async function persistOptions(payload: OptionsPayload): Promise<void> {
   });
 }
 
+/**
+ * Ensures sync storage contains a valid options payload. This handles first-run defaults as well as
+ * migrations from prior versions.
+ */
 async function ensureOptionsInitialized(): Promise<void> {
   const storageArea = chrome.storage?.sync;
   if (!storageArea) {
@@ -409,6 +465,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return false;
 });
 
+/**
+ * Handles background messages for reading and clearing the diagnostic error log.
+ */
 function handleErrorLogRequests(request: unknown, sendResponse: RuntimeSendResponse): boolean {
   const typedRequest = request as { type?: string } | undefined;
 
@@ -429,6 +488,10 @@ function handleErrorLogRequests(request: unknown, sendResponse: RuntimeSendRespo
   return false;
 }
 
+/**
+ * Attempts to trigger a selection copy from the currently focused window. This is used by the
+ * popup when it loads and by tests via message passing.
+ */
 function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean {
   cancelHotkeyFallback();
 
@@ -464,6 +527,10 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
   return true;
 }
 
+/**
+ * Picks the most suitable tab for copy execution. Prefers the active HTTP(S) tab, but gracefully
+ * falls back to other candidates if needed.
+ */
 function pickBestTab(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab | undefined {
   const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
   const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith("chrome-extension://");

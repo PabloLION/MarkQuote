@@ -1,13 +1,19 @@
+/**
+ * Shared error logging utilities for the background worker. Errors are persisted so the popup can
+ * display the latest failures to users and aid in support/debugging scenarios.
+ */
 import { ACTIVE_TAB_PERMISSION_MESSAGE, ERROR_STORAGE_KEY } from "./constants.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import { isUrlProtected } from "./protected-urls.js";
 import type { LoggedError } from "./types.js";
 
+/** Restores the badge count based on persisted errors when the worker starts. */
 export async function initializeBadgeFromStorage(): Promise<void> {
   const errors = await getStoredErrors();
   updateBadge(errors.length);
 }
 
+/** Returns the filtered error log from storage, ignoring malformed entries. */
 export async function getStoredErrors(): Promise<LoggedError[]> {
   const storageArea = chrome.storage?.local;
   if (!storageArea) {
@@ -23,6 +29,10 @@ export async function getStoredErrors(): Promise<LoggedError[]> {
   return raw.filter((entry): entry is LoggedError => Boolean(entry?.message));
 }
 
+/**
+ * Appends a formatted error entry and updates the badge. Context codes are used so we can group
+ * failures when reviewing user reports.
+ */
 export async function recordError(
   context: ErrorContext,
   error: unknown,
@@ -72,12 +82,13 @@ export async function recordError(
       timestamp: Date.now(),
     },
     ...existing,
-  ].slice(0, 10);
+  ].slice(0, 10); // Keep the 10 most recent entries to avoid unbounded growth.
 
   await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
   updateBadge(updated.length);
 }
 
+/** Clears the stored error log and resets the badge. */
 export async function clearStoredErrors(): Promise<void> {
   const storageArea = chrome.storage?.local;
   if (!storageArea) {
@@ -89,7 +100,7 @@ export async function clearStoredErrors(): Promise<void> {
 }
 
 function updateBadge(count: number): void {
-  const text = count > 0 ? String(Math.min(count, 99)) : "";
+  const text = count > 0 ? String(Math.min(count, 99)) : ""; // Badge intentionally caps at 99 to avoid overflowing the action UI.
   chrome.action.setBadgeText({ text }).catch((error) => {
     // Badge updates can fail when the action is unavailable (e.g. during browser shutdown).
     console.debug("[MarkQuote] Failed to update badge text", error);
