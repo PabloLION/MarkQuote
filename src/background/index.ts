@@ -36,6 +36,10 @@ const HOTKEY_POPUP_TIMEOUT_MS = 1000; // 1 second mirrors Chrome's own popup war
 void initializeBadgeFromStorage();
 const pendingSourcesRestored = restorePendingCopySources();
 
+function getSessionStorage(): typeof chrome.storage.session | null {
+  return chrome.storage?.session ?? null;
+}
+
 function cancelHotkeyFallback(): void {
   if (hotkeyPopupFallbackTimer === undefined) {
     return;
@@ -61,7 +65,7 @@ function isCopySource(candidate: unknown): candidate is CopySource {
  * overhead is negligible.
  */
 async function restorePendingCopySources(): Promise<void> {
-  const sessionStorage = chrome.storage?.session;
+  const sessionStorage = getSessionStorage();
   if (!sessionStorage) {
     return;
   }
@@ -91,7 +95,7 @@ async function restorePendingCopySources(): Promise<void> {
  * performance.
  */
 async function persistPendingCopySources(): Promise<void> {
-  const sessionStorage = chrome.storage?.session;
+  const sessionStorage = getSessionStorage();
   if (!sessionStorage) {
     return;
   }

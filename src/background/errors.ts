@@ -7,6 +7,8 @@ import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import { isUrlProtected } from "./protected-urls.js";
 import type { LoggedError } from "./types.js";
 
+const ERROR_LOG_MAX_ENTRIES = 10; // UX intentionally limits the log to the 10 latest entries shown in the popup.
+
 /** Restores the badge count based on persisted errors when the worker starts. */
 export async function initializeBadgeFromStorage(): Promise<void> {
   const errors = await getStoredErrors();
@@ -51,6 +53,7 @@ export async function recordError(
         : JSON.stringify(error);
 
   if (message.includes("Receiving end does not exist")) {
+    console.debug("[MarkQuote] Suppressing transient runtime disconnect", { context, message });
     return;
   }
 
@@ -82,7 +85,7 @@ export async function recordError(
       timestamp: Date.now(),
     },
     ...existing,
-  ].slice(0, 10); // Keep the 10 most recent entries to avoid unbounded growth.
+  ].slice(0, ERROR_LOG_MAX_ENTRIES);
 
   try {
     await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
@@ -116,6 +119,8 @@ function updateBadge(count: number): void {
     console.debug("[MarkQuote] Failed to update badge text", error);
   });
   if (count > 0) {
+    // Badge updates only happen on error boundaries and recoveries, so the sequential API calls
+    // keep the code simple with negligible impact on performance.
     chrome.action.setBadgeBackgroundColor({ color: "#d93025" }).catch((error) => {
       console.debug("[MarkQuote] Failed to update badge background", error);
     });
