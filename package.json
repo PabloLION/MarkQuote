@@ -23,7 +23,7 @@
     "build": "vite build",
     "check": "biome check --write --unsafe",
     "dev": "vite",
-    "dev:browser": "tsx scripts/dev/launch-dev-browser.ts",
+    "dev:browser": "tsx scripts/package/dev/launch-browser.ts",
     "dev:playwright": "tsx scripts/package/dev/playwright-dev.ts",
     "publish:chrome": "tsx scripts/publish/chrome-web-store.ts",
     "bundle": "tsx scripts/package/bundle.ts",
