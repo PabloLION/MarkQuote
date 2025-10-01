@@ -99,7 +99,8 @@ export interface ValidationResult {
 export function validateRulesFor<TRule extends RuleWithFlags>(
   config: RuleConfig<TRule>,
 ): ValidationResult {
-  const sanitizedRules = filteredRulesInternal(config);
+  filteredRulesInternal(config);
+  const rules = config.getRules();
   let valid = true;
   let message: string | undefined;
 
@@ -107,7 +108,11 @@ export function validateRulesFor<TRule extends RuleWithFlags>(
     element.removeAttribute("aria-invalid");
   });
 
-  sanitizedRules.forEach((sanitized, index) => {
+  rules.forEach((sanitized, index) => {
+    if (!config.hasContent(sanitized)) {
+      return;
+    }
+
     const row = config.body.querySelector<HTMLTableRowElement>(`tr[data-index="${index}"]`);
     if (!row) {
       return;

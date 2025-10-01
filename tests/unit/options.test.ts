@@ -34,11 +34,21 @@ function flushMicrotasks(): Promise<void> {
 
 describe("Options Page", () => {
   let disposeOptions: (() => void) | undefined;
+  let requestAnimationFrameSpy: vi.SpyInstance<number, [FrameRequestCallback]> | undefined;
+  let cancelAnimationFrameSpy: vi.SpyInstance<void, [number]> | undefined;
 
   beforeEach(async () => {
     document.body.innerHTML = html;
     vi.resetModules();
     sinonChrome.reset();
+
+    requestAnimationFrameSpy = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback: FrameRequestCallback) => {
+        callback(0);
+        return 0;
+      });
+    cancelAnimationFrameSpy = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
 
     globalThis.chrome = sinonChrome as unknown as typeof chrome;
 
@@ -60,6 +70,8 @@ describe("Options Page", () => {
   });
 
   afterEach(() => {
+    cancelAnimationFrameSpy?.mockRestore();
+    requestAnimationFrameSpy?.mockRestore();
     disposeOptions?.();
     sinonChrome.reset();
   });

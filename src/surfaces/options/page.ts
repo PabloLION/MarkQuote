@@ -83,9 +83,8 @@ export function initializeOptions(): () => void {
   let previewFrameHandle: number | undefined;
 
   function updatePreviewView(): void {
-    updatePreview(context, rulesAdapter);
-
     if (!hasAnimationFrame) {
+      updatePreview(context, rulesAdapter);
       return;
     }
 
