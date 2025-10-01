@@ -30,6 +30,7 @@ type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
 
 const pendingCopySources = new Map<number, CopySource>();
 let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+let hotkeyFallbackTab: chrome.tabs.Tab | undefined;
 const PENDING_COPY_SESSION_KEY = "markquote/pending-copy-sources";
 const HOTKEY_POPUP_TIMEOUT_MS = 1000; // 1 second mirrors Chrome's own popup warm-up before falling back.
 
@@ -38,6 +39,10 @@ const pendingSourcesRestored = restorePendingCopySources();
 
 function getSessionStorage(): typeof chrome.storage.session | null {
   return chrome.storage?.session ?? null;
+}
+
+function hasValidTabId(tab: chrome.tabs.Tab | undefined): tab is chrome.tabs.Tab & { id: number } {
+  return Boolean(tab && typeof tab.id === "number" && Number.isInteger(tab.id) && tab.id >= 0);
 }
 
 function cancelHotkeyFallback(): void {
@@ -129,6 +134,10 @@ function clearPendingSource(tabId: number): void {
   if (pendingCopySources.delete(tabId)) {
     void persistPendingCopySources();
   }
+
+  if (hotkeyFallbackTab?.id === tabId) {
+    hotkeyFallbackTab = undefined;
+  }
 }
 
 /**
@@ -187,7 +196,7 @@ function notifyCopyProtected(
  * gracefully by notifying the popup instead.
  */
 async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): Promise<void> {
-  if (tab?.id === undefined) {
+  if (!hasValidTabId(tab)) {
     return;
   }
 
@@ -289,7 +298,7 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
     });
   }
 
-  if (tab?.id) {
+  if (hasValidTabId(tab)) {
     scheduleHotkeyFallback(tab);
   }
 
@@ -312,16 +321,21 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
  * popup cancels this timer via the "popup-ready" message once it is fully initialised.
  */
 function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
+  hotkeyFallbackTab = tab;
   cancelHotkeyFallback();
 
   hotkeyPopupFallbackTimer = setTimeout(() => {
     hotkeyPopupFallbackTimer = undefined;
+    const targetTab = hotkeyFallbackTab;
+    hotkeyFallbackTab = undefined;
     void recordError(
       ERROR_CONTEXT.HotkeyPopupTimeout,
       "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
       { source: "hotkey" },
     );
-    void triggerCopy(tab, "hotkey");
+    if (targetTab) {
+      void triggerCopy(targetTab, "hotkey");
+    }
   }, HOTKEY_POPUP_TIMEOUT_MS);
 }
 
@@ -424,6 +438,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request?.type === "popup-ready") {
     cancelHotkeyFallback();
     sendResponse?.({ ok: true });
+    return false;
+  }
+
+  if (request?.type === "popup-closed") {
+    if (hotkeyFallbackTab && hasValidTabId(hotkeyFallbackTab)) {
+      const tabId = hotkeyFallbackTab.id;
+      if (pendingCopySources.has(tabId)) {
+        scheduleHotkeyFallback(hotkeyFallbackTab);
+      }
+    }
     return false;
   }
 

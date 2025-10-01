@@ -84,6 +84,19 @@ export function initializePopup(): () => void {
     // Ignore failures; the background worker may have been suspended before this message.
   });
 
+  let notifiedClosure = false;
+  const notifyPopupClosed = () => {
+    if (notifiedClosure) {
+      return;
+    }
+    notifiedClosure = true;
+    runtime.sendMessage({ type: "popup-closed" }).catch(() => {
+      // Background may be asleep; nothing critical to report if this fails.
+    });
+  };
+  window.addEventListener("pagehide", notifyPopupClosed);
+  window.addEventListener("beforeunload", notifyPopupClosed);
+
   const forcedState = resolveForcedPopupState();
 
   const messageListener: Parameters<typeof runtime.onMessage.addListener>[0] = (
@@ -157,6 +170,9 @@ export function initializePopup(): () => void {
     if (!forcedState) {
       runtime.onMessage.removeListener(messageListener);
     }
+
+    window.removeEventListener("pagehide", notifyPopupClosed);
+    window.removeEventListener("beforeunload", notifyPopupClosed);
 
     for (const fn of cleanupFns) {
       fn();
