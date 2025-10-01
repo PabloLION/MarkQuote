@@ -1,3 +1,8 @@
+// Utilities for Playwright integration tests. When VITE_E2E=true the background worker exposes
+// these message handlers so tests can seed storage, trigger copy flows, and read results
+// deterministically. In production builds the flag is false, so the handlers lie dormant—this keeps
+// the behaviour under test identical to the real extension while avoiding brittle UI setup in the
+// harness.
 import type { OptionsPayload } from "../options-schema.js";
 import { CURRENT_OPTIONS_VERSION } from "../options-schema.js";
 import {
