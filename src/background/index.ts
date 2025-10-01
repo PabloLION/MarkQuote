@@ -187,6 +187,12 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
     return;
   }
 
+  try {
+    await pendingSourcesRestored;
+  } catch (error) {
+    console.debug("[MarkQuote] Pending copy sources failed to restore before triggerCopy", error);
+  }
+
   const tabId = tab.id;
   const targetUrl = getTabUrl(tab);
   if (isUrlProtected(targetUrl)) {
@@ -521,7 +527,7 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
         return;
       }
 
-      triggerCopy(targetTab, "popup");
+      void triggerCopy(targetTab, "popup");
       sendResponse?.({ ok: true });
     })
     .catch((error) => {

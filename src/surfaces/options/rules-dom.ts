@@ -60,6 +60,7 @@ export function createHandleCell(scope: string, _index: number): HTMLTableCellEl
     "aria-label",
     scope === "title" ? "Drag to reorder title rule" : "Drag to reorder URL rule",
   );
+  // Static markup for the drag handle glyph; safe because it never incorporates user data.
   button.innerHTML = '<span aria-hidden="true">⋮⋮</span>';
 
   cell.append(button);

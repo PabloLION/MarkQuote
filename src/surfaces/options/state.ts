@@ -1,9 +1,11 @@
+import safeRegex from "safe-regex";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_OPTIONS,
   DEFAULT_TEMPLATE,
   type OptionsPayload,
+  SAFE_REGEX_ALLOWLIST,
   type TitleRule,
   type UrlRule,
 } from "../../options-schema.js";
@@ -70,6 +72,10 @@ export function validateRegex(pattern: string): boolean {
   }
 
   try {
+    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
+      console.error("Regex pattern flagged as potentially unsafe.", { pattern });
+      return false;
+    }
     new RegExp(pattern);
     return true;
   } catch (error) {

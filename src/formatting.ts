@@ -1,4 +1,10 @@
-import type { OptionsPayload, TitleRule, UrlRule } from "./options-schema.js";
+import safeRegex from "safe-regex";
+import {
+  type OptionsPayload,
+  SAFE_REGEX_ALLOWLIST,
+  type TitleRule,
+  type UrlRule,
+} from "./options-schema.js";
 
 export interface TemplateTokens {
   text: string;
@@ -17,6 +23,10 @@ function compileRegex(pattern: string, onError: (error: unknown) => void): RegEx
   }
 
   try {
+    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
+      console.error("Refusing to compile unsafe regular expression.", { pattern });
+      return undefined;
+    }
     return new RegExp(pattern);
   } catch (error) {
     onError(error);

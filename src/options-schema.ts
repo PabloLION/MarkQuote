@@ -79,6 +79,16 @@ export const DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE = "$1";
 export const DEFAULT_CHATGPT_UTM_TRAILING_SEARCH = String.raw`([?&])utm_source=chatgpt\.com($|#)`;
 export const DEFAULT_CHATGPT_UTM_TRAILING_REPLACE = "$2";
 
+export const SAFE_REGEX_ALLOWLIST = new Set<string>([
+  DEFAULT_WIKI_URL_PATTERN,
+  DEFAULT_WIKI_TITLE_SEARCH,
+  DEFAULT_CHATGPT_UTM_URL_PATTERN,
+  DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
+  DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
+  DEFAULT_AMAZON_URL_PATTERN,
+  DEFAULT_AMAZON_URL_SEARCH,
+]);
+
 function sanitizeString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }

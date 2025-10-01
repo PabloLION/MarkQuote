@@ -185,7 +185,7 @@ export function initializeOptions(): () => void {
 
   function renderRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     const rules = config.getRules();
-    config.body.innerHTML = "";
+    config.body.replaceChildren();
 
     rules.forEach((rule, index) => {
       const row = document.createElement("tr");

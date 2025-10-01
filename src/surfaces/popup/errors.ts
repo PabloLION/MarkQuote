@@ -39,7 +39,7 @@ export function createErrorController(
       errorContainer.hidden = true;
       problemBadge.setAttribute("hidden", "true");
       problemBadge.textContent = "";
-      errorList.innerHTML = "";
+      errorList.replaceChildren();
       return;
     }
 
@@ -49,7 +49,7 @@ export function createErrorController(
 
     // Re-render the limited (≤99) list each refresh; the volume is small and keeps the DOM logic
     // straightforward when entries are cleared or reordered.
-    errorList.innerHTML = "";
+    errorList.replaceChildren();
     errors.forEach((entry) => {
       const item = document.createElement("li");
       const timestamp = new Date(entry.timestamp).toLocaleString();
