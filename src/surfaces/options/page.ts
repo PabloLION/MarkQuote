@@ -74,6 +74,7 @@ export function initializeOptions(): () => void {
   const savingState: RuleSavingState = { title: false, url: false };
   const clearTimers: ClearConfirmationTimers = {};
   let draggingState: DragState | undefined;
+  const dragAbortControllers: Partial<Record<DragScope, AbortController>> = {};
 
   const rulesAdapter: PreviewRulesAdapter = {
     filtered: filteredRules,
@@ -183,6 +184,14 @@ export function initializeOptions(): () => void {
   }
 
   function renderRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
+    dragAbortControllers[config.scope]?.abort();
+    if (draggingState?.scope === config.scope) {
+      draggingState = undefined;
+    }
+    const rowAbortController = new AbortController();
+    dragAbortControllers[config.scope] = rowAbortController;
+    const rowSignal = rowAbortController.signal;
+
     const rules = config.getRules();
     config.body.replaceChildren();
 
@@ -209,7 +218,7 @@ export function initializeOptions(): () => void {
       );
 
       config.body.append(row);
-      attachRowDragHandlers(row, config.scope);
+      attachRowDragHandlers(row, config.scope, rowSignal);
     });
 
     resetClearConfirmation(config.scope);
@@ -217,7 +226,11 @@ export function initializeOptions(): () => void {
     updatePreviewView();
   }
 
-  function attachRowDragHandlers(row: HTMLTableRowElement, scope: DragScope): void {
+  function attachRowDragHandlers(
+    row: HTMLTableRowElement,
+    scope: DragScope,
+    dragSignal: AbortSignal,
+  ): void {
     const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
     if (!handle) {
       return;
@@ -240,7 +253,7 @@ export function initializeOptions(): () => void {
         }
         row.classList.add("dragging");
       },
-      { signal },
+      { signal: dragSignal },
     );
 
     handle.addEventListener(
@@ -249,7 +262,7 @@ export function initializeOptions(): () => void {
         row.classList.remove("dragging");
         draggingState = undefined;
       },
-      { signal },
+      { signal: dragSignal },
     );
 
     row.addEventListener(
@@ -261,7 +274,7 @@ export function initializeOptions(): () => void {
         event.preventDefault();
         row.classList.add("drag-over");
       },
-      { signal },
+      { signal: dragSignal },
     );
 
     row.addEventListener(
@@ -275,7 +288,7 @@ export function initializeOptions(): () => void {
           event.dataTransfer.dropEffect = "move";
         }
       },
-      { signal },
+      { signal: dragSignal },
     );
 
     row.addEventListener(
@@ -283,7 +296,7 @@ export function initializeOptions(): () => void {
       () => {
         row.classList.remove("drag-over");
       },
-      { signal },
+      { signal: dragSignal },
     );
 
     row.addEventListener(
@@ -316,7 +329,7 @@ export function initializeOptions(): () => void {
           markDirty(scope);
         }
       },
-      { signal },
+      { signal: dragSignal },
     );
   }
 
@@ -839,6 +852,9 @@ export function initializeOptions(): () => void {
   void loadOptions();
 
   return () => {
+    for (const controller of Object.values(dragAbortControllers)) {
+      controller?.abort();
+    }
     abortController.abort();
     if (context.statusTimeout) {
       clearTimeout(context.statusTimeout);

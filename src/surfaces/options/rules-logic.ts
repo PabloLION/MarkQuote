@@ -31,6 +31,9 @@ export function handleRuleInputChangeFor<TRule extends RuleWithFlags>(
   }
 
   const rules = config.getRules();
+  if (index < 0 || index >= rules.length) {
+    return false;
+  }
   const rule = rules[index];
 
   if (!rule) {
