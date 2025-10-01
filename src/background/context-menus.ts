@@ -23,17 +23,23 @@ export function registerContextMenus(config: ContextMenuConfig): void {
         void config.recordError(ERROR_CONTEXT.ContextMenusRemoveAll, lastErrorMessage);
       }
 
-      chrome.contextMenus.create({
-        id: COPY_MENU_ID,
-        title: "Copy as Markdown Quote",
-        contexts: ["selection"],
-      });
+      createContextMenu(
+        {
+          id: COPY_MENU_ID,
+          title: "Copy as Markdown Quote",
+          contexts: ["selection"],
+        },
+        config,
+      );
 
-      chrome.contextMenus.create({
-        id: OPTIONS_MENU_ID,
-        title: "Options",
-        contexts: ["action"],
-      });
+      createContextMenu(
+        {
+          id: OPTIONS_MENU_ID,
+          title: "Options",
+          contexts: ["action"],
+        },
+        config,
+      );
     });
 
     void config.ensureOptionsInitialized();
@@ -45,6 +51,21 @@ export function registerContextMenus(config: ContextMenuConfig): void {
       void config.triggerCopy(tab, "context-menu");
     } else if (info.menuItemId === OPTIONS_MENU_ID) {
       chrome.runtime.openOptionsPage();
+    }
+  });
+}
+
+function createContextMenu(
+  options: chrome.contextMenus.CreateProperties,
+  config: ContextMenuConfig,
+): void {
+  chrome.contextMenus.create(options, () => {
+    const lastError = chrome.runtime.lastError;
+    if (lastError) {
+      const message = lastError.message ?? "Unknown Chrome runtime error";
+      void config.recordError(ERROR_CONTEXT.ContextMenusCreate, message, {
+        menuId: options.id ?? "unknown",
+      });
     }
   });
 }
