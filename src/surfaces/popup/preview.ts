@@ -18,13 +18,11 @@ export function createPreviewController(dom: PopupDom): PreviewController {
           preview.textContent = "";
         }
         preview.hidden = true;
-        preview.setAttribute("hidden", "true");
         return;
       }
 
       target.textContent = text;
       preview.hidden = false;
-      preview.removeAttribute("hidden");
     },
     clear() {
       controller.render(null);
