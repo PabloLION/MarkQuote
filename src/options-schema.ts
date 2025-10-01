@@ -25,6 +25,38 @@ export interface OptionsPayload {
   urlRules: UrlRule[];
 }
 
+function isTitleRuleCandidate(value: unknown): value is TitleRule {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<TitleRule>;
+  return (
+    typeof candidate.urlPattern === "string" &&
+    typeof candidate.titleSearch === "string" &&
+    typeof candidate.titleReplace === "string" &&
+    typeof candidate.comment === "string" &&
+    typeof candidate.continueMatching === "boolean" &&
+    typeof candidate.enabled === "boolean"
+  );
+}
+
+function isUrlRuleCandidate(value: unknown): value is UrlRule {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const candidate = value as Partial<UrlRule>;
+  return (
+    typeof candidate.urlPattern === "string" &&
+    typeof candidate.urlSearch === "string" &&
+    typeof candidate.urlReplace === "string" &&
+    typeof candidate.comment === "string" &&
+    typeof candidate.continueMatching === "boolean" &&
+    typeof candidate.enabled === "boolean"
+  );
+}
+
 export const DEFAULT_TEMPLATE = "> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})";
 
 export const DEFAULT_WIKI_URL_PATTERN = String.raw`^https?://(?:[\w-]+\.)?en\.wikipedia\.org/`;
@@ -174,6 +206,27 @@ export const DEFAULT_OPTIONS: OptionsPayload = {
   titleRules: createDefaultTitleRules(),
   urlRules: createDefaultUrlRules(),
 };
+
+export function validateOptionsPayload(payload: unknown): payload is OptionsPayload {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const candidate = payload as Partial<OptionsPayload>;
+  if (
+    typeof candidate.version !== "number" ||
+    typeof candidate.format !== "string" ||
+    !Array.isArray(candidate.titleRules) ||
+    !Array.isArray(candidate.urlRules)
+  ) {
+    return false;
+  }
+
+  return (
+    candidate.titleRules.every((rule) => isTitleRuleCandidate(rule)) &&
+    candidate.urlRules.every((rule) => isUrlRuleCandidate(rule))
+  );
+}
 
 interface StoredOptionsSnapshot {
   options?: unknown;

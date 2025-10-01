@@ -13,6 +13,7 @@ import {
   E2E_SET_OPTIONS_MESSAGE,
 } from "./constants.js";
 import { getLastFormattedPreview, getLastPreviewError, runCopyPipeline } from "./copy-pipeline.js";
+import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 
 export type SelectionStub = {
   markdown: string;
@@ -25,7 +26,11 @@ type MessageContext = {
   sender: chrome.runtime.MessageSender;
   sendResponse: ((response?: unknown) => void) | undefined;
   persistOptions: (payload: OptionsPayload) => Promise<void>;
-  recordError: (context: string, error: unknown, extra?: Record<string, unknown>) => Promise<void>;
+  recordError: (
+    context: ErrorContext,
+    error: unknown,
+    extra?: Record<string, unknown>,
+  ) => Promise<void>;
 };
 
 let selectionStub: SelectionStub | undefined;
@@ -85,7 +90,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
         sendResponse?.({ ok: true });
       })
       .catch((error) => {
-        void recordError("persist-options-e2e", error);
+        void recordError(ERROR_CONTEXT.PersistOptionsE2E, error);
         sendResponse?.({
           ok: false,
           error: error instanceof Error ? error.message : String(error),

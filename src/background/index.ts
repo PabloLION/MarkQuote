@@ -3,11 +3,13 @@ import {
   DEFAULT_OPTIONS,
   normalizeStoredOptions,
   type OptionsPayload,
+  validateOptionsPayload,
 } from "../options-schema.js";
 import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import { runCopyPipeline, setLastPreviewError } from "./copy-pipeline.js";
 import { consumeSelectionStub, handleE2eMessage } from "./e2e.js";
+import { ERROR_CONTEXT } from "./error-context.js";
 import {
   clearStoredErrors,
   getStoredErrors,
@@ -22,8 +24,10 @@ type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
 
 const pendingCopySources = new Map<number, CopySource>();
 let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+const PENDING_COPY_SESSION_KEY = "markquote/pending-copy-sources";
 
 void initializeBadgeFromStorage();
+void restorePendingCopySources();
 
 function cancelHotkeyFallback(): void {
   if (hotkeyPopupFallbackTimer === undefined) {
@@ -32,6 +36,70 @@ function cancelHotkeyFallback(): void {
 
   clearTimeout(hotkeyPopupFallbackTimer);
   hotkeyPopupFallbackTimer = undefined;
+}
+
+function isCopySource(candidate: unknown): candidate is CopySource {
+  return (
+    candidate === "popup" ||
+    candidate === "hotkey" ||
+    candidate === "context-menu" ||
+    candidate === "e2e" ||
+    candidate === "unknown"
+  );
+}
+
+async function restorePendingCopySources(): Promise<void> {
+  const sessionStorage = chrome.storage?.session;
+  if (!sessionStorage) {
+    return;
+  }
+
+  try {
+    const snapshot = await sessionStorage.get(PENDING_COPY_SESSION_KEY);
+    const raw = snapshot?.[PENDING_COPY_SESSION_KEY];
+    if (!raw || typeof raw !== "object") {
+      return;
+    }
+
+    pendingCopySources.clear();
+    for (const [tabId, source] of Object.entries(raw as Record<string, unknown>)) {
+      const numericId = Number.parseInt(tabId, 10);
+      if (!Number.isNaN(numericId) && isCopySource(source)) {
+        pendingCopySources.set(numericId, source);
+      }
+    }
+  } catch (error) {
+    void recordError(ERROR_CONTEXT.RestorePendingSources, error);
+  }
+}
+
+async function persistPendingCopySources(): Promise<void> {
+  const sessionStorage = chrome.storage?.session;
+  if (!sessionStorage) {
+    return;
+  }
+
+  const serialized: Record<string, CopySource> = {};
+  pendingCopySources.forEach((value, key) => {
+    serialized[String(key)] = value;
+  });
+
+  try {
+    await sessionStorage.set({ [PENDING_COPY_SESSION_KEY]: serialized });
+  } catch (error) {
+    void recordError(ERROR_CONTEXT.PersistPendingSources, error);
+  }
+}
+
+function setPendingSource(tabId: number, source: CopySource): void {
+  pendingCopySources.set(tabId, source);
+  void persistPendingCopySources();
+}
+
+function clearPendingSource(tabId: number): void {
+  if (pendingCopySources.delete(tabId)) {
+    void persistPendingCopySources();
+  }
 }
 
 function getRuntimeLastErrorMessage(): string {
@@ -68,21 +136,22 @@ function notifyCopyProtected(
 }
 
 function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void {
-  if (!tab?.id) {
+  if (tab?.id === undefined) {
     return;
   }
 
+  const tabId = tab.id;
   const targetUrl = getTabUrl(tab);
   if (isUrlProtected(targetUrl)) {
     notifyCopyProtected(tab, source, targetUrl);
     return;
   }
 
-  pendingCopySources.set(tab.id, source);
+  setPendingSource(tabId, source);
 
   chrome.scripting.executeScript(
     {
-      target: { tabId: tab.id },
+      target: { tabId },
       files: ["selection.js"],
     },
     () => {
@@ -93,13 +162,16 @@ function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): void
       const lastErrorMessage = getRuntimeLastErrorMessage();
       if (lastErrorMessage.includes("must request permission")) {
         notifyCopyProtected(tab, source, targetUrl);
+        clearPendingSource(tabId);
         return;
       }
 
-      void recordError("inject-selection-script", lastErrorMessage, {
+      void recordError(ERROR_CONTEXT.InjectSelectionScript, lastErrorMessage, {
         tabUrl: tab.url,
         source,
       });
+
+      clearPendingSource(tabId);
 
       if (isE2ETest) {
         setLastPreviewError(lastErrorMessage);
@@ -136,7 +208,7 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
     console.info("[MarkQuote] Hotkey: action settings", settings);
   } catch (error) {
     console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
-    await recordError("hotkey-open-popup", error, { source });
+    await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
     if (tab) {
       triggerCopy(tab, source);
     }
@@ -145,7 +217,7 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
 
   if (!isPinned) {
     await recordError(
-      "hotkey-open-popup",
+      ERROR_CONTEXT.HotkeyOpenPopup,
       "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
       { source },
     );
@@ -172,7 +244,7 @@ async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<vo
     })
     .catch((error) => {
       cancelHotkeyFallback();
-      void recordError("open-popup-for-hotkey", error, { source });
+      void recordError(ERROR_CONTEXT.OpenPopupForHotkey, error, { source });
       if (tab) {
         triggerCopy(tab, source);
       }
@@ -185,7 +257,7 @@ function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
   hotkeyPopupFallbackTimer = setTimeout(() => {
     hotkeyPopupFallbackTimer = undefined;
     void recordError(
-      "hotkey-popup-timeout",
+      ERROR_CONTEXT.HotkeyPopupTimeout,
       "Popup did not respond to the keyboard shortcut. Falling back to direct copy.",
       { source: "hotkey" },
     );
@@ -225,6 +297,21 @@ async function ensureOptionsInitialized(): Promise<void> {
       "rules",
     ]);
 
+    if (snapshot.options && !validateOptionsPayload(snapshot.options)) {
+      console.warn("Invalid options payload detected; resetting to defaults.");
+      await recordError(
+        ERROR_CONTEXT.InvalidOptionsPayload,
+        "Stored options payload failed validation.",
+      );
+      await storageArea.set({
+        options: DEFAULT_OPTIONS,
+        format: DEFAULT_OPTIONS.format,
+        titleRules: DEFAULT_OPTIONS.titleRules,
+        urlRules: DEFAULT_OPTIONS.urlRules,
+      });
+      return;
+    }
+
     const hasExistingData = Object.values(snapshot).some((value) => {
       if (Array.isArray(value)) {
         return value.length > 0;
@@ -257,7 +344,7 @@ async function ensureOptionsInitialized(): Promise<void> {
     }
   } catch (error) {
     console.warn("Failed to initialize options storage.", error);
-    void recordError("initialize-options", error);
+    void recordError(ERROR_CONTEXT.InitializeOptions, error);
   }
 }
 
@@ -266,12 +353,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request?.type === "popup-ready") {
+    cancelHotkeyFallback();
+    sendResponse?.({ ok: true });
+    return false;
+  }
+
   if (request?.type === "request-selection-copy") {
     if (isE2ETest) {
       const stub = consumeSelectionStub();
       if (stub) {
         void runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e").catch((error) => {
-          void recordError("e2e-stub-selection", error);
+          void recordError(ERROR_CONTEXT.E2EStubSelection, error);
         });
         sendResponse?.({ ok: true });
         return false;
@@ -301,7 +394,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const source = tabId ? (pendingCopySources.get(tabId) ?? "unknown") : "unknown";
 
     if (tabId) {
-      pendingCopySources.delete(tabId);
+      clearPendingSource(tabId);
     }
 
     void runCopyPipeline(request.markdown, title, url, source);
@@ -339,7 +432,10 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
       const targetTab = pickBestTab(tabs);
 
       if (!targetTab) {
-        void recordError("request-selection-copy", "No suitable tab found for copy request.");
+        void recordError(
+          ERROR_CONTEXT.RequestSelectionCopy,
+          "No suitable tab found for copy request.",
+        );
         sendResponse?.({ ok: false });
         return;
       }
@@ -355,7 +451,7 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
       sendResponse?.({ ok: true });
     })
     .catch((error) => {
-      void recordError("query-tabs-for-copy", error);
+      void recordError(ERROR_CONTEXT.QueryTabsForCopy, error);
       sendResponse?.({ ok: false });
     });
 

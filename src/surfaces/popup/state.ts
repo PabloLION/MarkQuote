@@ -1,3 +1,5 @@
+import type { ErrorContext } from "../../background/error-context.js";
+
 export type RuntimeMessage =
   | {
       type: "copied-text-preview";
@@ -6,11 +8,14 @@ export type RuntimeMessage =
   | {
       type: "copy-protected";
       url?: string;
+    }
+  | {
+      type: "popup-ready";
     };
 
 export type LoggedExtensionError = {
   message: string;
-  context: string;
+  context: ErrorContext;
   timestamp: number;
 };
 

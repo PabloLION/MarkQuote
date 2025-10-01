@@ -1,19 +1,34 @@
-# Popup Preview States
+# Popup Forced State Preview
 
-Use the Vite dev server to exercise the popup without loading the full extension. The popup looks for a `state` query parameter (dev builds only) and renders the matching view so you can spot-check copy and styling in seconds.
+The popup surface exposes a lightweight dev-only API that makes it easy to preview success and
+failure states without running an end-to-end flow.
 
-## Quick start
+## Dev query parameters
 
-1. Run `pnpm dev`.
-2. Open one of the URLs below:
-   - Default tip: `http://localhost:5173/popup.html?state=default`
-   - Copied banner: `http://localhost:5173/popup.html?state=copied&preview=%3E%20This%20was%20addressed...`
-   - Protected warning: `http://localhost:5173/popup.html?state=protected`
+When the popup is served via `pnpm dev`, append `?state=` to the popup URL to force a state:
 
-The `preview` parameter is optional; omit it to fall back to the sample Markdown snippet. Encode newlines as `%0A` if you paste your own text.
+- `?state=default` – reset to the default instructional message
+- `?state=copied&preview=...` – show the success banner with optional preview text
+- `?state=protected` – render the protected-page warning
 
-## Dev hub shortcut
+If no `preview` argument is provided, a built-in sample Markdown block is displayed.
 
-Navigate to `http://localhost:5173/dev/popup.html` to see all three variants side-by-side. The page embeds the real popup bundle three times with the helper query strings and also provides handy links to open each state in a new tab.
+## Runtime API
 
-These overrides only apply when `import.meta.env.DEV` is `true`, so production builds remain unaffected.
+In dev mode (`import.meta.env.DEV`), the popup registers a global helper:
+
+```ts
+window.__MARKQUOTE_POPUP_DEV__?.showSuccess('**Preview** text');
+```
+
+Available helpers:
+
+- `showDefault()` – restore the default tip message
+- `showSuccess(markdown: string)` – render the copied-state banner with supplied Markdown
+- `showProtected()` – show the protected warning state
+
+This API is particularly useful when iterating on styles—open the popup, run a helper from the
+console, and adjust CSS without re-triggering copy operations.
+
+The background worker cancels its hotkey fallback timer once it receives the `popup-ready` message
+emitted during initialization, so overriding state won’t trigger unintended copy attempts.

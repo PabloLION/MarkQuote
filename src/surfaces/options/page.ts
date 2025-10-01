@@ -73,8 +73,24 @@ export function initializeOptions(): () => void {
     filtered: filteredRules,
   };
 
+  const hasAnimationFrame = typeof window.requestAnimationFrame === "function";
+  let previewFrameHandle: number | undefined;
+
   function updatePreviewView(): void {
     updatePreview(context, rulesAdapter);
+
+    if (!hasAnimationFrame) {
+      return;
+    }
+
+    if (previewFrameHandle !== undefined) {
+      window.cancelAnimationFrame(previewFrameHandle);
+    }
+
+    previewFrameHandle = window.requestAnimationFrame(() => {
+      previewFrameHandle = undefined;
+      updatePreview(context, rulesAdapter);
+    });
   }
 
   function setDirty(scope: DragScope, dirty: boolean): void {
@@ -831,5 +847,10 @@ export function initializeOptions(): () => void {
     hideStatus(context);
     context.draft = createDraft();
     draft = context.draft;
+
+    if (previewFrameHandle !== undefined && hasAnimationFrame) {
+      window.cancelAnimationFrame(previewFrameHandle);
+      previewFrameHandle = undefined;
+    }
   };
 }

@@ -1,10 +1,15 @@
+import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import type { CopySource } from "./types.js";
 
 type ContextMenuConfig = {
   triggerCopy: (tab: chrome.tabs.Tab, source: CopySource) => void;
   ensureOptionsInitialized: () => Promise<void>;
   clearStoredErrors: () => Promise<void>;
-  recordError: (context: string, error: unknown, extra?: Record<string, unknown>) => Promise<void>;
+  recordError: (
+    context: ErrorContext,
+    error: unknown,
+    extra?: Record<string, unknown>,
+  ) => Promise<void>;
 };
 
 const COPY_MENU_ID = "markquote";
@@ -15,7 +20,7 @@ export function registerContextMenus(config: ContextMenuConfig): void {
     chrome.contextMenus.removeAll(() => {
       if (chrome.runtime.lastError) {
         const lastErrorMessage = chrome.runtime.lastError.message ?? "Unknown Chrome runtime error";
-        void config.recordError("contextMenus.removeAll", lastErrorMessage);
+        void config.recordError(ERROR_CONTEXT.ContextMenusRemoveAll, lastErrorMessage);
       }
 
       chrome.contextMenus.create({

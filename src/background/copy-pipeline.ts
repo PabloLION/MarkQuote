@@ -1,5 +1,6 @@
 import { formatForClipboard } from "../clipboard.js";
 import { isE2ETest } from "./constants.js";
+import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
 import type { CopySource } from "./types.js";
 
@@ -23,7 +24,7 @@ export async function runCopyPipeline(
         }
       })
       .catch((error) => {
-        void recordError("notify-popup-preview", error);
+        void recordError(ERROR_CONTEXT.NotifyPopupPreview, error);
         if (isE2ETest) {
           lastPreviewError = error instanceof Error ? error.message : String(error);
         }

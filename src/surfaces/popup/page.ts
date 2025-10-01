@@ -75,6 +75,10 @@ export function initializePopup(): () => void {
 
   const errorController = createErrorController(dom, runtime, openFeedback);
 
+  runtime.sendMessage({ type: "popup-ready" }).catch(() => {
+    // Ignore failures; the background worker may have been suspended before this message.
+  });
+
   const forcedState = resolveForcedPopupState();
 
   const messageListener: Parameters<typeof runtime.onMessage.addListener>[0] = (

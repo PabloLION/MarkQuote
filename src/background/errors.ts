@@ -1,4 +1,5 @@
 import { ACTIVE_TAB_PERMISSION_MESSAGE, ERROR_STORAGE_KEY } from "./constants.js";
+import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import { isUrlProtected } from "./protected-urls.js";
 import type { LoggedError } from "./types.js";
 
@@ -23,7 +24,7 @@ export async function getStoredErrors(): Promise<LoggedError[]> {
 }
 
 export async function recordError(
-  context: string,
+  context: ErrorContext,
   error: unknown,
   extra?: Record<string, unknown>,
 ): Promise<void> {
@@ -44,7 +45,7 @@ export async function recordError(
   }
 
   const tabUrl = typeof extra?.tabUrl === "string" ? extra.tabUrl : undefined;
-  if (tabUrl && isUrlProtected(tabUrl) && context === "inject-selection-script") {
+  if (tabUrl && isUrlProtected(tabUrl) && context === ERROR_CONTEXT.InjectSelectionScript) {
     console.info("[MarkQuote] Skipping protected-page injection error", { tabUrl, message });
     return;
   }
