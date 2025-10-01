@@ -1,39 +1,54 @@
-import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../formatting.js";
 import {
   normalizeStoredOptions,
   type OptionsPayload,
   type TitleRule,
   type UrlRule,
 } from "../../options-schema.js";
-import { clearValidationState, loadDom, markInvalidField } from "./dom.js";
-import type {
-  DragScope,
-  RuleConfig,
-  RuleFieldDescriptor,
-  RuleFieldKeys,
-  RuleMessages,
-  RuleWithFlags,
-  StringFieldKey,
-} from "./rules-types.js";
+import { createOptionsContext } from "./context.js";
+import { clearValidationState, loadDom } from "./dom.js";
+import { type PreviewRulesAdapter, resetPreviewSample, updatePreview } from "./preview.js";
+import { buildRuleConfigs } from "./rules-config.js";
+import {
+  createCheckboxCell,
+  createHandleCell,
+  createInputCell,
+  createRemoveCell,
+} from "./rules-dom.js";
+import {
+  filteredRulesInternal,
+  handleRuleInputChangeFor,
+  moveRule,
+  readRuleField,
+  validateRulesFor,
+} from "./rules-logic.js";
+import type { DragScope, RuleConfig, RuleWithFlags } from "./rules-types.js";
 import {
   cloneOptions,
-  cloneTitleRule,
-  cloneUrlRule,
   createDraft,
   DEFAULT_PREVIEW_SAMPLE,
   DEFAULT_TEMPLATE,
   normalizeFormat,
   OPTIONS_VERSION,
-  STATUS_TIMEOUT_MS,
-  sanitizeTitleRule,
-  sanitizeUrlRule,
-  validateRegex,
 } from "./state.js";
+import { hideStatus, showStatus } from "./status.js";
 
-interface ValidationResult {
-  valid: boolean;
-  message?: string;
+interface DragState {
+  scope: DragScope;
+  fromIndex: number;
+  row: HTMLTableRowElement;
 }
+
+interface RuleDirtyState {
+  title: boolean;
+  url: boolean;
+}
+
+interface RuleSavingState {
+  title: boolean;
+  url: boolean;
+}
+
+type ClearConfirmationTimers = Partial<Record<DragScope, ReturnType<typeof setTimeout>>>;
 
 export function initializeOptions(): () => void {
   const dom = loadDom();
@@ -41,150 +56,30 @@ export function initializeOptions(): () => void {
     return () => {};
   }
 
-  const {
-    form,
-    templateField,
-    restoreTemplateButton,
-    previewElement,
-    statusElement,
-    titleSamplePresetSelect,
-    urlSamplePresetSelect,
-    sampleTitleInput,
-    sampleUrlInput,
-    sampleOutputTitle,
-    sampleOutputUrl,
-    titleRulesBody,
-    addTitleRuleButton,
-    clearTitleRulesButton,
-    confirmClearTitleRulesButton,
-    titleClearStatusElement,
-    saveTitleRuleButton,
-    titleUnsavedIndicator,
-    urlRulesBody,
-    addUrlRuleButton,
-    clearUrlRulesButton,
-    confirmClearUrlRulesButton,
-    urlClearStatusElement,
-    saveUrlRuleButton,
-    urlUnsavedIndicator,
-  } = dom;
+  const storageArea = globalThis.chrome?.storage?.sync;
+  const context = createOptionsContext(dom, storageArea, createDraft());
+  let draft = context.draft;
 
-  const ruleConfigs = {
-    title: {
-      scope: "title" as const,
-      getRules: () => draft.titleRules,
-      setRules: (next: TitleRule[]) => {
-        draft.titleRules = next;
-      },
-      body: titleRulesBody,
-      clearButton: clearTitleRulesButton,
-      confirmClearButton: confirmClearTitleRulesButton,
-      clearStatusElement: titleClearStatusElement,
-      saveButton: saveTitleRuleButton,
-      unsavedIndicator: titleUnsavedIndicator,
-      fields: [
-        { key: "urlPattern", placeholder: "URL pattern" },
-        { key: "titleSearch", placeholder: "Title search" },
-        { key: "titleReplace", placeholder: "Title replace", trimLeading: false },
-        { key: "comment", placeholder: "Comment (optional)", trimLeading: false },
-      ] satisfies RuleFieldDescriptor<TitleRule>[],
-      fieldKeys: {
-        pattern: "urlPattern",
-        search: "titleSearch",
-        replace: "titleReplace",
-      } satisfies RuleFieldKeys<TitleRule>,
-      createEmpty: (): TitleRule => ({
-        urlPattern: "",
-        titleSearch: "",
-        titleReplace: "",
-        comment: "",
-        continueMatching: false,
-        enabled: true,
-      }),
-      sanitize: sanitizeTitleRule,
-      hasContent: (rule: TitleRule) =>
-        Boolean(rule.urlPattern || rule.titleSearch || rule.titleReplace),
-      messages: {
-        missingPattern: "URL pattern is required when defining a title rule.",
-        invalidPattern: "One or more title rule URL patterns are invalid regex expressions.",
-        missingSearchForReplace:
-          "Provide a title search pattern before specifying a title replacement.",
-        invalidSearch: "One or more title search patterns are invalid regex expressions.",
-        cleared: "All title rules cleared.",
-        removed: "Title rule removed.",
-      } satisfies RuleMessages,
-    } satisfies RuleConfig<TitleRule>,
-    url: {
-      scope: "url" as const,
-      getRules: () => draft.urlRules,
-      setRules: (next: UrlRule[]) => {
-        draft.urlRules = next;
-      },
-      body: urlRulesBody,
-      clearButton: clearUrlRulesButton,
-      confirmClearButton: confirmClearUrlRulesButton,
-      clearStatusElement: urlClearStatusElement,
-      saveButton: saveUrlRuleButton,
-      unsavedIndicator: urlUnsavedIndicator,
-      fields: [
-        { key: "urlPattern", placeholder: "URL pattern" },
-        { key: "urlSearch", placeholder: "URL search" },
-        { key: "urlReplace", placeholder: "URL replace", trimLeading: false },
-        { key: "comment", placeholder: "Comment (optional)", trimLeading: false },
-      ] satisfies RuleFieldDescriptor<UrlRule>[],
-      fieldKeys: {
-        pattern: "urlPattern",
-        search: "urlSearch",
-        replace: "urlReplace",
-      } satisfies RuleFieldKeys<UrlRule>,
-      createEmpty: (): UrlRule => ({
-        urlPattern: "",
-        urlSearch: "",
-        urlReplace: "",
-        comment: "",
-        continueMatching: false,
-        enabled: true,
-      }),
-      sanitize: sanitizeUrlRule,
-      hasContent: (rule: UrlRule) => Boolean(rule.urlPattern || rule.urlSearch || rule.urlReplace),
-      messages: {
-        missingPattern: "URL pattern is required when defining a URL rule.",
-        invalidPattern: "One or more URL rule URL patterns are invalid regex expressions.",
-        missingSearchForReplace:
-          "Provide a URL search pattern before specifying a URL replacement.",
-        invalidSearch: "One or more URL search patterns are invalid regex expressions.",
-        cleared: "All URL rules cleared.",
-        removed: "URL rule removed.",
-      } satisfies RuleMessages,
-    } satisfies RuleConfig<UrlRule>,
-  } as const;
+  const ruleConfigs = buildRuleConfigs(context);
+  const abortController = new AbortController();
+  const { signal } = abortController;
 
-  type RuleConfigsMap = typeof ruleConfigs;
+  const dirtyState: RuleDirtyState = { title: false, url: false };
+  const savingState: RuleSavingState = { title: false, url: false };
+  const clearTimers: ClearConfirmationTimers = {};
+  let draggingState: DragState | undefined;
 
-  const saveButtonLabels = {
-    title: saveTitleRuleButton.textContent ?? "Save changes",
-    url: saveUrlRuleButton.textContent ?? "Save changes",
-  } as const;
-
-  const dirtyState: Record<DragScope, boolean> = {
-    title: false,
-    url: false,
+  const rulesAdapter: PreviewRulesAdapter = {
+    filtered: filteredRules,
   };
 
-  const savingState: Record<DragScope, boolean> = {
-    title: false,
-    url: false,
-  };
-
-  function getRuleConfig<TScope extends keyof RuleConfigsMap>(
-    scope: TScope,
-  ): RuleConfigsMap[TScope] {
-    return ruleConfigs[scope];
+  function updatePreviewView(): void {
+    updatePreview(context, rulesAdapter);
   }
 
   function setDirty(scope: DragScope, dirty: boolean): void {
     dirtyState[scope] = dirty;
-    const config = getRuleConfig(scope);
+    const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
     config.unsavedIndicator.hidden = !dirty;
     if (!savingState[scope]) {
       config.saveButton.disabled = !dirty;
@@ -205,67 +100,29 @@ export function initializeOptions(): () => void {
     }
 
     savingState[scope] = saving;
-    const config = getRuleConfig(scope);
+    const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
     if (saving) {
       config.saveButton.dataset.loading = "true";
       config.saveButton.disabled = true;
       config.saveButton.textContent = "Saving…";
     } else {
-      config.saveButton.textContent = saveButtonLabels[scope];
-      config.saveButton.disabled = !dirtyState[scope];
       delete config.saveButton.dataset.loading;
+      config.saveButton.textContent = config.saveButton.dataset.label ?? "Save changes";
+      config.saveButton.disabled = !dirtyState[scope];
     }
   }
 
-  setDirty("title", false);
-  setDirty("url", false);
-
-  const storageArea = globalThis.chrome?.storage?.sync;
-
-  const abortController = new AbortController();
-  const { signal } = abortController;
-
-  let statusTimeout: ReturnType<typeof setTimeout> | undefined;
-
-  let draft: OptionsPayload = createDraft();
-  const previewSample = {
-    title: DEFAULT_PREVIEW_SAMPLE.title,
-    url: DEFAULT_PREVIEW_SAMPLE.url,
-  };
-
-  let draggingState:
-    | {
-        scope: DragScope;
-        fromIndex: number;
-        row: HTMLTableRowElement;
+  function rememberSaveButtonLabels(): void {
+    (["title", "url"] as DragScope[]).forEach((scope) => {
+      const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
+      if (!config.saveButton.dataset.label) {
+        config.saveButton.dataset.label = config.saveButton.textContent ?? "Save changes";
       }
-    | undefined;
-
-  const clearTimeouts: Partial<Record<DragScope, ReturnType<typeof setTimeout>>> = {};
-
-  function scheduleStatusClear(): void {
-    if (statusTimeout) {
-      clearTimeout(statusTimeout);
-    }
-
-    if (!statusElement.textContent) {
-      return;
-    }
-
-    statusTimeout = setTimeout(() => {
-      statusElement.textContent = "";
-      statusElement.removeAttribute("data-variant");
-    }, STATUS_TIMEOUT_MS);
-  }
-
-  function setStatus(message: string, variant: "success" | "error" = "success"): void {
-    statusElement.textContent = message;
-    statusElement.setAttribute("data-variant", variant);
-    scheduleStatusClear();
+    });
   }
 
   function setClearStatus(scope: DragScope, message: string): void {
-    const { clearStatusElement } = getRuleConfig(scope);
+    const { clearStatusElement } = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
     if (!message) {
       clearStatusElement.textContent = "";
       clearStatusElement.hidden = true;
@@ -277,30 +134,15 @@ export function initializeOptions(): () => void {
   }
 
   function resetClearConfirmation(scope: DragScope): void {
-    const { clearButton, confirmClearButton } = getRuleConfig(scope);
-    const timeout = clearTimeouts[scope];
-    if (timeout) {
-      clearTimeout(timeout);
-      clearTimeouts[scope] = undefined;
+    const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
+    const timer = clearTimers[scope];
+    if (timer) {
+      clearTimeout(timer);
+      clearTimers[scope] = undefined;
     }
 
-    clearButton.hidden = false;
-    confirmClearButton.hidden = true;
-  }
-
-  function filteredRulesInternal<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): TRule[] {
-    const rules = config.getRules();
-    const normalized: TRule[] = [];
-
-    rules.forEach((rule, index) => {
-      const sanitized = config.sanitize(rule);
-      rules[index] = sanitized;
-      if (config.hasContent(sanitized)) {
-        normalized.push(sanitized);
-      }
-    });
-
-    return normalized;
+    config.clearButton.hidden = false;
+    config.confirmClearButton.hidden = true;
   }
 
   function filteredRules(scope: "title"): TitleRule[];
@@ -311,135 +153,47 @@ export function initializeOptions(): () => void {
       : filteredRulesInternal(ruleConfigs.url);
   }
 
-  function updatePreview(): void {
-    const titleRules = filteredRules("title");
-    const urlRules = filteredRules("url");
+  function renderRules(scope: DragScope): void {
+    if (scope === "title") {
+      renderRulesFor(ruleConfigs.title);
+    } else {
+      renderRulesFor(ruleConfigs.url);
+    }
+  }
 
-    const options: OptionsPayload = {
-      version: OPTIONS_VERSION,
-      format: normalizeFormat(templateField, draft),
-      titleRules,
-      urlRules,
-    };
+  function renderRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
+    const rules = config.getRules();
+    config.body.innerHTML = "";
 
-    previewElement.textContent = formatWithOptions(options, {
-      text: DEFAULT_PREVIEW_SAMPLE.text,
-      title: previewSample.title,
-      url: previewSample.url,
+    rules.forEach((rule, index) => {
+      const row = document.createElement("tr");
+      row.dataset.index = String(index);
+      row.classList.toggle("rule-disabled", rule.enabled === false);
+
+      const fieldCells = config.fields.map((descriptor) =>
+        createInputCell(
+          descriptor.key,
+          index,
+          readRuleField(rule, descriptor.key),
+          descriptor.placeholder,
+        ),
+      );
+
+      row.append(
+        createHandleCell(config.scope, index),
+        ...fieldCells,
+        createCheckboxCell("enabled", index, rule.enabled !== false, "Rule enabled"),
+        createCheckboxCell("continueMatching", index, !rule.continueMatching, "Break after match"),
+        createRemoveCell(index, config.scope),
+      );
+
+      config.body.append(row);
+      attachRowDragHandlers(row, config.scope);
     });
 
-    const transformedTitle = applyTitleRules(titleRules, previewSample.title, previewSample.url);
-    const transformedUrl = applyUrlRules(urlRules, previewSample.url);
-
-    sampleOutputTitle.textContent = transformedTitle || "—";
-    sampleOutputUrl.textContent = transformedUrl || "—";
-  }
-
-  function createInputCell(
-    field: string,
-    index: number,
-    value: string,
-    label: string,
-  ): HTMLTableCellElement {
-    const cell = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "text";
-    input.dataset.index = String(index);
-    input.dataset.field = field;
-    input.placeholder = label;
-    input.value = value;
-    cell.append(input);
-    return cell;
-  }
-
-  function createHandleCell(scope: "title" | "url", index: number): HTMLTableCellElement {
-    const cell = document.createElement("td");
-    cell.classList.add("reorder-cell");
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.classList.add("drag-handle");
-    button.draggable = true;
-    button.setAttribute(
-      "aria-label",
-      scope === "title" ? "Drag to reorder title rule" : "Drag to reorder URL rule",
-    );
-    button.innerHTML = '<span aria-hidden="true">⋮⋮</span>';
-
-    button.dataset.index = String(index);
-
-    cell.append(button);
-    return cell;
-  }
-
-  function createCheckboxCell(
-    field: string,
-    index: number,
-    checked: boolean,
-    label: string,
-  ): HTMLTableCellElement {
-    const cell = document.createElement("td");
-    cell.classList.add("toggle-cell");
-
-    const input = document.createElement("input");
-
-    input.type = "checkbox";
-    input.dataset.index = String(index);
-    input.dataset.field = field;
-    input.checked = checked;
-    input.setAttribute("aria-label", label);
-
-    cell.append(input);
-
-    return cell;
-  }
-
-  function createRemoveCell(index: number, scope: "title" | "url"): HTMLTableCellElement {
-    const cell = document.createElement("td");
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = "Remove";
-    button.dataset.action = scope === "title" ? "remove-title" : "remove-url";
-    button.dataset.index = String(index);
-    cell.append(button);
-    return cell;
-  }
-
-  function moveRule<T>(list: T[], fromIndex: number, toIndex: number): void {
-    if (
-      fromIndex === toIndex ||
-      fromIndex < 0 ||
-      toIndex < 0 ||
-      fromIndex >= list.length ||
-      toIndex >= list.length
-    ) {
-      return;
-    }
-
-    const [item] = list.splice(fromIndex, 1);
-    let insertIndex = toIndex;
-    if (fromIndex < toIndex) {
-      insertIndex = Math.min(insertIndex, list.length);
-    }
-    if (insertIndex > list.length) {
-      insertIndex = list.length;
-    }
-    list.splice(insertIndex, 0, item);
-  }
-
-  function readRuleField<TRule extends RuleWithFlags>(
-    rule: TRule,
-    key: StringFieldKey<TRule>,
-  ): string {
-    return (rule as Record<StringFieldKey<TRule>, string>)[key] ?? "";
-  }
-
-  function setRuleField<TRule extends RuleWithFlags>(
-    rule: TRule,
-    key: StringFieldKey<TRule>,
-    value: string,
-  ): void {
-    (rule as Record<StringFieldKey<TRule>, string>)[key] = value;
+    resetClearConfirmation(config.scope);
+    setClearStatus(config.scope, "");
+    updatePreviewView();
   }
 
   function attachRowDragHandlers(row: HTMLTableRowElement, scope: DragScope): void {
@@ -545,156 +299,69 @@ export function initializeOptions(): () => void {
     );
   }
 
-  function renderRules(scope: DragScope): void {
-    if (scope === "title") {
-      renderRulesFor(ruleConfigs.title);
-    } else {
-      renderRulesFor(ruleConfigs.url);
+  function handleRuleInputChange(scope: DragScope, input: HTMLInputElement): void {
+    const changed =
+      scope === "title"
+        ? handleRuleInputChangeFor(ruleConfigs.title, input)
+        : handleRuleInputChangeFor(ruleConfigs.url, input);
+    updatePreviewView();
+    if (changed) {
+      markDirty(scope);
     }
-  }
-
-  function renderRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
-    const rules = config.getRules();
-
-    config.body.innerHTML = "";
-
-    rules.forEach((rule, index) => {
-      const row = document.createElement("tr");
-      row.dataset.index = String(index);
-      row.classList.toggle("rule-disabled", rule.enabled === false);
-
-      const fieldCells = config.fields.map((descriptor) =>
-        createInputCell(
-          descriptor.key,
-          index,
-          readRuleField(rule, descriptor.key),
-          descriptor.placeholder,
-        ),
-      );
-
-      row.append(
-        createHandleCell(config.scope, index),
-        ...fieldCells,
-        createCheckboxCell("enabled", index, rule.enabled !== false, "Rule enabled"),
-        createCheckboxCell("continueMatching", index, !rule.continueMatching, "Break after match"),
-        createRemoveCell(index, config.scope),
-      );
-
-      config.body.append(row);
-      attachRowDragHandlers(row, config.scope);
-    });
-
-    resetClearConfirmation(config.scope);
-    setClearStatus(config.scope, "");
-    updatePreview();
   }
 
   function addRule(scope: DragScope): void {
     if (scope === "title") {
-      addRuleFor(ruleConfigs.title);
+      const config = ruleConfigs.title;
+      config.getRules().push(config.createEmpty());
+      renderRulesFor(config);
+      focusFirstField(config);
     } else {
-      addRuleFor(ruleConfigs.url);
+      const config = ruleConfigs.url;
+      config.getRules().push(config.createEmpty());
+      renderRulesFor(config);
+      focusFirstField(config);
     }
+
+    markDirty(scope);
   }
 
-  function addRuleFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
-    config.getRules().push(config.createEmpty());
-    renderRulesFor(config);
-
+  function focusFirstField<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     const firstField = config.fields[0]?.key;
-    if (firstField) {
-      const selector = `tr:last-child input[data-field="${firstField}"]`;
-      config.body.querySelector<HTMLInputElement>(selector)?.focus();
-    }
-
-    markDirty(config.scope);
-  }
-
-  function handleRuleInputChange(scope: DragScope, target: HTMLInputElement): void {
-    if (scope === "title") {
-      handleRuleInputChangeFor(ruleConfigs.title, target);
-    } else {
-      handleRuleInputChangeFor(ruleConfigs.url, target);
-    }
-  }
-
-  function handleRuleInputChangeFor<TRule extends RuleWithFlags>(
-    config: RuleConfig<TRule>,
-    target: HTMLInputElement,
-  ): void {
-    const index = Number.parseInt(target.dataset.index ?? "", 10);
-    const field = target.dataset.field;
-
-    if (Number.isNaN(index) || !field) {
+    if (!firstField) {
       return;
     }
-
-    const rules = config.getRules();
-    const rule = rules[index];
-    if (!rule) {
-      return;
-    }
-
-    let changed = false;
-
-    if (field === "continueMatching") {
-      const previous = rule.continueMatching;
-      rule.continueMatching = !target.checked;
-      changed = previous !== rule.continueMatching;
-    } else if (field === "enabled") {
-      const previous = rule.enabled !== false;
-      const nextEnabled = target.checked;
-      if (previous !== nextEnabled) {
-        rule.enabled = nextEnabled;
-        const row = target.closest<HTMLTableRowElement>("tr");
-        row?.classList.toggle("rule-disabled", !nextEnabled);
-        changed = true;
-      }
-    } else {
-      const descriptor = config.fields.find((item) => item.key === field);
-      if (!descriptor) {
-        return;
-      }
-
-      const preserveLeadingWhitespace = descriptor.trimLeading === false;
-      const nextValue = preserveLeadingWhitespace ? target.value : target.value.trimStart();
-      const previousValue = readRuleField(rule, descriptor.key);
-      if (previousValue !== nextValue) {
-        setRuleField(rule, descriptor.key, nextValue);
-        target.value = nextValue;
-        changed = true;
-      }
-    }
-
-    target.removeAttribute("aria-invalid");
-    updatePreview();
-
-    if (changed) {
-      markDirty(config.scope);
-    }
+    const selector = `tr:last-child input[data-field="${firstField}"]`;
+    config.body.querySelector<HTMLInputElement>(selector)?.focus();
   }
 
   function removeRule(scope: DragScope, index: number): void {
     if (scope === "title") {
-      removeRuleFor(ruleConfigs.title, index);
+      const config = ruleConfigs.title;
+      if (removeRuleInternal(config, index)) {
+        markDirty("title");
+      }
     } else {
-      removeRuleFor(ruleConfigs.url, index);
+      const config = ruleConfigs.url;
+      if (removeRuleInternal(config, index)) {
+        markDirty("url");
+      }
     }
   }
 
-  function removeRuleFor<TRule extends RuleWithFlags>(
+  function removeRuleInternal<TRule extends RuleWithFlags>(
     config: RuleConfig<TRule>,
     index: number,
-  ): void {
+  ): boolean {
     const rules = config.getRules();
     if (index < 0 || index >= rules.length) {
-      return;
+      return false;
     }
 
     rules.splice(index, 1);
     renderRulesFor(config);
-    setStatus(config.messages.removed);
-    markDirty(config.scope);
+    showStatus(context, config.messages.removed);
+    return true;
   }
 
   function promptClearRules(scope: DragScope): void {
@@ -707,17 +374,17 @@ export function initializeOptions(): () => void {
 
   function promptClearRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     setClearStatus(config.scope, "");
-    const existingTimeout = clearTimeouts[config.scope];
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-      clearTimeouts[config.scope] = undefined;
+    const timer = clearTimers[config.scope];
+    if (timer) {
+      clearTimeout(timer);
+      clearTimers[config.scope] = undefined;
     }
 
     config.clearButton.hidden = true;
     config.confirmClearButton.hidden = false;
     config.confirmClearButton.focus();
 
-    clearTimeouts[config.scope] = setTimeout(() => {
+    clearTimers[config.scope] = setTimeout(() => {
       resetClearConfirmation(config.scope);
     }, 5000);
   }
@@ -735,147 +402,67 @@ export function initializeOptions(): () => void {
     config.setRules([]);
     renderRulesFor(config);
     setClearStatus(config.scope, config.messages.cleared);
-    setStatus(config.messages.cleared);
+    showStatus(context, config.messages.cleared);
     markDirty(config.scope);
   }
 
-  function validateRules(scope: "title"): ValidationResult;
-  function validateRules(scope: "url"): ValidationResult;
-  function validateRules(scope: DragScope): ValidationResult {
+  function validateRules(scope: DragScope) {
     return scope === "title"
       ? validateRulesFor(ruleConfigs.title)
       : validateRulesFor(ruleConfigs.url);
   }
 
-  function validateRulesFor<TRule extends RuleWithFlags>(
-    config: RuleConfig<TRule>,
-  ): ValidationResult {
-    const rules = config.getRules();
-    const { pattern, search, replace } = config.fieldKeys;
-
-    let valid = true;
-    let message: string | undefined;
-
-    rules.forEach((rule, index) => {
-      const row = config.body.querySelector(`tr[data-index="${index}"]`);
-      if (!row) {
-        return;
-      }
-
-      const sanitized = config.sanitize(rule);
-      rules[index] = sanitized;
-
-      if (!config.hasContent(sanitized)) {
-        return;
-      }
-
-      const patternInput = row.querySelector<HTMLInputElement>(`input[data-field="${pattern}"]`);
-      const searchInput = row.querySelector<HTMLInputElement>(`input[data-field="${search}"]`);
-      const replaceInput = row.querySelector<HTMLInputElement>(`input[data-field="${replace}"]`);
-
-      const patternValue = readRuleField(sanitized, pattern);
-      const searchValue = readRuleField(sanitized, search);
-      const replaceValue = readRuleField(sanitized, replace);
-
-      if (!patternValue) {
-        valid = false;
-        message = message ?? config.messages.missingPattern;
-        if (patternInput) {
-          markInvalidField(patternInput);
-        }
-      } else if (!validateRegex(patternValue)) {
-        valid = false;
-        message = message ?? config.messages.invalidPattern;
-        if (patternInput) {
-          markInvalidField(patternInput);
-        }
-      }
-
-      if (replaceValue && !searchValue) {
-        valid = false;
-        message = message ?? config.messages.missingSearchForReplace;
-        if (searchInput) {
-          markInvalidField(searchInput);
-        }
-      }
-
-      if (searchValue && !validateRegex(searchValue)) {
-        valid = false;
-        message = message ?? config.messages.invalidSearch;
-        if (searchInput) {
-          markInvalidField(searchInput);
-        }
-      }
-
-      replaceInput?.removeAttribute("aria-invalid");
-    });
-
-    return { valid, message };
-  }
-
   function collectPayload(): OptionsPayload {
-    const titleRules = filteredRules("title");
-    const urlRules = filteredRules("url");
-
     return {
       version: OPTIONS_VERSION,
-      format: normalizeFormat(templateField, draft),
-      titleRules,
-      urlRules,
+      format: normalizeFormat(context.dom.templateField, draft),
+      titleRules: filteredRules("title"),
+      urlRules: filteredRules("url"),
     };
-  }
-
-  async function saveOptions(event: SubmitEvent): Promise<void> {
-    event.preventDefault();
-    await persistOptions();
   }
 
   async function persistOptions(scope?: DragScope): Promise<boolean> {
     setSaving(scope, true);
 
-    clearValidationState(titleRulesBody);
-    clearValidationState(urlRulesBody);
-    templateField?.removeAttribute("aria-invalid");
+    clearValidationState(context.dom.titleRulesBody);
+    clearValidationState(context.dom.urlRulesBody);
+    context.dom.templateField?.removeAttribute("aria-invalid");
 
-    const templateValidation = templateField
-      ? (() => {
-          if (!templateField.value.trim()) {
-            templateField.setAttribute("aria-invalid", "true");
-            return {
-              valid: false,
-              message: "Template cannot be empty.",
-            } satisfies ValidationResult;
-          }
-          return { valid: true } satisfies ValidationResult;
-        })()
-      : ({ valid: true } satisfies ValidationResult);
-
-    if (!templateValidation.valid) {
-      setStatus(templateValidation.message ?? "Template validation failed.", "error");
-      return false;
+    const templateField = context.dom.templateField;
+    if (templateField) {
+      const templateValue = templateField.value.trim();
+      if (!templateValue) {
+        templateField.setAttribute("aria-invalid", "true");
+        showStatus(context, "Template cannot be empty.", "error");
+        setSaving(scope, false);
+        return false;
+      }
     }
 
     const titleValidation = validateRules("title");
     if (!titleValidation.valid) {
-      setStatus(titleValidation.message ?? "Title rule validation failed.", "error");
+      showStatus(context, titleValidation.message ?? "Title rule validation failed.", "error");
+      setSaving(scope, false);
       return false;
     }
 
     const urlValidation = validateRules("url");
     if (!urlValidation.valid) {
-      setStatus(urlValidation.message ?? "URL rule validation failed.", "error");
+      showStatus(context, urlValidation.message ?? "URL rule validation failed.", "error");
+      setSaving(scope, false);
       return false;
     }
 
     const payload = collectPayload();
 
-    if (!storageArea) {
-      setStatus("Chrome storage is unavailable; unable to save changes.", "error");
+    if (!context.storage) {
+      showStatus(context, "Chrome storage is unavailable; unable to save changes.", "error");
+      setSaving(scope, false);
       return false;
     }
 
     try {
-      await storageArea.set({
+      await context.storage.set({
         options: payload,
         format: payload.format ?? DEFAULT_TEMPLATE,
         titleRules: payload.titleRules,
@@ -887,8 +474,9 @@ export function initializeOptions(): () => void {
           ? "Title rules saved."
           : "URL rules saved."
         : "Options saved successfully.";
-      setStatus(message);
-      draft = cloneOptions(payload);
+      showStatus(context, message, "success");
+      context.draft = cloneOptions(payload);
+      draft = context.draft;
       renderRules("title");
       renderRules("url");
       setDirty("title", false);
@@ -896,31 +484,36 @@ export function initializeOptions(): () => void {
       return true;
     } catch (error) {
       console.error("Failed to save options.", error);
-      setStatus("Failed to save options.", "error");
+      showStatus(context, "Failed to save options.", "error");
       return false;
     } finally {
       setSaving(scope, false);
     }
   }
 
+  async function saveOptions(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    await persistOptions();
+  }
+
   async function loadOptions(): Promise<void> {
-    if (!storageArea) {
-      setStatus("Chrome storage is unavailable; using defaults.", "error");
-      draft = createDraft();
-      if (templateField) {
-        templateField.value = draft.format;
+    if (!context.storage) {
+      showStatus(context, "Chrome storage is unavailable; using defaults.", "error");
+      context.draft = createDraft();
+      draft = context.draft;
+      if (context.dom.templateField) {
+        context.dom.templateField.value = draft.format;
       }
       renderRules("title");
       renderRules("url");
-      updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, "wikipedia");
-      updateUrlSample(DEFAULT_PREVIEW_SAMPLE.url, "amazon");
+      applyDefaultPreviewSamples();
       setDirty("title", false);
       setDirty("url", false);
       return;
     }
 
     try {
-      const snapshot = await storageArea.get([
+      const snapshot = await context.storage.get([
         "options",
         "format",
         "titleRules",
@@ -928,61 +521,71 @@ export function initializeOptions(): () => void {
         "linkRules",
         "rules",
       ]);
-      draft = cloneOptions(normalizeStoredOptions(snapshot));
-      if (templateField) {
-        templateField.value = draft.format;
+      context.draft = cloneOptions(normalizeStoredOptions(snapshot));
+      draft = context.draft;
+      if (context.dom.templateField) {
+        context.dom.templateField.value = draft.format;
       }
       renderRules("title");
       renderRules("url");
-      setStatus("Options loaded.", "success");
-      updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, "wikipedia");
-      updateUrlSample(DEFAULT_PREVIEW_SAMPLE.url, "amazon");
+      applyDefaultPreviewSamples();
       setDirty("title", false);
       setDirty("url", false);
+      showStatus(context, "Options loaded.");
     } catch (error) {
       console.error("Failed to load options; fallback to defaults.", error);
-      draft = createDraft();
-      if (templateField) {
-        templateField.value = draft.format;
+      context.draft = createDraft();
+      draft = context.draft;
+      if (context.dom.templateField) {
+        context.dom.templateField.value = draft.format;
       }
       renderRules("title");
       renderRules("url");
-      setStatus("Failed to load saved options; defaults restored.", "error");
-      updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, "wikipedia");
-      updateUrlSample(DEFAULT_PREVIEW_SAMPLE.url, "amazon");
+      applyDefaultPreviewSamples();
       setDirty("title", false);
       setDirty("url", false);
+      showStatus(context, "Failed to load saved options; defaults restored.", "error");
     }
+  }
+
+  function applyDefaultPreviewSamples(): void {
+    resetPreviewSample(context);
+    updateTitleSample(DEFAULT_PREVIEW_SAMPLE.title, "wikipedia");
+    updateUrlSample(DEFAULT_PREVIEW_SAMPLE.url, "amazon");
   }
 
   function updateTitleSample(nextTitle: string, preset?: string): void {
-    previewSample.title = nextTitle;
-    sampleTitleInput.value = previewSample.title;
+    context.previewSample.title = nextTitle;
+    context.dom.sampleTitleInput.value = context.previewSample.title;
     if (preset) {
-      titleSamplePresetSelect.value = preset;
+      context.dom.titleSamplePresetSelect.value = preset;
     }
-    updatePreview();
+    updatePreviewView();
   }
 
   function updateUrlSample(nextUrl: string, preset?: string): void {
-    previewSample.url = nextUrl;
-    sampleUrlInput.value = previewSample.url;
+    context.previewSample.url = nextUrl;
+    context.dom.sampleUrlInput.value = context.previewSample.url;
     if (preset) {
-      urlSamplePresetSelect.value = preset;
+      context.dom.urlSamplePresetSelect.value = preset;
     }
-    updatePreview();
+    updatePreviewView();
   }
 
-  titleSamplePresetSelect?.addEventListener(
+  rememberSaveButtonLabels();
+  setDirty("title", false);
+  setDirty("url", false);
+
+  context.dom.titleSamplePresetSelect.addEventListener(
     "change",
     () => {
-      const selected = titleSamplePresetSelect?.selectedOptions[0];
+      const selected = context.dom.titleSamplePresetSelect.selectedOptions[0];
       if (!selected) {
         return;
       }
 
       if (selected.value === "custom") {
-        updateTitleSample(sampleTitleInput?.value, "custom");
+        updateTitleSample(context.dom.sampleTitleInput.value, "custom");
         return;
       }
 
@@ -992,24 +595,24 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  sampleTitleInput?.addEventListener(
+  context.dom.sampleTitleInput.addEventListener(
     "input",
     () => {
-      updateTitleSample(sampleTitleInput?.value, "custom");
+      updateTitleSample(context.dom.sampleTitleInput.value, "custom");
     },
     { signal },
   );
 
-  urlSamplePresetSelect?.addEventListener(
+  context.dom.urlSamplePresetSelect.addEventListener(
     "change",
     () => {
-      const selected = urlSamplePresetSelect?.selectedOptions[0];
+      const selected = context.dom.urlSamplePresetSelect.selectedOptions[0];
       if (!selected) {
         return;
       }
 
       if (selected.value === "custom") {
-        updateUrlSample(sampleUrlInput?.value.trim(), "custom");
+        updateUrlSample(context.dom.sampleUrlInput.value.trim(), "custom");
         return;
       }
 
@@ -1019,15 +622,15 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  sampleUrlInput?.addEventListener(
+  context.dom.sampleUrlInput.addEventListener(
     "input",
     () => {
-      updateUrlSample(sampleUrlInput?.value.trim(), "custom");
+      updateUrlSample(context.dom.sampleUrlInput.value.trim(), "custom");
     },
     { signal },
   );
 
-  titleRulesBody?.addEventListener(
+  context.dom.titleRulesBody.addEventListener(
     "input",
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -1037,7 +640,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  titleRulesBody?.addEventListener(
+  context.dom.titleRulesBody.addEventListener(
     "change",
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -1047,7 +650,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  urlRulesBody?.addEventListener(
+  context.dom.urlRulesBody.addEventListener(
     "input",
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -1057,7 +660,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  urlRulesBody?.addEventListener(
+  context.dom.urlRulesBody.addEventListener(
     "change",
     (event) => {
       if (event.target instanceof HTMLInputElement) {
@@ -1067,7 +670,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  titleRulesBody?.addEventListener(
+  context.dom.titleRulesBody.addEventListener(
     "click",
     (event) => {
       const target = event.target;
@@ -1075,17 +678,20 @@ export function initializeOptions(): () => void {
         return;
       }
 
-      if (target.dataset.action === "remove-title") {
-        const index = Number.parseInt(target.dataset.index ?? "", 10);
-        if (!Number.isNaN(index)) {
-          removeRule("title", index);
+      if (target.dataset.action === "remove") {
+        const scope = target.dataset.scope as DragScope | undefined;
+        if (scope === "title") {
+          const index = Number.parseInt(target.dataset.index ?? "", 10);
+          if (!Number.isNaN(index)) {
+            removeRule("title", index);
+          }
         }
       }
     },
     { signal },
   );
 
-  urlRulesBody?.addEventListener(
+  context.dom.urlRulesBody.addEventListener(
     "click",
     (event) => {
       const target = event.target;
@@ -1093,24 +699,28 @@ export function initializeOptions(): () => void {
         return;
       }
 
-      if (target.dataset.action === "remove-url") {
-        const index = Number.parseInt(target.dataset.index ?? "", 10);
-        if (!Number.isNaN(index)) {
-          removeRule("url", index);
+      if (target.dataset.action === "remove") {
+        const scope = target.dataset.scope as DragScope | undefined;
+        if (scope === "url") {
+          const index = Number.parseInt(target.dataset.index ?? "", 10);
+          if (!Number.isNaN(index)) {
+            removeRule("url", index);
+          }
         }
       }
     },
     { signal },
   );
 
-  addTitleRuleButton.addEventListener(
+  context.dom.addTitleRuleButton.addEventListener(
     "click",
     () => {
       addRule("title");
     },
     { signal },
   );
-  addUrlRuleButton.addEventListener(
+
+  context.dom.addUrlRuleButton.addEventListener(
     "click",
     () => {
       addRule("url");
@@ -1118,7 +728,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  saveTitleRuleButton.addEventListener(
+  context.dom.saveTitleRuleButton.addEventListener(
     "click",
     () => {
       if (savingState.title || !dirtyState.title) {
@@ -1129,7 +739,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  saveUrlRuleButton.addEventListener(
+  context.dom.saveUrlRuleButton.addEventListener(
     "click",
     () => {
       if (savingState.url || !dirtyState.url) {
@@ -1140,7 +750,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  clearTitleRulesButton?.addEventListener(
+  context.dom.clearTitleRulesButton.addEventListener(
     "click",
     () => {
       promptClearRules("title");
@@ -1148,7 +758,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  confirmClearTitleRulesButton?.addEventListener(
+  context.dom.confirmClearTitleRulesButton.addEventListener(
     "click",
     () => {
       confirmClearRules("title");
@@ -1156,7 +766,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  clearUrlRulesButton?.addEventListener(
+  context.dom.clearUrlRulesButton.addEventListener(
     "click",
     () => {
       promptClearRules("url");
@@ -1164,7 +774,7 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  confirmClearUrlRulesButton?.addEventListener(
+  context.dom.confirmClearUrlRulesButton.addEventListener(
     "click",
     () => {
       confirmClearRules("url");
@@ -1172,32 +782,32 @@ export function initializeOptions(): () => void {
     { signal },
   );
 
-  if (templateField) {
-    templateField.addEventListener(
+  if (context.dom.templateField) {
+    context.dom.templateField.addEventListener(
       "input",
       () => {
-        draft.format = templateField.value;
-        updatePreview();
+        draft.format = context.dom.templateField?.value ?? draft.format;
+        updatePreviewView();
       },
       { signal },
     );
   }
 
-  restoreTemplateButton?.addEventListener(
+  context.dom.restoreTemplateButton?.addEventListener(
     "click",
     (event) => {
       event.preventDefault();
-      if (templateField) {
-        templateField.value = DEFAULT_TEMPLATE;
+      if (context.dom.templateField) {
+        context.dom.templateField.value = DEFAULT_TEMPLATE;
       }
       draft.format = DEFAULT_TEMPLATE;
-      updatePreview();
-      setStatus("Template restored to default.");
+      updatePreviewView();
+      showStatus(context, "Template restored to default.");
     },
     { signal },
   );
 
-  form.addEventListener(
+  context.dom.form.addEventListener(
     "submit",
     (event) => {
       void saveOptions(event);
@@ -1209,14 +819,17 @@ export function initializeOptions(): () => void {
 
   return () => {
     abortController.abort();
-    if (statusTimeout) {
-      clearTimeout(statusTimeout);
+    if (context.statusTimeout) {
+      clearTimeout(context.statusTimeout);
+      context.statusTimeout = undefined;
     }
-    Object.values(clearTimeouts).forEach((timeout) => {
-      if (timeout) {
-        clearTimeout(timeout);
+    Object.values(clearTimers).forEach((timer) => {
+      if (timer) {
+        clearTimeout(timer);
       }
     });
-    draft = createDraft();
+    hideStatus(context);
+    context.draft = createDraft();
+    draft = context.draft;
   };
 }

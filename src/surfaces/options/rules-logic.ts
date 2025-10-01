@@ -1,4 +1,5 @@
-import type { RuleConfig, RuleWithFlags } from "./rules-types.js";
+import { markInvalidField } from "./dom.js";
+import type { RuleConfig, RuleFieldDescriptor, RuleWithFlags } from "./rules-types.js";
 import { validateRegex } from "./state.js";
 
 export function filteredRulesInternal<TRule extends RuleWithFlags>(
@@ -21,33 +22,73 @@ export function filteredRulesInternal<TRule extends RuleWithFlags>(
 export function handleRuleInputChangeFor<TRule extends RuleWithFlags>(
   config: RuleConfig<TRule>,
   target: HTMLInputElement,
-): void {
+): boolean {
   const index = Number.parseInt(target.dataset.index ?? "", 10);
   const field = target.dataset.field;
 
   if (!field || Number.isNaN(index)) {
-    return;
+    return false;
   }
 
   const rules = config.getRules();
   const rule = rules[index];
 
   if (!rule) {
-    return;
+    return false;
   }
 
   const fieldKey = field as keyof TRule;
+  let changed = false;
 
-  if (typeof rule[fieldKey] === "boolean") {
-    (rule[fieldKey] as unknown as boolean) = target.checked;
+  if (field === "continueMatching") {
+    const nextValue = !target.checked;
+    if (rule[fieldKey] !== nextValue) {
+      (rule[fieldKey] as unknown as boolean) = nextValue;
+      changed = true;
+    }
+  } else if (field === "enabled") {
+    const nextValue = target.checked;
+    const previous = rule[fieldKey] !== false;
+    if (previous !== nextValue) {
+      (rule[fieldKey] as unknown as boolean) = nextValue;
+      target.closest<HTMLTableRowElement>("tr")?.classList.toggle("rule-disabled", !nextValue);
+      changed = true;
+    }
   } else {
-    (rule[fieldKey] as unknown as string) = target.value;
+    const descriptor = findFieldDescriptor(config.fields, field);
+    if (!descriptor) {
+      return false;
+    }
+
+    const preserveLeadingWhitespace = descriptor.trimLeading === false;
+    const nextValue = preserveLeadingWhitespace ? target.value : target.value.trimStart();
+    const previousValue = readRuleField(rule, field);
+
+    if (previousValue !== nextValue) {
+      setRuleField(rule, field, nextValue);
+      target.value = nextValue;
+      changed = true;
+    }
   }
+
+  target.removeAttribute("aria-invalid");
+  return changed;
 }
 
 export function readRuleField<TRule>(rule: TRule, key: string): string {
   const value = (rule as Record<string, unknown>)[key];
   return typeof value === "string" ? value : "";
+}
+
+function setRuleField<TRule>(rule: TRule, key: string, value: string): void {
+  (rule as Record<string, unknown>)[key] = value;
+}
+
+function findFieldDescriptor<TRule extends RuleWithFlags>(
+  fields: RuleFieldDescriptor<TRule>[],
+  key: string,
+): RuleFieldDescriptor<TRule> | undefined {
+  return fields.find((descriptor) => descriptor.key === key);
 }
 
 export interface ValidationResult {
@@ -84,23 +125,31 @@ export function validateRulesFor<TRule extends RuleWithFlags>(
     if (!patternValue) {
       valid = false;
       message = message ?? config.messages.missingPattern;
-      patternInput?.setAttribute("aria-invalid", "true");
+      if (patternInput) {
+        markInvalidField(patternInput);
+      }
     } else if (!validateRegex(patternValue)) {
       valid = false;
       message = message ?? config.messages.invalidPattern;
-      patternInput?.setAttribute("aria-invalid", "true");
+      if (patternInput) {
+        markInvalidField(patternInput);
+      }
     }
 
     if (replaceValue && !searchValue) {
       valid = false;
       message = message ?? config.messages.missingSearchForReplace;
-      searchInput?.setAttribute("aria-invalid", "true");
+      if (searchInput) {
+        markInvalidField(searchInput);
+      }
     }
 
     if (searchValue && !validateRegex(searchValue)) {
       valid = false;
       message = message ?? config.messages.invalidSearch;
-      searchInput?.setAttribute("aria-invalid", "true");
+      if (searchInput) {
+        markInvalidField(searchInput);
+      }
     }
 
     replaceInput?.removeAttribute("aria-invalid");
@@ -114,6 +163,17 @@ export function moveRule<TRule>(rules: TRule[], fromIndex: number, toIndex: numb
     return;
   }
 
+  if (fromIndex < 0 || toIndex < 0 || fromIndex >= rules.length || toIndex >= rules.length) {
+    return;
+  }
+
   const [rule] = rules.splice(fromIndex, 1);
-  rules.splice(toIndex, 0, rule);
+  let insertIndex = toIndex;
+  if (fromIndex < toIndex) {
+    insertIndex = Math.min(insertIndex, rules.length);
+  }
+  if (insertIndex > rules.length) {
+    insertIndex = rules.length;
+  }
+  rules.splice(insertIndex, 0, rule);
 }
