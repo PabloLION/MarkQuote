@@ -34,8 +34,8 @@ function flushMicrotasks(): Promise<void> {
 
 describe("Options Page", () => {
   let disposeOptions: (() => void) | undefined;
-  let requestAnimationFrameSpy: vi.SpyInstance<number, [FrameRequestCallback]> | undefined;
-  let cancelAnimationFrameSpy: vi.SpyInstance<void, [number]> | undefined;
+  let requestAnimationFrameSpy: ReturnType<typeof vi.spyOn> | undefined;
+  let cancelAnimationFrameSpy: ReturnType<typeof vi.spyOn> | undefined;
 
   beforeEach(async () => {
     document.body.innerHTML = html;
