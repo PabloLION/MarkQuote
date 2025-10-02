@@ -7,7 +7,7 @@ import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import { isUrlProtected } from "./protected-urls.js";
 import type { LoggedError } from "./types.js";
 
-const ERROR_LOG_MAX_ENTRIES = 10; // UX intentionally limits the log to the 10 latest entries shown in the popup.
+const ERROR_LOG_MAX_ENTRIES = 10; // UX intentionally limits the log to the 10 latest entries shown in the popup; kept local so context stays alongside storage semantics.
 
 /** Restores the badge count based on persisted errors when the worker starts. */
 export async function initializeBadgeFromStorage(): Promise<void> {
@@ -113,7 +113,7 @@ export async function clearStoredErrors(): Promise<void> {
 }
 
 function updateBadge(count: number): void {
-  const text = count > 0 ? String(Math.min(count, 99)) : ""; // Badge intentionally caps at 99 to avoid overflowing the action UI.
+  const text = count > 0 ? String(Math.min(count, 99)) : ""; // Badge intentionally caps at 99 to avoid overflowing the action UI; local constant keeps the rationale near usage.
   chrome.action.setBadgeText({ text }).catch((error) => {
     // Badge updates can fail when the action is unavailable (e.g. during browser shutdown).
     console.debug("[MarkQuote] Failed to update badge text", error);

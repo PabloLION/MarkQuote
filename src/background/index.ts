@@ -2,7 +2,8 @@
  * Background entry point that orchestrates copy flows, hotkey behaviour, option persistence, and
  * diagnostic telemetry. Centralising these responsibilities keeps chrome API usage contained,
  * which simplifies testing and documents design choices (e.g. session persistence for pending
- * copy sources).
+ * copy sources). Production logging is intentionally retained so support can diagnose field issues
+ * without shipping a separate debugging build.
  */
 import {
   CURRENT_OPTIONS_VERSION,
