@@ -60,7 +60,7 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
             await navigator.clipboard.writeText(value);
             return true;
           }
-        } catch (error) {
+        } catch (_error) {
           // Ignore and fall back to execCommand approach below.
         }
 

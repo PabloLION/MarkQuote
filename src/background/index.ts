@@ -221,7 +221,7 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
       target: { tabId },
       files: ["selection.js"],
     });
-  } catch (error) {
+  } catch (_error) {
     const lastErrorMessage = getRuntimeLastErrorMessage();
     if (lastErrorMessage.includes("must request permission")) {
       notifyCopyProtected(tab, source, targetUrl);

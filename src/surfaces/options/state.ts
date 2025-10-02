@@ -51,7 +51,7 @@ export function sanitizeTitleRule(rule: TitleRule): TitleRule {
     titleReplace: rule.titleReplace,
     comment: rule.comment.trim(),
     continueMatching: Boolean(rule.continueMatching),
-    enabled: rule.enabled === false ? false : true,
+    enabled: rule.enabled !== false,
   };
 }
 
@@ -62,7 +62,7 @@ export function sanitizeUrlRule(rule: UrlRule): UrlRule {
     urlReplace: rule.urlReplace,
     comment: rule.comment.trim(),
     continueMatching: Boolean(rule.continueMatching),
-    enabled: rule.enabled === false ? false : true,
+    enabled: rule.enabled !== false,
   };
 }
 
