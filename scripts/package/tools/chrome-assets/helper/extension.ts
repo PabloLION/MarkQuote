@@ -159,7 +159,8 @@ export async function undockDevtools(page: Page): Promise<void> {
   } catch (shortcutError) {
     try {
       const session = await page.context().newCDPSession(page);
-      await session.send("Page.openDevToolsWindow" as any);
+      const command = "Page.openDevToolsWindow";
+      await session.send(command as unknown as Parameters<typeof session.send>[0]);
     } catch (cdpError) {
       console.warn("Unable to toggle DevTools window", { shortcutError, cdpError });
     }

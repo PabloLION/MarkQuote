@@ -58,7 +58,7 @@ export function primeSelectionStub(
 }
 
 export function handleE2eMessage(context: MessageContext): boolean {
-  const { request, sender, sendResponse, persistOptions, recordError } = context;
+  const { request, sendResponse, persistOptions, recordError } = context;
   const message = request as { type?: string; markdown?: unknown; title?: unknown; url?: unknown };
 
   if (message.type === E2E_SELECTION_MESSAGE) {
