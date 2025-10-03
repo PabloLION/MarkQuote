@@ -31,7 +31,7 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
   `docs/storefront/chrome-web-store/assets/`.
 
 ## 5. Store Submission / Automation
-- Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `scripts/publish/chrome-web-store.sh dist/markquote-v<version>.zip`.
+- Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `pnpm publish:chrome dist/markquote-v<version>.zip`.
 - Inspect the script output; on success capture the JSON response in release notes.
 - If manual submission is required, sign in to the Chrome Web Store Developer Dashboard, upload the ZIP, and publish.
 - Update listing copy, privacy policy, support URL, and release notes as needed.

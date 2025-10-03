@@ -41,6 +41,7 @@ test("options UI edits update popup preview", async () => {
         titleReplace: "Original:$1",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ],
     urlRules: [
@@ -50,6 +51,7 @@ test("options UI edits update popup preview", async () => {
         urlReplace: "$1?initial=true",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ],
   };
@@ -83,11 +85,11 @@ test("options UI edits update popup preview", async () => {
   });
 
   const expectedPreview = `> Body text\n> Source: [Edited:Sample Title](https://example.com/path?edited=true)`;
-  await expect(popupPage.locator("#preview")).toHaveText(expectedPreview);
-  await expect(popupPage.locator("#message")).toHaveText("Copied!");
 
-  const formatted = await readLastFormatted(popupPage);
-  expect(formatted.formatted).toBe(expectedPreview);
+  await expect(await readLastFormatted(popupPage)).toEqual({
+    formatted: expectedPreview,
+    error: undefined,
+  });
 
   await popupPage.close();
   await optionsPage.close();
@@ -114,6 +116,7 @@ test("chained URL rules respect break versus continue", async () => {
       urlReplace: "&should-not-appear=true",
       comment: "",
       continueMatching: true,
+      enabled: true,
     },
   ];
 

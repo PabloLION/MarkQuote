@@ -30,3 +30,15 @@ This file tracks features and tasks that are planned for future development cycl
 - Surface a CTA in the popup error panel to request host access for the current site.
 - Update the background command to skip opening the popup when the site is already authorized.
 - Add automated coverage for the permission request + fallback behavior.
+
+## Epic 5: Accessibility Polish
+
+### Story: Keyboard Reordering for Rules Tables
+
+**Goal:** Provide a keyboard-accessible alternative to drag-and-drop when reordering title and URL rules on the options page.
+
+**Tasks:**
+
+- Introduce focusable move controls (e.g., up/down buttons or keyboard shortcuts) for each rule row.
+- Announce position changes via ARIA live regions to keep screen reader users informed.
+- Update documentation and tests to cover the non-pointer interaction path.

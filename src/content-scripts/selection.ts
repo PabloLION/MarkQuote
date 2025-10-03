@@ -1,4 +1,4 @@
-import { convertHtmlToMarkdown } from "./converter.js";
+import { convertHtmlToMarkdown } from "../converter.js";
 
 (() => {
   const selection = window.getSelection();

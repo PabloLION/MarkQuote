@@ -1,7 +1,9 @@
-import sinonChrome from "sinon-chrome";
+import type { MockInstance } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock.js";
+import { initializePopup } from "../../src/surfaces/popup/page.js";
 
-import { initializePopup } from "../../src/popup";
+const sinonChrome = getSinonChrome();
 
 const INLINE_MODE_ISSUE_QUERY = "https://github.com/PabloLION/MarkQuote/issues/3";
 
@@ -28,15 +30,17 @@ function mountPopupDom() {
       <button id="report-errors-button"></button>
       <button id="dismiss-errors-button"></button>
     </div>
-    <div id="message"></div>
-    <pre id="preview"></pre>
+    <div id="message" class="status-message" hidden>
+      <div id="message-text" class="status-text"></div>
+      <pre id="preview" class="status-preview" hidden><code></code></pre>
+    </div>
   `;
 }
 
 describe("popup", () => {
   describe("with chrome runtime", () => {
     let dispose: (() => void) | undefined;
-    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+    let windowOpenSpy: MockInstance;
     let clipboardWriteSpy: ReturnType<typeof vi.fn>;
     const originalShortcutOpener = getSinonCommands().openShortcutSettings;
     let openShortcutSettingsSpy: ReturnType<typeof vi.fn>;
@@ -69,13 +73,28 @@ describe("popup", () => {
       sinonChrome.reset();
     });
 
+    it("shows the default message and hides the preview initially", () => {
+      expect(document.getElementById("message")?.hasAttribute("hidden")).toBe(false);
+      expect(document.getElementById("message-text")?.textContent).toBe(
+        "Select text on a page, then trigger MarkQuote to copy it as a Markdown reference.",
+      );
+      expect(document.getElementById("message")?.dataset.label).toBe("Tip");
+      expect(document.getElementById("preview")?.hasAttribute("hidden")).toBe(true);
+    });
+
     it("renders copied message preview when receiving events", () => {
       const payload = { type: "copied-text-preview", text: "Example markdown" } as const;
 
       sinonChrome.runtime.onMessage.dispatch(payload, {} as chrome.runtime.MessageSender, () => {});
 
-      expect(document.getElementById("message")?.textContent).toBe("Copied!");
-      expect(document.getElementById("preview")?.textContent).toBe("Example markdown");
+      expect(document.getElementById("message-text")?.textContent).toBe(
+        "Markdown copied to clipboard.",
+      );
+      expect(document.getElementById("message")?.dataset.label).toBe("Copied");
+      expect(document.getElementById("message")?.dataset.variant).toBe("success");
+      const previewElement = document.getElementById("preview");
+      expect(previewElement?.hasAttribute("hidden")).toBe(false);
+      expect(previewElement?.textContent).toBe("Example markdown");
       expect(clipboardWriteSpy).toHaveBeenCalledWith("Example markdown");
     });
 
@@ -117,7 +136,7 @@ describe("popup", () => {
 
   describe("fallback behaviour", () => {
     let dispose: (() => void) | undefined;
-    let windowOpenSpy: ReturnType<typeof vi.spyOn>;
+    let windowOpenSpy: MockInstance;
 
     beforeEach(() => {
       mountPopupDom();

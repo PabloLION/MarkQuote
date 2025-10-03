@@ -9,6 +9,8 @@ export interface LaunchOptions {
   headed?: boolean;
   colorScheme?: "light" | "dark";
   windowSize?: { width: number; height: number };
+  devtools?: boolean;
+  devtoolsUndocked?: boolean;
 }
 
 export interface ExtensionContextHandle {
@@ -27,28 +29,41 @@ export async function launchExtensionContext(
   const defaultProfileDir = path.join(userDataDir, "Default");
   await mkdir(defaultProfileDir, { recursive: true });
   const preferencesPath = path.join(defaultProfileDir, "Preferences");
+  const devtoolsPreferencePayload: Record<string, string> = {
+    uiTheme: '"dark"',
+  };
+
+  if (options.devtoolsUndocked) {
+    devtoolsPreferencePayload.currentDockState = '"undocked"';
+    devtoolsPreferencePayload.previousDockState = '"undocked"';
+    devtoolsPreferencePayload.lastDockState = '"undocked"';
+  }
+
   const devtoolsPreferences = {
     devtools: {
-      preferences: JSON.stringify({
-        currentDockState: "undocked",
-        previousDockState: "undocked",
-        lastDockState: "undocked",
-        uiTheme: "dark",
-      }),
+      preferences: devtoolsPreferencePayload,
     },
   };
   await writeFile(preferencesPath, JSON.stringify(devtoolsPreferences));
+
+  const wantsDevtools = Boolean(options.devtools || options.devtoolsUndocked);
+  const launchArgs = [
+    `--disable-extensions-except=${distDir}`,
+    `--load-extension=${distDir}`,
+    `--window-size=${windowSize.width},${windowSize.height}`,
+    "--disable-infobars",
+  ];
+
+  if (wantsDevtools) {
+    launchArgs.push("--auto-open-devtools-for-tabs");
+  }
 
   const context = await chromium.launchPersistentContext(userDataDir, {
     headless: !headed,
     colorScheme: options.colorScheme ?? "dark",
     viewport: null,
-    args: [
-      `--disable-extensions-except=${distDir}`,
-      `--load-extension=${distDir}`,
-      `--window-size=${windowSize.width},${windowSize.height}`,
-      "--disable-infobars",
-    ],
+    devtools: wantsDevtools,
+    args: launchArgs,
     ignoreDefaultArgs: ["--enable-automation"],
   });
 
@@ -134,13 +149,24 @@ export async function openExtensionPage(
   return page;
 }
 
-async function undockDevtools(page: Page): Promise<void> {
+export async function undockDevtools(page: Page): Promise<void> {
+  const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
+
   try {
-    const shortcut = process.platform === "darwin" ? "Meta+Alt+I" : "Control+Shift+I";
     await page.waitForTimeout(400);
     await page.keyboard.press(shortcut);
     await page.waitForTimeout(200);
-  } catch (error) {
-    console.warn("Unable to toggle DevTools window", error);
+  } catch (shortcutError) {
+    try {
+      const session = await page.context().newCDPSession(page);
+      const sendOpenDevtools = session.send as (
+        method: "Page.openDevToolsWindow",
+        params?: Record<string, never>,
+      ) => Promise<void>;
+
+      await sendOpenDevtools("Page.openDevToolsWindow");
+    } catch (cdpError) {
+      console.warn("Unable to toggle DevTools window", { shortcutError, cdpError });
+    }
   }
 }

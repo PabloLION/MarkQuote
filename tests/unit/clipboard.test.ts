@@ -1,6 +1,8 @@
-import sinonChrome from "sinon-chrome";
 import { describe, expect, it } from "vitest";
 import { formatForClipboard } from "../../src/clipboard.js";
+import { getSinonChrome } from "../../src/dev/chrome-dev-mock.js";
+
+const sinonChrome = getSinonChrome();
 
 describe("formatForClipboard", () => {
   it("should use the default format when none is in storage", async () => {

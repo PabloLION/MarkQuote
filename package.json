@@ -1,6 +1,6 @@
 {
   "name": "markquote",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Copy webpage selections as Markdown quotes with reference source link.",
   "private": true,
   "type": "module",
@@ -23,7 +23,9 @@
     "build": "vite build",
     "check": "biome check --write --unsafe",
     "dev": "vite",
+    "dev:browser": "tsx scripts/package/dev/browser.ts",
     "dev:playwright": "tsx scripts/package/dev/playwright-dev.ts",
+    "publish:chrome": "tsx scripts/package/publish/chrome-web-store.ts",
     "bundle": "tsx scripts/package/bundle.ts",
     "tools:chrome-assets": "tsx scripts/package/capture-store-assets.ts",
     "tools:chrome-assets:options": "tsx scripts/package/tools/chrome-assets/options.ts",
@@ -32,6 +34,7 @@
     "tools:chrome-assets:promo-marquee": "tsx scripts/package/tools/chrome-assets/promo-marquee.ts",
     "prepare": "husky",
     "test": "vitest",
+    "test:coverage": "vitest --coverage",
     "test:e2e": "pnpm exec playwright test",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
   },
@@ -50,6 +53,7 @@
     "@types/chrome": "^0.1.12",
     "@types/node": "^24.5.2",
     "@types/sinon-chrome": "^2.2.16",
+    "@types/safe-regex": "^1.0.3",
     "@types/turndown": "^5.0.5",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
@@ -61,9 +65,11 @@
     "typescript": "^5.9.2",
     "vite": "^7.1.6",
     "vite-plugin-static-copy": "^3.1.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4"
   },
   "dependencies": {
+    "safe-regex": "^2.1.1",
     "turndown": "^7.2.1"
   }
 }

@@ -1,4 +1,10 @@
-import type { OptionsPayload, TitleRule, UrlRule } from "./options-schema.js";
+import safeRegex from "safe-regex";
+import {
+  type OptionsPayload,
+  SAFE_REGEX_ALLOWLIST,
+  type TitleRule,
+  type UrlRule,
+} from "./options-schema.js";
 
 export interface TemplateTokens {
   text: string;
@@ -17,6 +23,10 @@ function compileRegex(pattern: string, onError: (error: unknown) => void): RegEx
   }
 
   try {
+    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
+      console.error("Refusing to compile unsafe regular expression.", { pattern });
+      return undefined;
+    }
     return new RegExp(pattern);
   } catch (error) {
     onError(error);
@@ -62,6 +72,10 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
 }
 
 function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplicationResult {
+  if (rule.enabled === false) {
+    return { value: title, matched: false };
+  }
+
   if (!matchesUrlPattern(rule.urlPattern, url)) {
     return { value: title, matched: false };
   }
@@ -73,6 +87,10 @@ function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplic
   return safeApplyRegex(title, rule.titleSearch, rule.titleReplace);
 }
 
+/**
+ * Applies the provided title rules to the starting value, respecting `continueMatching` flags and
+ * returning the transformed title.
+ */
 export function applyTitleRules(rules: TitleRule[], startingTitle: string, url: string): string {
   let currentTitle = startingTitle;
 
@@ -89,6 +107,10 @@ export function applyTitleRules(rules: TitleRule[], startingTitle: string, url: 
 }
 
 function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
+  if (rule.enabled === false) {
+    return { value: url, matched: false };
+  }
+
   if (!matchesUrlPattern(rule.urlPattern, url)) {
     return { value: url, matched: false };
   }
@@ -100,6 +122,10 @@ function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
   return safeApplyRegex(url, rule.urlSearch, rule.urlReplace);
 }
 
+/**
+ * Runs URL rules against the captured link and returns the rewritten value. Rules short-circuit when
+ * `continueMatching` is false.
+ */
 export function applyUrlRules(rules: UrlRule[], startingUrl: string): string {
   let currentUrl = startingUrl;
 
@@ -136,6 +162,10 @@ function replaceTokens(template: string, tokens: Record<string, string>): string
   }, template);
 }
 
+/**
+ * Formats clipboard output by applying title/URL rules and replacing template placeholders with the
+ * supplied tokens.
+ */
 export function formatWithOptions(options: OptionsPayload, tokens: TemplateTokens): string {
   const title = applyTitleRules(options.titleRules, tokens.title, tokens.url);
   const url = applyUrlRules(options.urlRules, tokens.url);

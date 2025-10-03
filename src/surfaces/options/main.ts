@@ -1,4 +1,4 @@
-import { initializeOptions } from "./options.js";
+import { initializeOptions } from "./page.js";
 
 function boot(): void {
   const dispose = initializeOptions();

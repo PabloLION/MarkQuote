@@ -1,0 +1,66 @@
+:root {
+  --surface-background: #ffffff;
+  --surface-foreground: #1e1e1e;
+  --panel-background: #f4f4f5;
+  --border-color: #d4d4d8;
+  --accent-color: #2563eb;
+  --accent-foreground: #ffffff;
+  --danger-color: #dc2626;
+  --status-success: #047857;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface-background: #111827;
+    --surface-foreground: #e5e7eb;
+    --panel-background: #1f2937;
+    --border-color: #374151;
+    --accent-color: #3b82f6;
+    --accent-foreground: #0b1120;
+    --danger-color: #f87171;
+    --status-success: #34d399;
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--surface-background);
+  color: var(--surface-foreground);
+}
+
+button {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: var(--accent-color);
+  color: var(--accent-foreground);
+  transition: filter 160ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+button.primary {
+  background-color: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--accent-foreground);
+}
+
+button.secondary {
+  background-color: transparent;
+  color: inherit;
+  border-color: var(--border-color);
+}
+
+button.danger {
+  background-color: var(--danger-color);
+  color: #ffffff;
+}
+
+button:hover {
+  filter: brightness(1.05);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}

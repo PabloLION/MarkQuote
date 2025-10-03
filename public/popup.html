@@ -3,33 +3,14 @@
   <head>
     <title>MarkQuote</title>
     <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/shared.css" />
     <style>
       :root {
         --popup-width: 320px;
-        --surface-background: #ffffff;
-        --surface-foreground: #1e1e1e;
-        --panel-background: #f4f4f5;
-        --border-color: #d4d4d8;
-        --accent-color: #2563eb;
-        --accent-foreground: #ffffff;
-      }
-
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --surface-background: #111827;
-          --surface-foreground: #e5e7eb;
-          --panel-background: #1f2937;
-          --border-color: #374151;
-          --accent-color: #3b82f6;
-          --accent-foreground: #0b1120;
-        }
       }
 
       body {
-        margin: 0;
         padding: 16px;
-        background: var(--surface-background);
-        color: var(--surface-foreground);
         width: var(--popup-width);
         box-sizing: border-box;
         display: grid;
@@ -43,24 +24,26 @@
       }
 
       button {
-        border-radius: 999px;
-        border: 1px solid var(--border-color);
-        padding: 8px 14px;
-        font-weight: 600;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-        transition: background-color 140ms ease, border-color 140ms ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         width: 100%;
+        padding: 8px 14px;
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: inherit;
+        filter: none;
       }
 
       button.primary {
-        background: var(--accent-color);
+        background-color: var(--accent-color);
         border-color: var(--accent-color);
         color: var(--accent-foreground);
       }
 
       button:hover {
+        filter: none;
         background-color: rgba(37, 99, 235, 0.1);
         border-color: var(--accent-color);
       }
@@ -70,22 +53,83 @@
         filter: brightness(1.05);
       }
 
-      #message {
-        font-weight: 600;
-      }
-
-      #preview {
-        margin: 0;
-        background: var(--panel-background);
+      .status-message {
+        position: relative;
         border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 12px;
+        font-weight: 600;
+        background: var(--surface-background);
+        line-height: 1.4;
+      }
+
+      .status-message[hidden] {
+        display: none;
+      }
+
+      .status-message[data-variant="success"] {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+      }
+
+      .status-message[data-variant="warning"] {
+        border-color: rgba(217, 119, 6, 0.55);
+        color: #b45309;
+        background: rgba(253, 230, 138, 0.12);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .status-message[data-variant="warning"] {
+          border-color: rgba(251, 191, 36, 0.65);
+          color: #facc15;
+          background: rgba(234, 179, 8, 0.12);
+        }
+      }
+
+      .status-message[data-label]::before {
+        content: attr(data-label);
+        position: absolute;
+        top: -0.7em;
+        left: 14px;
+        padding: 0 6px;
+        font-size: 0.68rem;
+        letter-spacing: 0.02em;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+        background: var(--surface-background);
+        text-transform: uppercase;
+      }
+
+      .status-message[data-variant="success"][data-label]::before {
+        color: var(--accent-color);
+      }
+
+      .status-text + .status-preview {
+        margin-top: 10px;
+      }
+
+      .status-preview {
+        margin: 0;
+        padding: 12px;
+        border-radius: 8px;
+        background: var(--panel-background);
         max-height: 420px;
         overflow-y: auto;
         white-space: pre-wrap;
         word-break: break-word;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
         font-size: 0.9rem;
+        color: var(--surface-foreground);
+        font-weight: 400;
+      }
+
+      .status-preview[hidden] {
+        display: none;
+      }
+
+      .status-preview code {
+        display: block;
+        white-space: inherit;
       }
 
       .badge {
@@ -94,12 +138,15 @@
         justify-content: center;
         min-width: 18px;
         padding: 0 6px;
-        margin-left: 6px;
         border-radius: 12px;
         background: #d93025;
         color: #fff;
         font-size: 0.7rem;
         font-weight: 700;
+      }
+
+      .badge[hidden] {
+        display: none;
       }
 
       #error-container {
@@ -165,8 +212,10 @@
       </div>
       <ul id="error-list"></ul>
     </div>
-    <div id="message"></div>
-    <pre id="preview"></pre>
-    <script src="popup.js"></script>
+    <div id="message" class="status-message" hidden role="status" aria-live="polite" aria-atomic="true">
+      <div id="message-text" class="status-text"></div>
+      <pre id="preview" class="status-preview" hidden aria-label="Copied Markdown preview"><code class="language-markdown"></code></pre>
+    </div>
+    <script type="module" src="./popup-loader.js"></script>
   </body>
 </html>

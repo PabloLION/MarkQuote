@@ -25,6 +25,7 @@ describe("formatWithOptions", () => {
           titleReplace: "Sample",
           comment: "",
           continueMatching: false,
+          enabled: true,
         },
       ],
       urlRules: [
@@ -34,6 +35,7 @@ describe("formatWithOptions", () => {
           urlReplace: "https",
           comment: "",
           continueMatching: false,
+          enabled: true,
         },
       ],
     };
@@ -73,6 +75,7 @@ describe("formatWithOptions", () => {
         titleReplace: "Column",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ];
 
@@ -83,6 +86,7 @@ describe("formatWithOptions", () => {
         urlReplace: "https",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ];
 
@@ -104,6 +108,7 @@ describe("formatWithOptions", () => {
         titleReplace: "Second",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
       {
         urlPattern: "",
@@ -111,6 +116,7 @@ describe("formatWithOptions", () => {
         titleReplace: "Third",
         comment: "",
         continueMatching: true,
+        enabled: true,
       },
     ];
 
@@ -126,6 +132,7 @@ describe("formatWithOptions", () => {
         urlReplace: "https://",
         comment: "",
         continueMatching: true,
+        enabled: true,
       },
       {
         urlPattern: "",
@@ -133,6 +140,7 @@ describe("formatWithOptions", () => {
         urlReplace: "sample",
         comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ];
 
@@ -146,18 +154,70 @@ describe("formatWithOptions", () => {
         urlPattern: "",
         titleSearch: "First",
         titleReplace: "Second",
+        comment: "",
         continueMatching: true,
+        enabled: true,
       },
       {
         urlPattern: "",
         titleSearch: "Second",
         titleReplace: "Third",
+        comment: "",
         continueMatching: false,
+        enabled: true,
       },
     ];
 
     const result = applyTitleRules(rules, "First Article", "https://example.com");
     expect(result).toBe("Third Article");
+  });
+
+  it("skips disabled title rules", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "example.com",
+        titleSearch: "Example",
+        titleReplace: "Sample",
+        comment: "",
+        continueMatching: false,
+        enabled: false,
+      },
+      {
+        urlPattern: "example.com",
+        titleSearch: "Article",
+        titleReplace: "Post",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyTitleRules(rules, "Example Article", "https://example.com");
+    expect(result).toBe("Example Post");
+  });
+
+  it("skips disabled URL rules", () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: "example.com",
+        urlSearch: "http",
+        urlReplace: "https",
+        comment: "",
+        continueMatching: false,
+        enabled: false,
+      },
+      {
+        urlPattern: "example.com",
+        urlSearch: "example",
+        urlReplace: "sample",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyUrlRules(rules, "http://example.com");
+    expect(result).toBe("http://sample.com");
   });
 
   it("removes chatgpt utm query parameters via chained defaults", () => {
@@ -166,13 +226,17 @@ describe("formatWithOptions", () => {
         urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
         urlSearch: DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
         urlReplace: DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
+        comment: "",
         continueMatching: true,
+        enabled: true,
       },
       {
         urlPattern: DEFAULT_CHATGPT_UTM_URL_PATTERN,
         urlSearch: DEFAULT_CHATGPT_UTM_TRAILING_SEARCH,
         urlReplace: DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
+        comment: "",
         continueMatching: true,
+        enabled: true,
       },
     ];
 

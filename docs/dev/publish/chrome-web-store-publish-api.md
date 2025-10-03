@@ -49,7 +49,7 @@ access_token() {
 ```
 
 Source the file and call `TOKEN=$(access_token)` before invoking the API. The repository ships
-`scripts/publish/chrome-web-store.sh` which wraps these steps when the environment variables are set.
+`scripts/package/publish/chrome-web-store.ts` (exposed via `pnpm publish:chrome`) which wraps these steps when the environment variables are set.
 
 ## 4. Upload ZIP
 
@@ -74,7 +74,7 @@ Optional parameters: `publishTarget=trustedTesters`, `deployPercentage=25`.
 
 ## 6. Scripted Workflow
 
-Run `scripts/publish/chrome-web-store.sh dist/markquote.zip` after exporting the required env vars or
+Run `pnpm publish:chrome dist/markquote.zip` after exporting the required env vars or
 sourcing `.dev/secrets/chrome-web-store.env`.
 
 ## 7. References
