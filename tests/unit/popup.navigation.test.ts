@@ -40,7 +40,7 @@ describe("popup navigation", () => {
       openWindow,
       feedbackUrl,
       inlineModeUrl: inlineUrl,
-      commands: { openShortcutSettings } as typeof chrome.commands & {
+      commands: { openShortcutSettings } as unknown as typeof chrome.commands & {
         openShortcutSettings?: () => void;
       },
     });

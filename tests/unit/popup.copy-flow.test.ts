@@ -18,6 +18,7 @@ const createPreview = () => ({
 
 const createMessages = () => ({
   set: vi.fn(),
+  clear: vi.fn(),
 });
 
 describe("popup copy flow", () => {

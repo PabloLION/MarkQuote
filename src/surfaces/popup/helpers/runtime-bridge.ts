@@ -37,9 +37,9 @@ export function createRuntimeBridge(deps: RuntimeBridgeDeps): RuntimeBridge {
 
   if (!deps.forcedState) {
     messageListener = (request) => {
-      const result = deps.onMessage(request);
+      const result = deps.onMessage(request) as unknown;
       if (result && typeof (result as Promise<unknown>).then === "function") {
-        void result;
+        void (result as Promise<unknown>);
       }
     };
     runtime.onMessage.addListener(
