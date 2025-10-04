@@ -36,7 +36,10 @@
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "test:e2e": "pnpm exec playwright test",
-    "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png"
+    "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png",
+    "bmad:refresh": "bmad-method install -f -i codex",
+    "bmad:list": "bmad-method list:agents",
+    "bmad:validate": "bmad-method validate"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -52,9 +55,11 @@
     "@playwright/test": "^1.55.0",
     "@types/chrome": "^0.1.12",
     "@types/node": "^24.5.2",
-    "@types/sinon-chrome": "^2.2.16",
     "@types/safe-regex": "^1.0.3",
+    "@types/sinon-chrome": "^2.2.16",
     "@types/turndown": "^5.0.5",
+    "@vitest/coverage-istanbul": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^16.2.3",
@@ -65,8 +70,7 @@
     "typescript": "^5.9.2",
     "vite": "^7.1.6",
     "vite-plugin-static-copy": "^3.1.2",
-    "vitest": "^3.2.4",
-    "@vitest/coverage-v8": "^3.2.4"
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "safe-regex": "^2.1.1",
