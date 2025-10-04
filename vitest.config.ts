@@ -15,6 +15,7 @@ export default defineConfig({
       exclude: [
         "src/dev/**",
         "src/import-meta-env.d.ts",
+        "src/entries/**",
         "src/background/e2e.ts",
         "src/background/index.ts",
         "src/background/context-menus.ts",
@@ -26,10 +27,10 @@ export default defineConfig({
         "src/surfaces/popup/page.ts",
       ],
       thresholds: {
-        statements: 80,
-        branches: 75,
-        functions: 80,
-        lines: 80,
+        statements: 92,
+        branches: 88,
+        functions: 94,
+        lines: 92,
       },
       reportOnFailure: true,
       cleanOnRerun: true,
