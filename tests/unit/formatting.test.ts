@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../src/formatting.js";
 import {
@@ -248,5 +248,107 @@ describe("formatWithOptions", () => {
 
     const soloResult = applyUrlRules(rules, "https://example.com/article?utm_source=chatgpt.com");
     expect(soloResult).toBe("https://example.com/article");
+  });
+
+  it("skips unsafe regex patterns and logs errors", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: "[[[",
+        titleReplace: "Unsafe",
+        comment: "",
+        continueMatching: true,
+        enabled: true,
+      },
+    ];
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = applyTitleRules(rules, "Example", "https://example.com");
+    expect(result).toBe("Example");
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("skips invalid regex patterns and preserves original text", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: "(unbalanced",
+        titleReplace: "Broken",
+        comment: "",
+        continueMatching: true,
+        enabled: true,
+      },
+    ];
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = applyTitleRules(rules, "Example", "https://example.com");
+    expect(result).toBe("Example");
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("skips url rules when regex compilation fails", () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: "",
+        urlSearch: "(unbalanced",
+        urlReplace: "value",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = applyUrlRules(rules, "https://example.com");
+    expect(result).toBe("https://example.com");
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("treats empty title search as a match and short-circuits the chain", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: "",
+        titleReplace: "unused",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+      {
+        urlPattern: "",
+        titleSearch: "Original",
+        titleReplace: "Modified",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyTitleRules(rules, "Original", "https://example.com");
+    expect(result).toBe("Original");
+  });
+
+  it("treats empty url search as a match and short-circuits", () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: "",
+        urlSearch: "",
+        urlReplace: "unused",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+      {
+        urlPattern: "",
+        urlSearch: "example",
+        urlReplace: "sample",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyUrlRules(rules, "https://example.com");
+    expect(result).toBe("https://example.com");
   });
 });

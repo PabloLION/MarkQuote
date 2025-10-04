@@ -118,4 +118,67 @@ describe("background/errors", () => {
     const errors = await getStoredErrors();
     expect(errors.length).toBe(1);
   });
+
+  it("caps badge display at 99 when restoring from storage", async () => {
+    sinonChrome.storage.local.get.resolves({
+      [ERROR_STORAGE_KEY]: Array.from({ length: 150 }, (_, index) => ({
+        message: `error-${index}`,
+        context: ERROR_CONTEXT.InitializeOptions,
+        timestamp: index,
+      })),
+    });
+
+    await initializeBadgeFromStorage();
+
+    expect(badgeTextMock).toHaveBeenCalledWith({ text: "99" });
+  });
+
+  it("skips persistence when storage is unavailable", async () => {
+    const originalStorage = (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage;
+    delete (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage;
+
+    try {
+      await recordError(ERROR_CONTEXT.InitializeOptions, new Error("missing storage"));
+      expect(badgeTextMock).not.toHaveBeenCalled();
+    } finally {
+      (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage = originalStorage;
+    }
+  });
+
+  it("decorates host access errors with guidance", async () => {
+    sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+    await recordError(ERROR_CONTEXT.InjectSelectionScript, "Cannot access contents of the page.", {
+      tabUrl: "https://example.com/settings",
+    });
+
+    const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+      [ERROR_STORAGE_KEY]: Array<{ message: string }>;
+    };
+    const entry = payload[ERROR_STORAGE_KEY][0];
+    expect(entry.message).toContain("Grant host access");
+  });
+
+  it("logs badge update failures for visibility", async () => {
+    badgeTextMock.mockRejectedValue(new Error("text-fail"));
+    badgeBackgroundMock.mockRejectedValue(new Error("bg-fail"));
+    const consoleSpy = vi.spyOn(console, "debug").mockImplementation(() => {});
+
+    await recordError(ERROR_CONTEXT.InitializeOptions, "serious failure");
+
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
+  it("no-ops when clearing errors without storage", async () => {
+    const originalStorage = (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage;
+    delete (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage;
+
+    try {
+      await clearStoredErrors();
+      expect(badgeTextMock).not.toHaveBeenCalled();
+    } finally {
+      (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage = originalStorage;
+    }
+  });
 });

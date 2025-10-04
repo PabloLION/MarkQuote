@@ -63,10 +63,11 @@ describe("popup runtime bridge", () => {
   });
 
   it("notifies when requesting selection copy fails", async () => {
+    const requestError = new Error("request failed");
     const sendMessage = vi
       .fn()
       .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error("request failed"));
+      .mockRejectedValueOnce(requestError);
     const runtime = createRuntimeMock(sendMessage);
     const onSelectionCopyError = vi.fn();
 
@@ -78,7 +79,7 @@ describe("popup runtime bridge", () => {
     });
 
     await vi.waitFor(() => {
-      expect(onSelectionCopyError).toHaveBeenCalledWith(new Error("request failed"));
+      expect(onSelectionCopyError).toHaveBeenCalledWith(requestError);
     });
   });
 });
