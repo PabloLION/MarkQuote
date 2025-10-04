@@ -10,6 +10,7 @@ import {
 } from "../../options-schema.js";
 import { createOptionsContext } from "./context.js";
 import { clearValidationState, loadDom } from "./dom.js";
+import { createRuleDragManager } from "./helpers/drag-controller.js";
 import { createPreviewScheduler } from "./helpers/preview-scheduler.js";
 import { createRuleChangeTracker } from "./helpers/rule-change-tracker.js";
 import { type PreviewRulesAdapter, resetPreviewSample, updatePreview } from "./preview.js";
@@ -38,12 +39,6 @@ import {
 } from "./state.js";
 import { hideStatus, showStatus } from "./status.js";
 
-interface DragState {
-  scope: DragScope;
-  fromIndex: number;
-  row: HTMLTableRowElement;
-}
-
 type ClearConfirmationTimers = Partial<Record<DragScope, ReturnType<typeof setTimeout>>>;
 const CLEAR_CONFIRMATION_TIMEOUT_MS = 5000;
 
@@ -63,7 +58,6 @@ export function initializeOptions(): () => void {
   const { signal } = abortController;
 
   const clearTimers: ClearConfirmationTimers = {};
-  let draggingState: DragState | undefined;
   const dragAbortControllers: Partial<Record<DragScope, AbortController>> = {};
 
   const ruleChangeTracker = createRuleChangeTracker({
@@ -78,6 +72,21 @@ export function initializeOptions(): () => void {
 
   const previewScheduler = createPreviewScheduler(() => {
     updatePreview(context, rulesAdapter);
+  });
+
+  const dragManager = createRuleDragManager({
+    onReorder(scope, fromIndex, toIndex) {
+      if (fromIndex === toIndex) {
+        return;
+      }
+      if (scope === "title") {
+        moveRule(draft.titleRules, fromIndex, toIndex);
+      } else {
+        moveRule(draft.urlRules, fromIndex, toIndex);
+      }
+      renderRules(scope);
+      ruleChangeTracker.markDirty(scope);
+    },
   });
 
   function updatePreviewView(): void {
@@ -126,9 +135,6 @@ export function initializeOptions(): () => void {
 
   function renderRulesFor<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
     dragAbortControllers[config.scope]?.abort();
-    if (draggingState?.scope === config.scope) {
-      draggingState = undefined;
-    }
     const rowAbortController = new AbortController();
     dragAbortControllers[config.scope] = rowAbortController;
     const rowSignal = rowAbortController.signal;
@@ -159,119 +165,12 @@ export function initializeOptions(): () => void {
       );
 
       config.body.append(row);
-      attachRowDragHandlers(row, config.scope, rowSignal);
+      dragManager.registerRow(row, config.scope, rowSignal);
     });
 
     resetClearConfirmation(config.scope);
     setClearStatus(config.scope, "");
     updatePreviewView();
-  }
-
-  function attachRowDragHandlers(
-    row: HTMLTableRowElement,
-    scope: DragScope,
-    dragSignal: AbortSignal,
-  ): void {
-    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
-    if (!handle) {
-      return;
-    }
-
-    handle.addEventListener(
-      "dragstart",
-      (event) => {
-        const index = Number.parseInt(row.dataset.index ?? "", 10);
-        if (Number.isNaN(index)) {
-          event.preventDefault();
-          return;
-        }
-
-        draggingState = { scope, fromIndex: index, row };
-        if (event.dataTransfer) {
-          event.dataTransfer.setData("text/plain", String(index));
-          event.dataTransfer.setDragImage(row, 0, 0);
-          event.dataTransfer.effectAllowed = "move";
-        }
-        row.classList.add("dragging");
-      },
-      { signal: dragSignal },
-    );
-
-    handle.addEventListener(
-      "dragend",
-      () => {
-        row.classList.remove("dragging");
-        draggingState = undefined;
-      },
-      { signal: dragSignal },
-    );
-
-    row.addEventListener(
-      "dragenter",
-      (event) => {
-        if (!draggingState || draggingState.scope !== scope) {
-          return;
-        }
-        event.preventDefault();
-        row.classList.add("drag-over");
-      },
-      { signal: dragSignal },
-    );
-
-    row.addEventListener(
-      "dragover",
-      (event) => {
-        if (!draggingState || draggingState.scope !== scope) {
-          return;
-        }
-        event.preventDefault();
-        if (event.dataTransfer) {
-          event.dataTransfer.dropEffect = "move";
-        }
-      },
-      { signal: dragSignal },
-    );
-
-    row.addEventListener(
-      "dragleave",
-      () => {
-        row.classList.remove("drag-over");
-      },
-      { signal: dragSignal },
-    );
-
-    row.addEventListener(
-      "drop",
-      (event) => {
-        if (!draggingState || draggingState.scope !== scope) {
-          return;
-        }
-        event.preventDefault();
-
-        const targetIndex = Number.parseInt(row.dataset.index ?? "", 10);
-        if (Number.isNaN(targetIndex)) {
-          row.classList.remove("drag-over");
-          return;
-        }
-
-        const fromIndex = draggingState.fromIndex;
-        row.classList.remove("drag-over");
-        draggingState.row.classList.remove("dragging");
-
-        if (scope === "title") {
-          moveRule(draft.titleRules, fromIndex, targetIndex);
-        } else {
-          moveRule(draft.urlRules, fromIndex, targetIndex);
-        }
-
-        draggingState = undefined;
-        renderRules(scope);
-        if (fromIndex !== targetIndex) {
-          ruleChangeTracker.markDirty(scope);
-        }
-      },
-      { signal: dragSignal },
-    );
   }
 
   function handleRuleInputChange(scope: DragScope, input: HTMLInputElement): void {
