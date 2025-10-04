@@ -2,7 +2,6 @@
  * Popup surface entry point. Wires DOM handles to controllers for messaging, preview rendering,
  * clipboard fallbacks, and error log management.
  */
-import { copyMarkdownToClipboard } from "./clipboard.js";
 import { loadPopupDom } from "./dom.js";
 import { createErrorController } from "./errors.js";
 import {
@@ -10,14 +9,15 @@ import {
   createDevPreviewApi,
   resolveForcedPopupState,
 } from "./forced-state.js";
+import { createCopyFlow } from "./helpers/copy-flow.js";
+import { createPopupNavigation } from "./helpers/navigation.js";
+import { createRuntimeBridge } from "./helpers/runtime-bridge.js";
 import { createMessageController } from "./message.js";
 import { createPreviewController } from "./preview.js";
 import {
-  COPIED_STATUS_MESSAGE,
   DEFAULT_STATUS_MESSAGE,
   FEEDBACK_URL,
   type PopupDevPreviewApi,
-  PROTECTED_STATUS_MESSAGE,
   type RuntimeMessage,
 } from "./state.js";
 
@@ -43,111 +43,65 @@ export function initializePopup(): () => void {
   messages.set(DEFAULT_STATUS_MESSAGE, { label: "Tip" });
   preview.clear();
 
-  const openExternal = (url: string, features = "noopener") => {
-    window.open(url, "_blank", features);
-  };
-
-  const openOptions = () => {
-    if (runtime.openOptionsPage) {
-      runtime.openOptionsPage();
-      return;
-    }
-
-    window.open("options.html", "_blank");
-  };
-
-  const openShortcuts = () => {
-    const commands = chrome.commands as typeof chrome.commands & {
-      openShortcutSettings?: () => void;
-    };
-
-    if (typeof commands.openShortcutSettings === "function") {
-      commands.openShortcutSettings();
-      return;
-    }
-
-    window.open("chrome://extensions/shortcuts", "_blank");
-  };
-
-  function openFeedback(): void {
-    openExternal(FEEDBACK_URL, "noopener");
-  }
-
   const inlineModeLink =
     dom.inlineModeButton?.getAttribute("data-feedback-link") ??
     "https://github.com/PabloLION/MarkQuote/issues/3";
-  const openInlineModeIssue = () => openExternal(inlineModeLink, "noopener");
-
-  const errorController = createErrorController(dom, runtime, openFeedback);
-
-  runtime.sendMessage({ type: "popup-ready" }).catch(() => {
-    // Ignore failures; the background worker may have been suspended before this message.
+  const navigation = createPopupNavigation({
+    openWindow: (url, target, features) => window.open(url, target, features),
+    runtime,
+    commands: chrome.commands as typeof chrome.commands & {
+      openShortcutSettings?: () => void;
+    },
+    feedbackUrl: FEEDBACK_URL,
+    inlineModeUrl: inlineModeLink,
   });
 
-  let notifiedClosure = false;
-  const notifyPopupClosed = () => {
-    if (notifiedClosure) {
-      return;
-    }
-    notifiedClosure = true;
-    runtime.sendMessage({ type: "popup-closed" }).catch(() => {
-      // Background may be asleep; nothing critical to report if this fails.
-    });
-  };
-  window.addEventListener("pagehide", notifyPopupClosed);
-  window.addEventListener("beforeunload", notifyPopupClosed);
+  const errorController = createErrorController(dom, runtime, navigation.openFeedback);
 
   const forcedState = resolveForcedPopupState();
 
-  const messageListener: Parameters<typeof runtime.onMessage.addListener>[0] = (
-    request: RuntimeMessage,
-  ) => {
-    if (request.type === "copied-text-preview") {
-      preview.render(request.text);
-      messages.set(COPIED_STATUS_MESSAGE, { label: "Copied", variant: "success" });
+  const copyFlow = createCopyFlow({ preview, messages });
 
-      void copyMarkdownToClipboard(request.text).then((success) => {
-        if (!success) {
-          messages.set("Unable to copy automatically. Text is ready below.", {
-            variant: "warning",
-          });
-        }
-      });
-    } else if (request.type === "copy-protected") {
-      preview.clear();
-      messages.set(PROTECTED_STATUS_MESSAGE, { label: "Protected", variant: "warning" });
-    }
-  };
-
-  if (!forcedState) {
-    runtime.onMessage.addListener(messageListener);
-    runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
+  const runtimeBridge = createRuntimeBridge({
+    runtime,
+    windowRef: window,
+    forcedState,
+    onMessage: (message: RuntimeMessage) => copyFlow.handleMessage(message),
+    onSelectionCopyError: (error) => {
       console.warn("Failed to request selection copy.", error);
-    });
-  } else {
+    },
+  });
+
+  if (forcedState) {
     applyForcedPopupState(forcedState, preview, messages);
   }
 
   const cleanupFns: Array<() => void> = [];
 
   if (dom.optionsButton) {
-    dom.optionsButton.addEventListener("click", openOptions);
-    cleanupFns.push(() => dom.optionsButton?.removeEventListener("click", openOptions));
+    dom.optionsButton.addEventListener("click", navigation.openOptions);
+    cleanupFns.push(() => dom.optionsButton?.removeEventListener("click", navigation.openOptions));
   }
 
   if (dom.hotkeysButton) {
-    dom.hotkeysButton.addEventListener("click", openShortcuts);
-    cleanupFns.push(() => dom.hotkeysButton?.removeEventListener("click", openShortcuts));
+    dom.hotkeysButton.addEventListener("click", navigation.openShortcuts);
+    cleanupFns.push(() =>
+      dom.hotkeysButton?.removeEventListener("click", navigation.openShortcuts),
+    );
   }
 
   if (dom.feedbackButton) {
-    dom.feedbackButton.addEventListener("click", openFeedback);
-    cleanupFns.push(() => dom.feedbackButton?.removeEventListener("click", openFeedback));
+    dom.feedbackButton.addEventListener("click", navigation.openFeedback);
+    cleanupFns.push(() =>
+      dom.feedbackButton?.removeEventListener("click", navigation.openFeedback),
+    );
   }
 
   if (dom.inlineModeButton) {
-    dom.inlineModeButton.addEventListener("click", openInlineModeIssue);
-    cleanupFns.push(() => dom.inlineModeButton?.removeEventListener("click", openInlineModeIssue));
+    dom.inlineModeButton.addEventListener("click", navigation.openInlineModeIssue);
+    cleanupFns.push(() =>
+      dom.inlineModeButton?.removeEventListener("click", navigation.openInlineModeIssue),
+    );
   }
 
   void errorController.refresh();
@@ -167,13 +121,7 @@ export function initializePopup(): () => void {
   }
 
   return () => {
-    if (!forcedState) {
-      runtime.onMessage.removeListener(messageListener);
-    }
-
-    window.removeEventListener("pagehide", notifyPopupClosed);
-    window.removeEventListener("beforeunload", notifyPopupClosed);
-
+    runtimeBridge.cleanup();
     for (const fn of cleanupFns) {
       fn();
     }
