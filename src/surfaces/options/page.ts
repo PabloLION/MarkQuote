@@ -10,6 +10,7 @@ import {
 } from "../../options-schema.js";
 import { createOptionsContext } from "./context.js";
 import { clearValidationState, loadDom } from "./dom.js";
+import { createRuleChangeTracker } from "./helpers/rule-change-tracker.js";
 import { type PreviewRulesAdapter, resetPreviewSample, updatePreview } from "./preview.js";
 import { buildRuleConfigs } from "./rules-config.js";
 import {
@@ -42,16 +43,6 @@ interface DragState {
   row: HTMLTableRowElement;
 }
 
-interface RuleDirtyState {
-  title: boolean;
-  url: boolean;
-}
-
-interface RuleSavingState {
-  title: boolean;
-  url: boolean;
-}
-
 type ClearConfirmationTimers = Partial<Record<DragScope, ReturnType<typeof setTimeout>>>;
 const CLEAR_CONFIRMATION_TIMEOUT_MS = 5000;
 
@@ -70,11 +61,15 @@ export function initializeOptions(): () => void {
   const abortController = new AbortController();
   const { signal } = abortController;
 
-  const dirtyState: RuleDirtyState = { title: false, url: false };
-  const savingState: RuleSavingState = { title: false, url: false };
   const clearTimers: ClearConfirmationTimers = {};
   let draggingState: DragState | undefined;
   const dragAbortControllers: Partial<Record<DragScope, AbortController>> = {};
+
+  const ruleChangeTracker = createRuleChangeTracker({
+    title: ruleConfigs.title,
+    url: ruleConfigs.url,
+  });
+  ruleChangeTracker.rememberSaveButtonLabels();
 
   const rulesAdapter: PreviewRulesAdapter = {
     filtered: filteredRules,
@@ -96,50 +91,6 @@ export function initializeOptions(): () => void {
     previewFrameHandle = window.requestAnimationFrame(() => {
       previewFrameHandle = undefined;
       updatePreview(context, rulesAdapter);
-    });
-  }
-
-  function setDirty(scope: DragScope, dirty: boolean): void {
-    dirtyState[scope] = dirty;
-    const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
-    config.unsavedIndicator.hidden = !dirty;
-    if (!savingState[scope]) {
-      config.saveButton.disabled = !dirty;
-    }
-  }
-
-  function markDirty(scope: DragScope): void {
-    if (!dirtyState[scope]) {
-      setDirty(scope, true);
-    }
-  }
-
-  function setSaving(scope: DragScope | undefined, saving: boolean): void {
-    if (!scope) {
-      setSaving("title", saving);
-      setSaving("url", saving);
-      return;
-    }
-
-    savingState[scope] = saving;
-    const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
-    if (saving) {
-      config.saveButton.dataset.loading = "true";
-      config.saveButton.disabled = true;
-      config.saveButton.textContent = "Saving…";
-    } else {
-      delete config.saveButton.dataset.loading;
-      config.saveButton.textContent = config.saveButton.dataset.label ?? "Save changes";
-      config.saveButton.disabled = !dirtyState[scope];
-    }
-  }
-
-  function rememberSaveButtonLabels(): void {
-    (["title", "url"] as DragScope[]).forEach((scope) => {
-      const config = scope === "title" ? ruleConfigs.title : ruleConfigs.url;
-      if (!config.saveButton.dataset.label) {
-        config.saveButton.dataset.label = config.saveButton.textContent ?? "Save changes";
-      }
     });
   }
 
@@ -326,7 +277,7 @@ export function initializeOptions(): () => void {
         draggingState = undefined;
         renderRules(scope);
         if (fromIndex !== targetIndex) {
-          markDirty(scope);
+          ruleChangeTracker.markDirty(scope);
         }
       },
       { signal: dragSignal },
@@ -340,7 +291,7 @@ export function initializeOptions(): () => void {
         : handleRuleInputChangeFor(ruleConfigs.url, input);
     updatePreviewView();
     if (changed) {
-      markDirty(scope);
+      ruleChangeTracker.markDirty(scope);
     }
   }
 
@@ -357,7 +308,7 @@ export function initializeOptions(): () => void {
       focusFirstField(config);
     }
 
-    markDirty(scope);
+    ruleChangeTracker.markDirty(scope);
   }
 
   function focusFirstField<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
@@ -373,12 +324,12 @@ export function initializeOptions(): () => void {
     if (scope === "title") {
       const config = ruleConfigs.title;
       if (removeRuleInternal(config, index)) {
-        markDirty("title");
+        ruleChangeTracker.markDirty("title");
       }
     } else {
       const config = ruleConfigs.url;
       if (removeRuleInternal(config, index)) {
-        markDirty("url");
+        ruleChangeTracker.markDirty("url");
       }
     }
   }
@@ -437,7 +388,7 @@ export function initializeOptions(): () => void {
     renderRulesFor(config);
     setClearStatus(config.scope, config.messages.cleared);
     showStatus(context, config.messages.cleared);
-    markDirty(config.scope);
+    ruleChangeTracker.markDirty(config.scope);
   }
 
   function validateRules(scope: DragScope) {
@@ -456,7 +407,7 @@ export function initializeOptions(): () => void {
   }
 
   async function persistOptions(scope?: DragScope): Promise<boolean> {
-    setSaving(scope, true);
+    ruleChangeTracker.setSaving(scope, true);
 
     clearValidationState(context.dom.titleRulesBody);
     clearValidationState(context.dom.urlRulesBody);
@@ -468,7 +419,7 @@ export function initializeOptions(): () => void {
       if (!templateValue) {
         templateField.setAttribute("aria-invalid", "true");
         showStatus(context, "Template cannot be empty.", "error");
-        setSaving(scope, false);
+        ruleChangeTracker.setSaving(scope, false);
         return false;
       }
     }
@@ -476,14 +427,14 @@ export function initializeOptions(): () => void {
     const titleValidation = validateRules("title");
     if (!titleValidation.valid) {
       showStatus(context, titleValidation.message ?? "Title rule validation failed.", "error");
-      setSaving(scope, false);
+      ruleChangeTracker.setSaving(scope, false);
       return false;
     }
 
     const urlValidation = validateRules("url");
     if (!urlValidation.valid) {
       showStatus(context, urlValidation.message ?? "URL rule validation failed.", "error");
-      setSaving(scope, false);
+      ruleChangeTracker.setSaving(scope, false);
       return false;
     }
 
@@ -491,7 +442,7 @@ export function initializeOptions(): () => void {
 
     if (!context.storage) {
       showStatus(context, "Chrome storage is unavailable; unable to save changes.", "error");
-      setSaving(scope, false);
+      ruleChangeTracker.setSaving(scope, false);
       return false;
     }
 
@@ -513,15 +464,15 @@ export function initializeOptions(): () => void {
       draft = context.draft;
       renderRules("title");
       renderRules("url");
-      setDirty("title", false);
-      setDirty("url", false);
+      ruleChangeTracker.setDirty("title", false);
+      ruleChangeTracker.setDirty("url", false);
       return true;
     } catch (error) {
       console.error("Failed to save options.", error);
       showStatus(context, "Failed to save options.", "error");
       return false;
     } finally {
-      setSaving(scope, false);
+      ruleChangeTracker.setSaving(scope, false);
     }
   }
 
@@ -541,8 +492,8 @@ export function initializeOptions(): () => void {
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
-      setDirty("title", false);
-      setDirty("url", false);
+      ruleChangeTracker.setDirty("title", false);
+      ruleChangeTracker.setDirty("url", false);
       return;
     }
 
@@ -563,8 +514,8 @@ export function initializeOptions(): () => void {
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
-      setDirty("title", false);
-      setDirty("url", false);
+      ruleChangeTracker.setDirty("title", false);
+      ruleChangeTracker.setDirty("url", false);
       showStatus(context, "Options loaded.");
     } catch (error) {
       console.error("Failed to load options; fallback to defaults.", error);
@@ -576,8 +527,8 @@ export function initializeOptions(): () => void {
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
-      setDirty("title", false);
-      setDirty("url", false);
+      ruleChangeTracker.setDirty("title", false);
+      ruleChangeTracker.setDirty("url", false);
       showStatus(context, "Failed to load saved options; defaults restored.", "error");
     }
   }
@@ -606,9 +557,8 @@ export function initializeOptions(): () => void {
     updatePreviewView();
   }
 
-  rememberSaveButtonLabels();
-  setDirty("title", false);
-  setDirty("url", false);
+  ruleChangeTracker.setDirty("title", false);
+  ruleChangeTracker.setDirty("url", false);
 
   context.dom.titleSamplePresetSelect.addEventListener(
     "change",
@@ -765,7 +715,7 @@ export function initializeOptions(): () => void {
   context.dom.saveTitleRuleButton.addEventListener(
     "click",
     () => {
-      if (savingState.title || !dirtyState.title) {
+      if (ruleChangeTracker.isSaving("title") || !ruleChangeTracker.isDirty("title")) {
         return;
       }
       void persistOptions("title");
@@ -776,7 +726,7 @@ export function initializeOptions(): () => void {
   context.dom.saveUrlRuleButton.addEventListener(
     "click",
     () => {
-      if (savingState.url || !dirtyState.url) {
+      if (ruleChangeTracker.isSaving("url") || !ruleChangeTracker.isDirty("url")) {
         return;
       }
       void persistOptions("url");
