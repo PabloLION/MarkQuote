@@ -3,8 +3,7 @@ import { createRuntimeBridge } from "../../src/surfaces/popup/helpers/runtime-br
 import type { RuntimeMessage } from "../../src/surfaces/popup/state.js";
 
 describe("popup runtime bridge", () => {
-  function createRuntimeMock() {
-    const sendMessage = vi.fn().mockResolvedValue(undefined);
+  function createRuntimeMock(sendMessage = vi.fn().mockResolvedValue(undefined)) {
     const listeners: Array<(message: RuntimeMessage) => void> = [];
     return {
       sendMessage,
@@ -61,5 +60,25 @@ describe("popup runtime bridge", () => {
     expect(runtime.sendMessage).toHaveBeenCalledWith({ type: "popup-ready" });
     expect(runtime.sendMessage).not.toHaveBeenCalledWith({ type: "request-selection-copy" });
     expect(runtime.onMessage.addListener).not.toHaveBeenCalled();
+  });
+
+  it("notifies when requesting selection copy fails", async () => {
+    const sendMessage = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("request failed"));
+    const runtime = createRuntimeMock(sendMessage);
+    const onSelectionCopyError = vi.fn();
+
+    createRuntimeBridge({
+      runtime,
+      windowRef: window,
+      onMessage: () => {},
+      onSelectionCopyError,
+    });
+
+    await vi.waitFor(() => {
+      expect(onSelectionCopyError).toHaveBeenCalledWith(new Error("request failed"));
+    });
   });
 });
