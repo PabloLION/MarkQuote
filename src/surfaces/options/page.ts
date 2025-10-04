@@ -10,6 +10,7 @@ import {
 } from "../../options-schema.js";
 import { createOptionsContext } from "./context.js";
 import { clearValidationState, loadDom } from "./dom.js";
+import { createPreviewScheduler } from "./helpers/preview-scheduler.js";
 import { createRuleChangeTracker } from "./helpers/rule-change-tracker.js";
 import { type PreviewRulesAdapter, resetPreviewSample, updatePreview } from "./preview.js";
 import { buildRuleConfigs } from "./rules-config.js";
@@ -75,23 +76,12 @@ export function initializeOptions(): () => void {
     filtered: filteredRules,
   };
 
-  const hasAnimationFrame = typeof window.requestAnimationFrame === "function";
-  let previewFrameHandle: number | undefined;
+  const previewScheduler = createPreviewScheduler(() => {
+    updatePreview(context, rulesAdapter);
+  });
 
   function updatePreviewView(): void {
-    if (!hasAnimationFrame) {
-      updatePreview(context, rulesAdapter);
-      return;
-    }
-
-    if (previewFrameHandle !== undefined) {
-      window.cancelAnimationFrame(previewFrameHandle);
-    }
-
-    previewFrameHandle = window.requestAnimationFrame(() => {
-      previewFrameHandle = undefined;
-      updatePreview(context, rulesAdapter);
-    });
+    previewScheduler.schedule();
   }
 
   function setClearStatus(scope: DragScope, message: string): void {
@@ -818,10 +808,6 @@ export function initializeOptions(): () => void {
     hideStatus(context);
     context.draft = createDraft();
     draft = context.draft;
-
-    if (previewFrameHandle !== undefined && hasAnimationFrame) {
-      window.cancelAnimationFrame(previewFrameHandle);
-      previewFrameHandle = undefined;
-    }
+    previewScheduler.dispose();
   };
 }
