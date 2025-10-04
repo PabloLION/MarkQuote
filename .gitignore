@@ -148,3 +148,9 @@ vite.config.ts.timestamp-*
 .vite/
 
 AGENTS.md
+# BMAD (local only)
+.bmad-core/
+.bmad-*/
+
+# Claude cache
+.claude/
