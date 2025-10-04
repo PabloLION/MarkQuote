@@ -1,20 +1,26 @@
-const loadModule = async () => {
-  const isDev = window.location.hostname === "localhost" || window.location.port === "5173";
+const POPUP_DEV_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const DEV_POPUP_ENTRY: string = "/src/surfaces/popup/main.ts";
+
+export async function loadPopupModule(): Promise<void> {
+  const hostname = window.location.hostname;
+  const port = window.location.port;
+  const isDev = POPUP_DEV_HOSTS.has(hostname) || port === "5173";
 
   if (isDev) {
-    await import("/src/surfaces/popup/main.ts");
+    await import(/* @vite-ignore */ DEV_POPUP_ENTRY);
     return;
   }
 
-  await import("./popup.js");
-};
+  const moduleUrl = chrome?.runtime?.id ? chrome.runtime.getURL("popup.js") : "./popup.js";
+  await import(/* @vite-ignore */ moduleUrl);
+}
 
-const renderBootstrapError = () => {
+export function renderBootstrapError(): void {
   const statusContainer = document.getElementById("message");
   const statusText = document.getElementById("message-text");
   const preview = document.getElementById("preview");
 
-  if (statusContainer && statusText) {
+  if (statusContainer instanceof HTMLElement && statusText instanceof HTMLElement) {
     statusContainer.removeAttribute("hidden");
     statusContainer.dataset.label = "Error";
     statusContainer.dataset.variant = "warning";
@@ -29,10 +35,12 @@ const renderBootstrapError = () => {
     document.body.prepend(fallback);
   }
 
-  preview?.setAttribute("hidden", "true");
-};
+  if (preview instanceof HTMLElement) {
+    preview.setAttribute("hidden", "true");
+  }
+}
 
-loadModule().catch((error) => {
+loadPopupModule().catch((error: unknown) => {
   console.error("Unable to bootstrap popup entry", error);
   renderBootstrapError();
 });
