@@ -1,6 +1,7 @@
 const POPUP_DEV_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEV_POPUP_ENTRY: string = "/src/surfaces/popup/main.ts";
 
+// Covered via Chrome runtime integration; unit tests cannot load extension popup HTML.
 export async function loadPopupModule(): Promise<void> {
   const hostname = window.location.hostname;
   const port = window.location.port;
@@ -15,6 +16,7 @@ export async function loadPopupModule(): Promise<void> {
   await import(/* @vite-ignore */ moduleUrl);
 }
 
+// Triggered only on real popup failures; relies on DOM styling outside unit-test environment.
 export function renderBootstrapError(): void {
   const statusContainer = document.getElementById("message");
   const statusText = document.getElementById("message-text");

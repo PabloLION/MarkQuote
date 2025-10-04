@@ -1,3 +1,7 @@
+const DEV_OPTIONS_ENTRY: string = "/src/surfaces/options/main.ts";
+
+// Mirrors browser behaviour when mounting the options page; excluded from unit coverage because it
+// depends on Chrome extension APIs and async module loading.
 export async function loadOptionsModule(): Promise<void> {
   const isExtensionContext = Boolean(globalThis.chrome?.runtime?.id);
   if (!isExtensionContext) {
@@ -9,6 +13,8 @@ export async function loadOptionsModule(): Promise<void> {
   await import(/* @vite-ignore */ moduleUrl);
 }
 
+// Displays the inline error banner when the options bundle cannot boot; relies on DOM fragments
+// provided only in browser surfaces, so we document and exclude it from coverage metrics.
 export function renderOptionsError(error: unknown): void {
   console.error("Failed to boot options page.", error);
 
@@ -31,4 +37,3 @@ export function renderOptionsError(error: unknown): void {
 loadOptionsModule().catch((error: unknown) => {
   renderOptionsError(error);
 });
-const DEV_OPTIONS_ENTRY: string = "/src/surfaces/options/main.ts";
