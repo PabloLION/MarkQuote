@@ -6,12 +6,14 @@ export interface PreviewScheduler {
 export function createPreviewScheduler(update: () => void): PreviewScheduler {
   const hasAnimationFrame =
     typeof window !== "undefined" && typeof window.requestAnimationFrame === "function";
-  const cancelAnimationFrameFn = hasAnimationFrame
-    ? window.cancelAnimationFrame?.bind(window)
-    : undefined;
-  const requestAnimationFrameFn = hasAnimationFrame
-    ? window.requestAnimationFrame.bind(window)
-    : undefined;
+  const cancelAnimationFrameFn =
+    hasAnimationFrame && typeof window.cancelAnimationFrame === "function"
+      ? (handle: number) => window.cancelAnimationFrame(handle)
+      : undefined;
+  const requestAnimationFrameFn =
+    hasAnimationFrame && typeof window.requestAnimationFrame === "function"
+      ? (callback: FrameRequestCallback) => window.requestAnimationFrame(callback)
+      : undefined;
   let frameHandle: number | undefined;
 
   const flush = () => {
