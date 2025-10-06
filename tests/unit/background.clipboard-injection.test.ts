@@ -61,4 +61,25 @@ describe("background/clipboard-injection", () => {
 
     expect(result).toBe(false);
   });
+
+  it("rejects clipboard writes that exceed the size limit", async () => {
+    const writeSpy = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { clipboard: { writeText: writeSpy } },
+    });
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const oversized = "x".repeat(1_000_001);
+    const result = await copySelectionToClipboard(oversized);
+
+    expect(result).toBe(false);
+    expect(writeSpy).not.toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[MarkQuote] Refusing to copy oversized clipboard payload",
+      expect.objectContaining({ length: oversized.length }),
+    );
+
+    consoleSpy.mockRestore();
+  });
 });

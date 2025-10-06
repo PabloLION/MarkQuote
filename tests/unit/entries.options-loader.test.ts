@@ -97,9 +97,10 @@ describe("entries/options-loader", () => {
       module.__setOptionsModuleImporter(importer);
 
       const loadPromise = module.loadOptionsModule();
-      await vi.advanceTimersByTimeAsync(10_000);
+      const expectation = expect(loadPromise).rejects.toThrow("Module load timed out");
 
-      await expect(loadPromise).rejects.toThrow("Module load timed out");
+      await vi.advanceTimersByTimeAsync(10_000);
+      await expectation;
     } finally {
       vi.useRealTimers();
     }

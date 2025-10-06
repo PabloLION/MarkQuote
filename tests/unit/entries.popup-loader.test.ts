@@ -163,9 +163,10 @@ describe("entries/popup-loader", () => {
       module.__setPopupModuleImporter(importer);
 
       const loadPromise = module.loadPopupModule();
-      await vi.advanceTimersByTimeAsync(10_000);
+      const expectation = expect(loadPromise).rejects.toThrow("Module load timed out");
 
-      await expect(loadPromise).rejects.toThrow("Module load timed out");
+      await vi.advanceTimersByTimeAsync(10_000);
+      await expectation;
     } finally {
       vi.useRealTimers();
     }
