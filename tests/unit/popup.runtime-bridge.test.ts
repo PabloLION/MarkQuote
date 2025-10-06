@@ -158,4 +158,45 @@ describe("popup runtime bridge", () => {
     );
     expect(closedCalls.length).toBe(1);
   });
+
+  it("removes runtime listener when popup closes during async handling", async () => {
+    const runtime = createRuntimeMock();
+    const listenerMap = new Map<string, EventListener>();
+    const windowStub = {
+      addEventListener: vi.fn((event: string, listener: EventListener) => {
+        listenerMap.set(event, listener);
+      }),
+      removeEventListener: vi.fn(),
+    } as unknown as Window;
+
+    const onMessage = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    const bridge = createRuntimeBridge({
+      runtime,
+      windowRef: windowStub,
+      onMessage,
+    });
+
+    const listener = (runtime.onMessage.addListener as ReturnType<typeof vi.fn>).mock.calls.at(
+      0,
+    )?.[0];
+    expect(typeof listener).toBe("function");
+
+    (runtime as unknown as { emit: (message: RuntimeMessage) => void }).emit({
+      type: "copied-text-preview",
+      text: "sample",
+    } as RuntimeMessage);
+
+    listenerMap.get("pagehide")?.(new Event("pagehide"));
+    await vi.waitFor(() => {
+      const sendMessageMock = runtime.sendMessage as unknown as ReturnType<typeof vi.fn>;
+      const closedCalls = sendMessageMock.mock.calls.filter(
+        (args) => args[0]?.type === "popup-closed",
+      );
+      expect(closedCalls.length).toBe(1);
+    });
+
+    bridge.cleanup();
+
+    expect(runtime.onMessage.removeListener).toHaveBeenCalledWith(listener);
+  });
 });
