@@ -117,12 +117,6 @@ function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number
     }
 
     queuedPopupPreview = undefined;
-    // Popup readiness can flip between the initial guard above and the delivery call (e.g. a rapid
-    // close event racing this timer). Bail out and queue the payload again if readiness changed.
-    if (!popupReady) {
-      queuedPopupPreview = payload;
-      return;
-    }
     void deliverPopupPreview(payload, attempt);
   }, delay);
 }

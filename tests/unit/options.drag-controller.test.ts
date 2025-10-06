@@ -98,6 +98,29 @@ describe("rule drag manager", () => {
     expect(onReorder).not.toHaveBeenCalled();
   });
 
+  it("ignores drag events that cross scopes", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const titleRow = createRow(0);
+    const urlRow = createRow(1);
+    manager.registerRow(titleRow, "title", controller.signal);
+    manager.registerRow(urlRow, "url", controller.signal);
+
+    const handle = titleRow.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
+
+    const enterEvent = dispatchDragEvent(urlRow, "dragenter");
+    expect(enterEvent.defaultPrevented).toBe(false);
+    expect(urlRow.classList.contains("drag-over")).toBe(false);
+
+    dispatchDragEvent(urlRow, "drop");
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
   it("skips rows without drag handles", () => {
     const onReorder = vi.fn();
     const manager = createRuleDragManager({ onReorder });

@@ -143,6 +143,58 @@ describe("options/rules-logic moveRule", () => {
     expect(handleRuleInputChangeFor(config, invalid)).toBe(false);
   });
 
+  it("returns false when field descriptor is missing", () => {
+    const rules: FakeRule[] = [
+      { pattern: "value", search: "", replace: "", continueMatching: false, enabled: true },
+    ];
+    const config = createConfig(rules);
+    const input = document.createElement("input");
+    input.dataset.index = "0";
+    input.dataset.field = "unknown";
+    input.value = "next";
+
+    expect(handleRuleInputChangeFor(config, input)).toBe(false);
+  });
+
+  it("toggles continueMatching checkbox state", () => {
+    const rules: FakeRule[] = [
+      { pattern: "value", search: "", replace: "", continueMatching: false, enabled: true },
+    ];
+    const config = createConfig(rules);
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = false;
+    checkbox.dataset.index = "0";
+    checkbox.dataset.field = "continueMatching";
+
+    const changed = handleRuleInputChangeFor(config, checkbox);
+    expect(changed).toBe(true);
+    expect(rules[0].continueMatching).toBe(true);
+  });
+
+  it("respects trimLeading=false descriptors", () => {
+    const rules: FakeRule[] = [
+      { pattern: "value", search: "", replace: "", continueMatching: false, enabled: true },
+    ];
+    const config = {
+      ...createConfig(rules),
+      fields: [
+        { key: "pattern", placeholder: "pattern" },
+        { key: "search", placeholder: "search", trimLeading: false },
+        { key: "replace", placeholder: "replace" },
+      ],
+    } satisfies RuleConfig<FakeRule>;
+
+    const input = document.createElement("input");
+    input.dataset.index = "0";
+    input.dataset.field = "search";
+    input.value = "    spaced";
+
+    const changed = handleRuleInputChangeFor(config, input);
+    expect(changed).toBe(true);
+    expect(rules[0].search).toBe("    spaced");
+  });
+
   it("validates rule fields and marks invalid inputs", () => {
     const rules: FakeRule[] = [
       {
@@ -161,5 +213,49 @@ describe("options/rules-logic moveRule", () => {
     expect(valid).toBe(false);
     expect(message).toBe("Missing pattern");
     expect(config.body.querySelector("[aria-invalid='true']")).not.toBeNull();
+  });
+
+  it("flags missing search when replace has content", () => {
+    const rules: FakeRule[] = [
+      {
+        pattern: "pattern",
+        search: "",
+        replace: "value",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+    const config = {
+      ...createConfig(rules),
+      hasContent: () => true,
+    } satisfies RuleConfig<FakeRule>;
+
+    const { valid, message } = validateRulesFor(config);
+    expect(valid).toBe(false);
+    expect(message).toBe("Missing search");
+    const searchInput = config.body.querySelector<HTMLInputElement>("input[data-field='search']");
+    expect(searchInput?.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("flags invalid search patterns", () => {
+    const rules: FakeRule[] = [
+      {
+        pattern: "pattern",
+        search: "unsafe[[[",
+        replace: "value",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+    const config = {
+      ...createConfig(rules),
+      hasContent: () => true,
+    } satisfies RuleConfig<FakeRule>;
+
+    const { valid, message } = validateRulesFor(config);
+    expect(valid).toBe(false);
+    expect(message).toBe("Invalid search");
+    const searchInput = config.body.querySelector<HTMLInputElement>("input[data-field='search']");
+    expect(searchInput?.getAttribute("aria-invalid")).toBe("true");
   });
 });

@@ -428,9 +428,18 @@ describe("background/copy-pipeline", () => {
     const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout").mockImplementation(() => {});
 
     try {
-      sinonChrome.runtime.sendMessage.rejects(new Error("Receiving end does not exist."));
+      const transientError = new Error("Receiving end does not exist.");
+      sinonChrome.runtime.sendMessage.onFirstCall().callsFake(async () => {
+        Object.defineProperty(sinonChrome.runtime, "lastError", {
+          configurable: true,
+          get: () => ({ message: transientError.message }),
+        });
+        throw transientError;
+      });
+      sinonChrome.runtime.sendMessage.onSecondCall().resolves(undefined);
 
       await runCopyPipeline("Body", "Title", "https://example.com", "popup", 333);
+      setPopupDocumentId("doc-active");
       markPopupReady();
       await flushPromises();
 
@@ -438,6 +447,20 @@ describe("background/copy-pipeline", () => {
 
       markPopupClosed();
       callbacks[0]?.();
+
+      expect(sinonChrome.runtime.sendMessage.callCount).toBe(1);
+
+      Object.defineProperty(sinonChrome.runtime, "lastError", {
+        configurable: true,
+        value: undefined,
+        writable: true,
+      });
+
+      setPopupDocumentId("doc-reopen");
+      markPopupReady();
+      await flushPromises();
+
+      expect(sinonChrome.runtime.sendMessage.callCount).toBe(2);
 
       expect(setTimeoutSpy).toHaveBeenCalled();
       expect(clearTimeoutSpy).toHaveBeenCalled();
