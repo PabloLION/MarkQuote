@@ -200,3 +200,8 @@ export function formatWithOptions(options: OptionsPayload, tokens: TemplateToken
     URL: url,
   });
 }
+
+/** Internal hooks reserved for unit tests. */
+export const __testing = {
+  compileRegexForTest: compileRegex,
+};

@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../src/formatting.js";
+import {
+  __testing,
+  applyTitleRules,
+  applyUrlRules,
+  formatWithOptions,
+} from "../../src/formatting.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
@@ -486,5 +491,12 @@ describe("formatWithOptions", () => {
       expect.objectContaining({ length: longPattern.length }),
     );
     consoleSpy.mockRestore();
+  });
+
+  it("treats empty patterns as disabled without invoking error handler", () => {
+    const onError = vi.fn();
+    const regex = __testing.compileRegexForTest("", onError);
+    expect(regex).toBeUndefined();
+    expect(onError).not.toHaveBeenCalled();
   });
 });
