@@ -25,6 +25,20 @@ async function flushPromises(): Promise<void> {
   await Promise.resolve();
 }
 
+function resetRuntimeLastError(): void {
+  const runtime = sinonChrome.runtime as unknown as { lastError?: unknown };
+  const descriptor = Object.getOwnPropertyDescriptor(runtime, "lastError");
+  if (descriptor) {
+    Object.defineProperty(runtime, "lastError", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+  } else {
+    runtime.lastError = undefined;
+  }
+}
+
 describe("background/copy-pipeline", () => {
   const originalChrome = globalThis.chrome;
 
@@ -51,7 +65,7 @@ describe("background/copy-pipeline", () => {
     markPopupClosed();
     setPopupDocumentId(undefined);
     vi.useRealTimers();
-    (sinonChrome.runtime as unknown as { lastError?: unknown }).lastError = undefined;
+    resetRuntimeLastError();
     globalThis.chrome = originalChrome;
     vi.restoreAllMocks();
   });
