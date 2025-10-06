@@ -92,4 +92,44 @@ describe("popup error controller", () => {
     await expect(controller.refresh()).resolves.toBeUndefined();
     controller.dispose();
   });
+
+  it("handles runtime failures when fetching errors", async () => {
+    const dom = buildDom();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const runtime = {
+      sendMessage: vi.fn().mockRejectedValue(new Error("boom")),
+    } as unknown as typeof chrome.runtime;
+
+    const controller = createErrorController(dom, runtime, () => {});
+    await controller.refresh();
+
+    expect(dom.problemBadge?.hasAttribute("hidden")).toBe(true);
+    expect(dom.errorList?.childElementCount).toBe(0);
+    expect(warnSpy).toHaveBeenCalledWith("Failed to load error log", expect.any(Error));
+
+    warnSpy.mockRestore();
+  });
+
+  it("logs failures when clearing the error log", async () => {
+    const dom = buildDom();
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const runtime = {
+      sendMessage: vi
+        .fn()
+        .mockResolvedValueOnce({ errors: [] })
+        .mockRejectedValue(new Error("clear failed")),
+    } as unknown as typeof chrome.runtime;
+
+    const controller = createErrorController(dom, runtime, () => {});
+    await controller.refresh();
+
+    dom.dismissErrorsButton?.click();
+    await vi.waitFor(() => {
+      expect(runtime.sendMessage).toHaveBeenCalledWith({ type: "clear-error-log" });
+    });
+    expect(warnSpy).toHaveBeenCalledWith("Failed to clear error log", expect.any(Error));
+
+    warnSpy.mockRestore();
+    controller.dispose();
+  });
 });
