@@ -128,20 +128,17 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
   }
 
   try {
-    if (activePopupDocumentId) {
-      await chrome.runtime.sendMessage(
-        chrome.runtime.id,
-        {
-          type: "copied-text-preview",
-          text: payload.text,
-        },
-        { documentId: activePopupDocumentId } as RuntimeMessageOptionsWithDocument,
-      );
+    const message = {
+      type: "copied-text-preview",
+      text: payload.text,
+    } as const;
+
+    if (activePopupDocumentId && chrome.runtime?.id) {
+      await chrome.runtime.sendMessage(chrome.runtime.id, message, {
+        documentId: activePopupDocumentId,
+      } as RuntimeMessageOptionsWithDocument);
     } else {
-      await chrome.runtime.sendMessage({
-        type: "copied-text-preview",
-        text: payload.text,
-      });
+      await chrome.runtime.sendMessage(message);
     }
     if (isE2ETest) {
       lastPreviewError = undefined;
@@ -171,6 +168,13 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
 }
 
 async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  if (!Number.isInteger(tabId) || tabId < 0) {
+    await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Invalid tabId for fallback copy", {
+      tabId,
+    });
+    return;
+  }
+
   try {
     const [injection] = await chrome.scripting.executeScript({
       target: { tabId },

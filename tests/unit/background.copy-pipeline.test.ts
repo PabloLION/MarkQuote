@@ -96,6 +96,31 @@ describe("background/copy-pipeline", () => {
     expect((call?.args?.[2] as { documentId?: string })?.documentId).toBe("doc-123");
   });
 
+  it("sends preview without document targeting when runtime id is missing", async () => {
+    const originalId = sinonChrome.runtime.id;
+    sinonChrome.runtime.id = undefined as unknown as string;
+
+    const result = await runCopyPipeline(
+      "Sample text",
+      "Sample Title",
+      "https://example.com",
+      "popup",
+      999,
+    );
+
+    setPopupDocumentId("doc-999");
+    markPopupReady();
+    await flushPromises();
+
+    expect(sinonChrome.runtime.sendMessage.calledOnce).toBe(true);
+    const call = sinonChrome.runtime.sendMessage.firstCall;
+    expect(call?.args?.[0]).toEqual({
+      type: "copied-text-preview",
+      text: result,
+    });
+    sinonChrome.runtime.id = originalId;
+  });
+
   it("retries transient failures and records an error when sending ultimately fails", async () => {
     vi.useFakeTimers();
     const failure = new Error("send failed");
@@ -294,6 +319,26 @@ describe("background/copy-pipeline", () => {
     expect(
       contexts.filter((context) => context === ERROR_CONTEXT.PopupClipboardFallback).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("records fallback error when tab id is invalid", async () => {
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
+    Object.defineProperty(sinonChrome.runtime, "lastError", {
+      configurable: true,
+      get: () => ({ message: "fatal" }),
+    });
+
+    await runCopyPipeline("Body", "Title", "https://example.com", "popup", Number.NaN);
+    markPopupReady();
+    await flushPromises();
+
+    expect(getScriptingMock().mock.calls.length).toBe(0);
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.PopupClipboardFallback,
+      "Invalid tabId for fallback copy",
+      { tabId: Number.NaN },
+    );
   });
 
   it("requeues preview when retry fires while popup is not ready", async () => {
