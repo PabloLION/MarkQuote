@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { copySelectionToClipboard } from "../../src/background/clipboard-injection.js";
+import {
+  CLIPBOARD_MAX_BYTES,
+  copySelectionToClipboard,
+} from "../../src/background/clipboard-injection.js";
 
 describe("background/clipboard-injection", () => {
   const originalNavigator = navigator;
@@ -59,6 +62,39 @@ describe("background/clipboard-injection", () => {
 
     const result = await copySelectionToClipboard("failure");
 
+    expect(result).toBe(false);
+  });
+
+  it("returns false when execCommand is unavailable", async () => {
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: {},
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: undefined,
+    });
+
+    const result = await copySelectionToClipboard("fallback");
+
+    expect(result).toBe(false);
+    expect(document.body.querySelector("textarea")).toBeNull();
+  });
+
+  it("handles copy failures at the clipboard size limit", async () => {
+    const writeSpy = vi.fn().mockRejectedValue(new Error("nope"));
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { clipboard: { writeText: writeSpy } },
+    });
+    const execSpy = vi.fn().mockReturnValue(false);
+    document.execCommand = execSpy as unknown as typeof document.execCommand;
+
+    const payload = "x".repeat(CLIPBOARD_MAX_BYTES);
+    const result = await copySelectionToClipboard(payload);
+
+    expect(writeSpy).toHaveBeenCalled();
+    expect(execSpy).toHaveBeenCalledWith("copy");
     expect(result).toBe(false);
   });
 

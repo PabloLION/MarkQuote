@@ -29,9 +29,15 @@ export async function copySelectionToClipboard(value: string): Promise<boolean> 
   document.body.append(textarea);
   textarea.select();
 
+  if (typeof document.execCommand !== "function") {
+    textarea.remove();
+    return false;
+  }
+
+  const execCommand = document.execCommand.bind(document);
   let success = false;
   try {
-    success = document.execCommand("copy");
+    success = execCommand("copy");
   } finally {
     textarea.remove();
   }
