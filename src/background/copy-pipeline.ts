@@ -3,6 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { copySelectionToClipboard } from "./clipboard-injection.js";
 import { isE2ETest } from "./constants.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
@@ -55,6 +56,10 @@ export async function runCopyPipeline(
 
 export function markPopupReady(): void {
   popupReady = true;
+  if (queuedPopupRetryTimer) {
+    clearTimeout(queuedPopupRetryTimer);
+    queuedPopupRetryTimer = undefined;
+  }
   if (!queuedPopupPreview) {
     return;
   }
@@ -169,33 +174,7 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
   try {
     const [injection] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: async (value: string) => {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(value);
-            return true;
-          }
-        } catch (_error) {
-          // Ignore and fall back to execCommand approach below.
-        }
-
-        const textarea = document.createElement("textarea");
-        textarea.value = value;
-        textarea.setAttribute("readonly", "true");
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.append(textarea);
-        textarea.select();
-
-        let success = false;
-        try {
-          success = document.execCommand("copy");
-        } finally {
-          textarea.remove();
-        }
-
-        return success;
-      },
+      func: copySelectionToClipboard,
       args: [text],
     });
 

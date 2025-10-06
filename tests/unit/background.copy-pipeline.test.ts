@@ -51,7 +51,7 @@ describe("background/copy-pipeline", () => {
     markPopupClosed();
     setPopupDocumentId(undefined);
     vi.useRealTimers();
-    delete (sinonChrome.runtime as unknown as { lastError?: unknown }).lastError;
+    (sinonChrome.runtime as unknown as { lastError?: unknown }).lastError = undefined;
     globalThis.chrome = originalChrome;
     vi.restoreAllMocks();
   });
@@ -282,100 +282,6 @@ describe("background/copy-pipeline", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("executes clipboard-first injection path in the fallback helper", async () => {
-    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
-    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
-    Object.defineProperty(sinonChrome.runtime, "lastError", {
-      configurable: true,
-      get: () => ({ message: "fatal" }),
-    });
-
-    const originalClipboard = navigator.clipboard;
-    const originalExecCommand = document.execCommand;
-    const writeSpy = vi.fn().mockResolvedValue(undefined);
-    const execSpy = vi.fn();
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: writeSpy },
-    });
-    document.execCommand = execSpy;
-
-    getScriptingMock().mockImplementation(async ({ func }) => {
-      const success = await func("payload");
-      return [{ result: success }];
-    });
-
-    try {
-      await runCopyPipeline("Body", "Title", "https://example.com", "popup", 111);
-      markPopupReady();
-      await flushPromises();
-
-      expect(writeSpy).toHaveBeenCalledWith("payload");
-      expect(execSpy).not.toHaveBeenCalled();
-      expect(recordErrorSpy).toHaveBeenCalledWith(
-        ERROR_CONTEXT.NotifyPopupPreview,
-        expect.any(String),
-      );
-    } finally {
-      if (originalClipboard) {
-        Object.defineProperty(navigator, "clipboard", {
-          configurable: true,
-          value: originalClipboard,
-        });
-      } else {
-        delete (navigator as { clipboard?: unknown }).clipboard;
-      }
-      document.execCommand = originalExecCommand;
-    }
-  });
-
-  it("executes textarea fallback when clipboard write fails", async () => {
-    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
-    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
-    Object.defineProperty(sinonChrome.runtime, "lastError", {
-      configurable: true,
-      get: () => ({ message: "fatal" }),
-    });
-
-    const originalClipboard = navigator.clipboard;
-    const originalExecCommand = document.execCommand;
-    const writeSpy = vi.fn().mockRejectedValue(new Error("clipboard blocked"));
-    const execSpy = vi.fn().mockReturnValue(true);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText: writeSpy },
-    });
-    document.execCommand = execSpy;
-
-    getScriptingMock().mockImplementation(async ({ func }) => {
-      const success = await func("fallback payload");
-      return [{ result: success }];
-    });
-
-    try {
-      await runCopyPipeline("Body", "Title", "https://example.com", "popup", 222);
-      markPopupReady();
-      await flushPromises();
-
-      expect(writeSpy).toHaveBeenCalled();
-      expect(execSpy).toHaveBeenCalledWith("copy");
-      expect(recordErrorSpy).toHaveBeenCalledWith(
-        ERROR_CONTEXT.NotifyPopupPreview,
-        expect.any(String),
-      );
-    } finally {
-      if (originalClipboard) {
-        Object.defineProperty(navigator, "clipboard", {
-          configurable: true,
-          value: originalClipboard,
-        });
-      } else {
-        delete (navigator as { clipboard?: unknown }).clipboard;
-      }
-      document.execCommand = originalExecCommand;
-    }
-  });
-
   it("requeues preview when retry fires while popup is not ready", async () => {
     const callbacks: Array<() => void> = [];
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation((callback) => {
@@ -401,6 +307,41 @@ describe("background/copy-pipeline", () => {
     } finally {
       setTimeoutSpy.mockRestore();
       clearTimeoutSpy.mockRestore();
+    }
+  });
+
+  it("clears pending retry timer when popup becomes ready", async () => {
+    sinonChrome.runtime.sendMessage.rejects(new Error("Receiving end does not exist."));
+    const realSetTimeout = globalThis.setTimeout;
+    const realClearTimeout = globalThis.clearTimeout;
+    const scheduledTimers: Array<ReturnType<typeof setTimeout>> = [];
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      ...args: Parameters<typeof setTimeout>
+    ) => {
+      const id = realSetTimeout(...args);
+      scheduledTimers.push(id);
+      return id;
+    }) as typeof setTimeout);
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout").mockImplementation(((
+      handle: Parameters<typeof clearTimeout>[0],
+    ) => {
+      return realClearTimeout(handle);
+    }) as typeof clearTimeout);
+
+    try {
+      await runCopyPipeline("Body", "Title", "https://example.com", "popup", 444);
+      markPopupReady();
+      await flushPromises();
+      expect(setTimeoutSpy).toHaveBeenCalled();
+
+      markPopupReady();
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(scheduledTimers[0]);
+    } finally {
+      clearTimeoutSpy.mockRestore();
+      setTimeoutSpy.mockRestore();
+      for (const id of scheduledTimers) {
+        clearTimeout(id);
+      }
     }
   });
 });
