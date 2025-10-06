@@ -44,5 +44,17 @@ export function createImportController(): ImportController {
 }
 
 export function isRunningUnderVitest(meta: ImportMeta): boolean {
-  return Boolean((meta as VitestAwareImportMeta).vitest);
+  if ((meta as VitestAwareImportMeta).vitest) {
+    return true;
+  }
+  if (typeof process !== "undefined" && process.env?.VITEST) {
+    return true;
+  }
+  if (
+    typeof globalThis === "object" &&
+    (globalThis as { __vitest_worker__?: boolean }).__vitest_worker__
+  ) {
+    return true;
+  }
+  return false;
 }
