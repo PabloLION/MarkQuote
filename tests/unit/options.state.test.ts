@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_OPTIONS } from "../../src/options-schema.js";
+import { DEFAULT_OPTIONS, type TitleRule, type UrlRule } from "../../src/options-schema.js";
 import {
   cloneOptions,
+  cloneTitleRule,
+  cloneUrlRule,
   createDraft,
   DEFAULT_PREVIEW_SAMPLE,
   normalizeFormat,
@@ -30,6 +32,32 @@ describe("options/state", () => {
     const draft = createDraft();
     expect(draft.format).toBe(DEFAULT_OPTIONS.format);
     expect(draft.titleRules).not.toBe(DEFAULT_OPTIONS.titleRules);
+  });
+
+  it("clones individual rules without mutating the source", () => {
+    const malformedTitle = {
+      urlPattern: undefined,
+      titleSearch: undefined,
+      titleReplace: undefined,
+      comment: undefined,
+      continueMatching: undefined,
+      enabled: undefined,
+    } as unknown as TitleRule;
+    const titleClone = cloneTitleRule(malformedTitle);
+    titleClone.comment = "patched";
+    expect(malformedTitle.comment).toBeUndefined();
+
+    const malformedUrl = {
+      urlPattern: undefined,
+      urlSearch: undefined,
+      urlReplace: undefined,
+      comment: undefined,
+      continueMatching: undefined,
+      enabled: undefined,
+    } as unknown as UrlRule;
+    const urlClone = cloneUrlRule(malformedUrl);
+    urlClone.comment = "patched";
+    expect(malformedUrl.comment).toBeUndefined();
   });
 
   it("sanitizes title rules and url rules", () => {
