@@ -15,10 +15,6 @@ export default defineConfig({
       exclude: [
         "src/dev/**",
         "src/import-meta-env.d.ts",
-        // Popup loader runs inside Chrome popup UI; exercised by Playwright e2e suites.
-        "src/entries/popup-loader.ts",
-        // Options loader depends on extension storage APIs; covered via integration tests.
-        "src/entries/options-loader.ts",
         "src/background/e2e.ts",
         "src/background/index.ts",
         "src/background/context-menus.ts",
