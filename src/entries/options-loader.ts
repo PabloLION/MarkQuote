@@ -2,6 +2,8 @@ const DEV_OPTIONS_ENTRY: string = "/src/surfaces/options/main.ts";
 
 type ModuleImporter = (specifier: string) => Promise<unknown>;
 
+const MODULE_LOAD_TIMEOUT_MS = 10_000;
+
 type VitestAwareImportMeta = ImportMeta & { vitest?: boolean };
 
 function isRunningUnderVitest(meta: ImportMeta): boolean {
@@ -14,17 +16,38 @@ export function __setOptionsModuleImporter(mock?: ModuleImporter): void {
   importModule = mock ?? ((specifier) => import(/* @vite-ignore */ specifier));
 }
 
+async function importWithTimeout(specifier: string): Promise<unknown> {
+  const importPromise = importModule(specifier);
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  try {
+    await Promise.race([
+      importPromise,
+      new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(() => {
+          reject(new Error(`Module load timed out: ${specifier}`));
+        }, MODULE_LOAD_TIMEOUT_MS);
+      }),
+    ]);
+    return await importPromise;
+  } finally {
+    if (timeoutHandle !== undefined) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
+
 // Mirrors browser behaviour when mounting the options page; excluded from unit coverage because it
 // depends on Chrome extension APIs and async module loading.
 export async function loadOptionsModule(): Promise<void> {
   const isExtensionContext = Boolean(globalThis.chrome?.runtime?.id);
   if (!isExtensionContext) {
-    await importModule(DEV_OPTIONS_ENTRY);
+    await importWithTimeout(DEV_OPTIONS_ENTRY);
     return;
   }
 
   const moduleUrl = chrome.runtime.getURL("options.js");
-  await importModule(moduleUrl);
+  await importWithTimeout(moduleUrl);
 }
 
 // Displays the inline error banner when the options bundle cannot boot; relies on DOM fragments

@@ -85,4 +85,23 @@ describe("entries/options-loader", () => {
 
     expect(status.textContent).toContain("failed to load");
   });
+
+  it("fails fast when module loading exceeds the timeout", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const importer = vi.fn(() => new Promise(() => {}));
+
+      await vi.resetModules();
+      const module = await import("../../src/entries/options-loader.js");
+      module.__setOptionsModuleImporter(importer);
+
+      const loadPromise = module.loadOptionsModule();
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      await expect(loadPromise).rejects.toThrow("Module load timed out");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

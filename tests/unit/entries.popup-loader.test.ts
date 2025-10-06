@@ -150,4 +150,24 @@ describe("entries/popup-loader", () => {
     expect(container.dataset.variant).toBe("warning");
     expect(preview.getAttribute("hidden")).toBe("true");
   });
+
+  it("rejects when popup module loading times out", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const importer = vi.fn(() => new Promise(() => {}));
+
+      await vi.resetModules();
+      stubWindowLocation("http://localhost:5173/popup.html");
+      const module = await import("../../src/entries/popup-loader.js");
+      module.__setPopupModuleImporter(importer);
+
+      const loadPromise = module.loadPopupModule();
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      await expect(loadPromise).rejects.toThrow("Module load timed out");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
