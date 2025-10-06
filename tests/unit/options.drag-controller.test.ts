@@ -85,6 +85,19 @@ describe("rule drag manager", () => {
     expect(sourceRow.classList.contains("dragging")).toBe(false);
   });
 
+  it("ignores dragover events when no drag operation is active", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const row = createRow(0);
+    manager.registerRow(row, "title", controller.signal);
+
+    const overEvent = dispatchDragEvent(row, "dragover");
+    expect(overEvent.defaultPrevented).toBe(false);
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
   it("skips rows without drag handles", () => {
     const onReorder = vi.fn();
     const manager = createRuleDragManager({ onReorder });
@@ -112,5 +125,45 @@ describe("rule drag manager", () => {
     manager.dispose();
     expect(() => dispatchDragEvent(row, "drop")).not.toThrow();
     expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it("removes listeners when the registration signal aborts", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const row = createRow(0);
+    manager.registerRow(row, "title", controller.signal);
+    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    controller.abort();
+
+    const event = dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
+    expect(event.defaultPrevented).toBe(false);
+    expect(row.classList.contains("dragging")).toBe(false);
+  });
+
+  it("releases drag-over flair when row is removed", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const sourceRow = createRow(0);
+    const targetRow = createRow(1);
+    manager.registerRow(sourceRow, "title", controller.signal);
+    manager.registerRow(targetRow, "title", controller.signal);
+
+    const handle = sourceRow.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
+    dispatchDragEvent(targetRow, "dragenter");
+    expect(targetRow.classList.contains("drag-over")).toBe(true);
+
+    targetRow.remove();
+    dispatchDragEvent(targetRow, "dragleave");
+
+    expect(targetRow.classList.contains("drag-over")).toBe(false);
   });
 });
