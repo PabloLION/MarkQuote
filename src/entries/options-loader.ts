@@ -1,16 +1,30 @@
 const DEV_OPTIONS_ENTRY: string = "/src/surfaces/options/main.ts";
 
+type ModuleImporter = (specifier: string) => Promise<unknown>;
+
+type VitestAwareImportMeta = ImportMeta & { vitest?: boolean };
+
+function isRunningUnderVitest(meta: ImportMeta): boolean {
+  return Boolean((meta as VitestAwareImportMeta).vitest);
+}
+
+let importModule: ModuleImporter = (specifier) => import(/* @vite-ignore */ specifier);
+
+export function __setOptionsModuleImporter(mock?: ModuleImporter): void {
+  importModule = mock ?? ((specifier) => import(/* @vite-ignore */ specifier));
+}
+
 // Mirrors browser behaviour when mounting the options page; excluded from unit coverage because it
 // depends on Chrome extension APIs and async module loading.
 export async function loadOptionsModule(): Promise<void> {
   const isExtensionContext = Boolean(globalThis.chrome?.runtime?.id);
   if (!isExtensionContext) {
-    await import(/* @vite-ignore */ DEV_OPTIONS_ENTRY);
+    await importModule(DEV_OPTIONS_ENTRY);
     return;
   }
 
   const moduleUrl = chrome.runtime.getURL("options.js");
-  await import(/* @vite-ignore */ moduleUrl);
+  await importModule(moduleUrl);
 }
 
 // Displays the inline error banner when the options bundle cannot boot; relies on DOM fragments
@@ -34,6 +48,14 @@ export function renderOptionsError(error: unknown): void {
   document.body.prepend(fallback);
 }
 
-loadOptionsModule().catch((error: unknown) => {
-  renderOptionsError(error);
-});
+export async function bootstrapOptions(): Promise<void> {
+  try {
+    await loadOptionsModule();
+  } catch (error) {
+    renderOptionsError(error);
+  }
+}
+
+if (!isRunningUnderVitest(import.meta)) {
+  void bootstrapOptions();
+}

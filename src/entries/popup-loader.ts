@@ -1,6 +1,20 @@
 const POPUP_DEV_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEV_POPUP_ENTRY: string = "/src/surfaces/popup/main.ts";
 
+type ModuleImporter = (specifier: string) => Promise<unknown>;
+
+type VitestAwareImportMeta = ImportMeta & { vitest?: boolean };
+
+function isRunningUnderVitest(meta: ImportMeta): boolean {
+  return Boolean((meta as VitestAwareImportMeta).vitest);
+}
+
+let importModule: ModuleImporter = (specifier) => import(/* @vite-ignore */ specifier);
+
+export function __setPopupModuleImporter(mock?: ModuleImporter): void {
+  importModule = mock ?? ((specifier) => import(/* @vite-ignore */ specifier));
+}
+
 // Covered via Chrome runtime integration; unit tests cannot load extension popup HTML.
 export async function loadPopupModule(): Promise<void> {
   const hostname = window.location.hostname;
@@ -8,12 +22,12 @@ export async function loadPopupModule(): Promise<void> {
   const isDev = POPUP_DEV_HOSTS.has(hostname) || port === "5173";
 
   if (isDev) {
-    await import(/* @vite-ignore */ DEV_POPUP_ENTRY);
+    await importModule(DEV_POPUP_ENTRY);
     return;
   }
 
   const moduleUrl = chrome?.runtime?.id ? chrome.runtime.getURL("popup.js") : "./popup.js";
-  await import(/* @vite-ignore */ moduleUrl);
+  await importModule(moduleUrl);
 }
 
 // Triggered only on real popup failures; relies on DOM styling outside unit-test environment.
@@ -42,7 +56,15 @@ export function renderBootstrapError(): void {
   }
 }
 
-loadPopupModule().catch((error: unknown) => {
-  console.error("Unable to bootstrap popup entry", error);
-  renderBootstrapError();
-});
+export async function bootstrapPopup(): Promise<void> {
+  try {
+    await loadPopupModule();
+  } catch (error) {
+    console.error("Unable to bootstrap popup entry", error);
+    renderBootstrapError();
+  }
+}
+
+if (!isRunningUnderVitest(import.meta)) {
+  void bootstrapPopup();
+}
