@@ -55,6 +55,7 @@ describe("rule drag manager", () => {
     dispatchDragEvent(row, "drop");
 
     expect(onReorder).not.toHaveBeenCalled();
+    expect(row.classList.contains("dragging")).toBe(false);
   });
 
   it("toggles visual state classes during drag lifecycle", () => {

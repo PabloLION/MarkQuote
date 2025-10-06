@@ -68,6 +68,10 @@ export function createRuleDragManager(options: DragManagerOptions): RuleDragMana
     const targetIndex = Number.parseInt(row.dataset.index ?? "", 10);
     if (Number.isNaN(targetIndex)) {
       row.classList.remove("drag-over");
+      if (draggingState) {
+        draggingState.row.classList.remove("dragging");
+        draggingState = undefined;
+      }
       return;
     }
 
