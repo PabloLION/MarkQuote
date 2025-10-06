@@ -1,41 +1,16 @@
+import {
+  createImportController,
+  isRunningUnderVitest,
+  type ModuleImporter,
+} from "./loader-helpers.js";
+
 const POPUP_DEV_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEV_POPUP_ENTRY: string = "/src/surfaces/popup/main.ts";
 
-type ModuleImporter = (specifier: string) => Promise<unknown>;
-
-const MODULE_LOAD_TIMEOUT_MS = 10_000;
-
-type VitestAwareImportMeta = ImportMeta & { vitest?: boolean };
-
-function isRunningUnderVitest(meta: ImportMeta): boolean {
-  return Boolean((meta as VitestAwareImportMeta).vitest);
-}
-
-let importModule: ModuleImporter = (specifier) => import(/* @vite-ignore */ specifier);
+const { importWithTimeout, setModuleImporter } = createImportController();
 
 export function __setPopupModuleImporter(mock?: ModuleImporter): void {
-  importModule = mock ?? ((specifier) => import(/* @vite-ignore */ specifier));
-}
-
-async function importWithTimeout(specifier: string): Promise<unknown> {
-  const importPromise = importModule(specifier);
-  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    await Promise.race([
-      importPromise,
-      new Promise<never>((_, reject) => {
-        timeoutHandle = setTimeout(() => {
-          reject(new Error(`Module load timed out: ${specifier}`));
-        }, MODULE_LOAD_TIMEOUT_MS);
-      }),
-    ]);
-    return await importPromise;
-  } finally {
-    if (timeoutHandle !== undefined) {
-      clearTimeout(timeoutHandle);
-    }
-  }
+  setModuleImporter(mock);
 }
 
 // Covered via Chrome runtime integration; unit tests cannot load extension popup HTML.

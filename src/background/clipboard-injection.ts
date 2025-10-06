@@ -2,10 +2,10 @@
  * Clipboard helper passed to `chrome.scripting.executeScript` so we can exercise the behaviour in
  * isolation during unit tests. The function runs within the target page context.
  */
-const MAX_CLIPBOARD_TEXT_LENGTH = 1_000_000; // Prevent unbounded writes that could hang target pages.
+export const CLIPBOARD_MAX_BYTES = 1_000_000; // Prevent unbounded writes that could hang target pages.
 
 export async function copySelectionToClipboard(value: string): Promise<boolean> {
-  if (value.length > MAX_CLIPBOARD_TEXT_LENGTH) {
+  if (value.length > CLIPBOARD_MAX_BYTES) {
     console.warn("[MarkQuote] Refusing to copy oversized clipboard payload", {
       length: value.length,
     });

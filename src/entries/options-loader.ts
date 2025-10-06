@@ -1,40 +1,15 @@
+import {
+  createImportController,
+  isRunningUnderVitest,
+  type ModuleImporter,
+} from "./loader-helpers.js";
+
 const DEV_OPTIONS_ENTRY: string = "/src/surfaces/options/main.ts";
 
-type ModuleImporter = (specifier: string) => Promise<unknown>;
-
-const MODULE_LOAD_TIMEOUT_MS = 10_000;
-
-type VitestAwareImportMeta = ImportMeta & { vitest?: boolean };
-
-function isRunningUnderVitest(meta: ImportMeta): boolean {
-  return Boolean((meta as VitestAwareImportMeta).vitest);
-}
-
-let importModule: ModuleImporter = (specifier) => import(/* @vite-ignore */ specifier);
+const { importWithTimeout, setModuleImporter } = createImportController();
 
 export function __setOptionsModuleImporter(mock?: ModuleImporter): void {
-  importModule = mock ?? ((specifier) => import(/* @vite-ignore */ specifier));
-}
-
-async function importWithTimeout(specifier: string): Promise<unknown> {
-  const importPromise = importModule(specifier);
-  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-
-  try {
-    await Promise.race([
-      importPromise,
-      new Promise<never>((_, reject) => {
-        timeoutHandle = setTimeout(() => {
-          reject(new Error(`Module load timed out: ${specifier}`));
-        }, MODULE_LOAD_TIMEOUT_MS);
-      }),
-    ]);
-    return await importPromise;
-  } finally {
-    if (timeoutHandle !== undefined) {
-      clearTimeout(timeoutHandle);
-    }
-  }
+  setModuleImporter(mock);
 }
 
 // Mirrors browser behaviour when mounting the options page; excluded from unit coverage because it
