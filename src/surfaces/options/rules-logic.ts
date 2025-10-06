@@ -178,6 +178,8 @@ export function moveRule<TRule>(rules: TRule[], fromIndex: number, toIndex: numb
   const [rule] = rules.splice(fromIndex, 1);
   let insertIndex = toIndex;
   if (fromIndex < toIndex) {
+    // When moving an item forward in the list we already removed one element, so clamp the
+    // insertion point to the new array length to avoid leaving a sparse gap at the end.
     insertIndex = Math.min(insertIndex, rules.length);
   }
   if (insertIndex > rules.length) {

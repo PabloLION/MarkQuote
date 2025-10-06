@@ -68,6 +68,7 @@ export function sanitizeUrlRule(rule: UrlRule): UrlRule {
 
 export function validateRegex(pattern: string): boolean {
   if (!pattern) {
+    // Empty inputs are common while the user is editing; treat as "not yet valid" without logging.
     return false;
   }
 
