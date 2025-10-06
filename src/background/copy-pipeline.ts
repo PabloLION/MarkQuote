@@ -134,14 +134,16 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
   }
 
   try {
+    const documentId = activePopupDocumentId;
+    const runtimeId = chrome.runtime?.id;
     const message = {
       type: "copied-text-preview",
       text: payload.text,
     } as const;
 
-    if (activePopupDocumentId && chrome.runtime?.id) {
-      await chrome.runtime.sendMessage(chrome.runtime.id, message, {
-        documentId: activePopupDocumentId,
+    if (documentId && runtimeId) {
+      await chrome.runtime.sendMessage(runtimeId, message, {
+        documentId,
       } as RuntimeMessageOptionsWithDocument);
     } else {
       await chrome.runtime.sendMessage(message);
