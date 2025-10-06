@@ -694,6 +694,9 @@ export function initializeOptions(): () => void {
     for (const controller of Object.values(dragAbortControllers)) {
       controller?.abort();
     }
+    for (const scope of Object.keys(dragAbortControllers) as DragScope[]) {
+      delete dragAbortControllers[scope];
+    }
     abortController.abort();
     if (context.statusTimeout) {
       clearTimeout(context.statusTimeout);
