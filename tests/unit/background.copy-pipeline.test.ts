@@ -509,7 +509,7 @@ describe("background/copy-pipeline", () => {
     vi.useFakeTimers();
     const persistError = new Error("persist failed");
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(errorsModule, "recordError").mockImplementation(async (context, error, extra) => {
+    vi.spyOn(errorsModule, "recordError").mockImplementation(async (context, _error, _extra) => {
       if (context === ERROR_CONTEXT.PopupClipboardFallback) {
         throw persistError;
       }
