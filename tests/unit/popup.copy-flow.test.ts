@@ -52,6 +52,36 @@ describe("popup copy flow", () => {
     );
   });
 
+  it("handles permission errors from the Clipboard API", async () => {
+    const permissionError = new DOMException("Permission denied", "NotAllowedError");
+    (copyMarkdownToClipboard as ReturnType<typeof vi.fn>).mockRejectedValueOnce(permissionError);
+    const preview = createPreview();
+    const messages = createMessages();
+    const copyFlow = createCopyFlow({ preview, messages });
+
+    await copyFlow.handleMessage({ type: "copied-text-preview", text: "Draft" });
+
+    expect(messages.set).toHaveBeenLastCalledWith(
+      "Clipboard permission denied. Copy manually below.",
+      expect.objectContaining({ variant: "warning" }),
+    );
+  });
+
+  it("handles quota errors from the Clipboard API", async () => {
+    const quotaError = new DOMException("Quota exceeded", "QuotaExceededError");
+    (copyMarkdownToClipboard as ReturnType<typeof vi.fn>).mockRejectedValueOnce(quotaError);
+    const preview = createPreview();
+    const messages = createMessages();
+    const copyFlow = createCopyFlow({ preview, messages });
+
+    await copyFlow.handleMessage({ type: "copied-text-preview", text: "Limit" });
+
+    expect(messages.set).toHaveBeenLastCalledWith(
+      "Clipboard quota exceeded. Copy manually below.",
+      expect.objectContaining({ variant: "warning" }),
+    );
+  });
+
   it("handles protected messages", async () => {
     const preview = createPreview();
     const messages = createMessages();

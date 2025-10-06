@@ -17,9 +17,33 @@ export function createCopyFlow(deps: CopyFlowDeps): CopyFlow {
     deps.preview.render(text);
     deps.messages.set(COPIED_STATUS_MESSAGE, { label: "Copied", variant: "success" });
 
-    const success = await copyMarkdownToClipboard(text);
+    let success = false;
+    let failureReason: string | undefined;
+    let failureName: string | undefined;
+
+    try {
+      success = await copyMarkdownToClipboard(text);
+    } catch (error) {
+      if (error instanceof DOMException) {
+        failureName = error.name;
+        failureReason = error.message || error.name;
+      } else {
+        const normalized = error instanceof Error ? error : new Error(String(error));
+        failureName = normalized.name;
+        failureReason = normalized.message;
+      }
+    }
+
     if (!success) {
-      deps.messages.set("Unable to copy automatically. Text is ready below.", {
+      let message = "Unable to copy automatically. Text is ready below.";
+      if (failureName === "NotAllowedError") {
+        message = "Clipboard permission denied. Copy manually below.";
+      } else if (failureName === "QuotaExceededError") {
+        message = "Clipboard quota exceeded. Copy manually below.";
+      } else if (failureReason) {
+        message = "Clipboard permission denied. Copy manually below.";
+      }
+      deps.messages.set(message, {
         variant: "warning",
       });
     }
