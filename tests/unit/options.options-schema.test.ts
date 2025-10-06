@@ -138,6 +138,42 @@ describe("options-schema", () => {
     expect(normalized.urlRules).toEqual(createDefaultUrlRules());
   });
 
+  it("ignores url rules that are not objects", () => {
+    const snapshot = {
+      options: {
+        version: CURRENT_OPTIONS_VERSION,
+        format: DEFAULT_TEMPLATE,
+        titleRules: createDefaultTitleRules(),
+        urlRules: [123, null],
+      },
+    };
+
+    const normalized = normalizeStoredOptions(snapshot);
+
+    expect(normalized.urlRules).toEqual(createDefaultUrlRules());
+  });
+
+  it("drops url rules that provide no matching fields", () => {
+    const snapshot = {
+      options: {
+        version: CURRENT_OPTIONS_VERSION,
+        format: DEFAULT_TEMPLATE,
+        titleRules: createDefaultTitleRules(),
+        urlRules: [
+          {
+            comment: "noop",
+            continueMatching: false,
+            enabled: true,
+          },
+        ],
+      },
+    };
+
+    const normalized = normalizeStoredOptions(snapshot);
+
+    expect(normalized.urlRules).toEqual(createDefaultUrlRules());
+  });
+
   it("ensures default rules are present when inputs empty", () => {
     const snapshot = { options: { version: 1, format: "" } };
     const normalized = normalizeStoredOptions(snapshot);
