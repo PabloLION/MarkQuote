@@ -4,6 +4,13 @@ import { SAFE_REGEX_ALLOWLIST } from "../options-schema.js";
 
 export const MAX_REGEX_PATTERN_LENGTH = 500;
 
+export function isPatternAllowed(pattern: string): boolean {
+  if (SAFE_REGEX_ALLOWLIST.has(pattern)) {
+    return true;
+  }
+  return safeRegex(pattern);
+}
+
 export function describePattern(pattern: string): { preview: string; length: number } {
   const trimmed = pattern.trim();
   const normalized = trimmed.replace(/\s+/g, " ");
@@ -28,7 +35,7 @@ export function compileRegex(
   }
 
   try {
-    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
+    if (!isPatternAllowed(pattern)) {
       console.error("Refusing to compile unsafe regular expression.", describePattern(pattern));
       return undefined;
     }

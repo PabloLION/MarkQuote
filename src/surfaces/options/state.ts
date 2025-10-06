@@ -1,4 +1,4 @@
-import safeRegex from "safe-regex";
+import { compileRegex, describePattern, isPatternAllowed } from "../../lib/regex.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
@@ -72,12 +72,15 @@ export function validateRegex(pattern: string): boolean {
   }
 
   try {
-    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
+    if (!isPatternAllowed(pattern)) {
       console.error("Regex pattern flagged as potentially unsafe.", { pattern });
       return false;
     }
-    new RegExp(pattern);
-    return true;
+    return (
+      compileRegex(pattern, (error) => {
+        console.error("Invalid regex pattern.", { pattern: describePattern(pattern), error });
+      }) !== undefined
+    );
   } catch (error) {
     console.error("Invalid regex pattern.", { pattern, error });
     return false;
