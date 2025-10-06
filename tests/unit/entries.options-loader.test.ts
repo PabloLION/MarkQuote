@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LOADER_TIMEOUT_MS } from "../../src/entries/loader-helpers.js";
 
 const originalChrome: typeof chrome | undefined = globalThis.chrome;
 
@@ -99,7 +100,7 @@ describe("entries/options-loader", () => {
       const loadPromise = module.loadOptionsModule();
       const expectation = expect(loadPromise).rejects.toThrow("Module load timed out");
 
-      await vi.advanceTimersByTimeAsync(10_000);
+      await vi.advanceTimersByTimeAsync(LOADER_TIMEOUT_MS);
       await expectation;
     } finally {
       vi.useRealTimers();

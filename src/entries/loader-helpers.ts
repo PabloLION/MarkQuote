@@ -1,6 +1,6 @@
 export type ModuleImporter = (specifier: string) => Promise<unknown>;
 
-export const LOADER_TIMEOUT_MS = 10_000; // Aligns with extension UI bootstrap expectations.
+export const LOADER_TIMEOUT_MS = 5_000; // Fast fail ensures users see fallback messaging promptly.
 
 type VitestAwareImportMeta = ImportMeta & { vitest?: boolean };
 
