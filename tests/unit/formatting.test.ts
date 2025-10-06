@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  __testing,
-  applyTitleRules,
-  applyUrlRules,
-  formatWithOptions,
-} from "../../src/formatting.js";
+vi.mock("safe-regex", async () => {
+  type SafeRegexFn = (pattern: string | RegExp, options?: { limit?: number }) => boolean;
+  const actual = await vi.importActual<SafeRegexFn | { default: SafeRegexFn }>("safe-regex");
+  const implementation: SafeRegexFn = typeof actual === "function" ? actual : actual.default;
+  const spy = vi.fn(implementation);
+  return { default: spy };
+});
+
+import safeRegex from "safe-regex";
+
+import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../src/formatting.js";
+import { compileRegex } from "../../src/lib/regex.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
@@ -495,8 +501,15 @@ describe("formatWithOptions", () => {
 
   it("treats empty patterns as disabled without invoking error handler", () => {
     const onError = vi.fn();
-    const regex = __testing.compileRegexForTest("", onError);
+    const safeRegexMock = safeRegex as unknown as {
+      mockClear: () => void;
+      mock: { calls: unknown[] };
+    };
+    safeRegexMock.mockClear();
+
+    const regex = compileRegex("", onError);
     expect(regex).toBeUndefined();
     expect(onError).not.toHaveBeenCalled();
+    expect(safeRegexMock.mock.calls.length).toBe(0);
   });
 });

@@ -1,10 +1,5 @@
-import safeRegex from "safe-regex";
-import {
-  type OptionsPayload,
-  SAFE_REGEX_ALLOWLIST,
-  type TitleRule,
-  type UrlRule,
-} from "./options-schema.js";
+import { compileRegex, describePattern } from "./lib/regex.js";
+import type { OptionsPayload, TitleRule, UrlRule } from "./options-schema.js";
 
 export interface TemplateTokens {
   text: string;
@@ -15,40 +10,6 @@ export interface TemplateTokens {
 interface RuleApplicationResult {
   value: string;
   matched: boolean;
-}
-
-const MAX_REGEX_PATTERN_LENGTH = 500;
-
-function compileRegex(pattern: string, onError: (error: unknown) => void): RegExp | undefined {
-  if (!pattern) {
-    return undefined;
-  }
-
-  if (pattern.length > MAX_REGEX_PATTERN_LENGTH) {
-    console.error("Regex pattern exceeds maximum length.", describePattern(pattern));
-    return undefined;
-  }
-
-  try {
-    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
-      console.error("Refusing to compile unsafe regular expression.", describePattern(pattern));
-      return undefined;
-    }
-    return new RegExp(pattern);
-  } catch (error) {
-    onError(error);
-    return undefined;
-  }
-}
-
-function describePattern(pattern: string): { preview: string; length: number } {
-  const trimmed = pattern.trim();
-  const normalized = trimmed.replace(/\s+/g, " ");
-  const preview = normalized.length > 64 ? `${normalized.slice(0, 63)}…` : normalized;
-  return {
-    preview,
-    length: pattern.length,
-  };
 }
 
 function safeApplyRegex(
@@ -200,8 +161,3 @@ export function formatWithOptions(options: OptionsPayload, tokens: TemplateToken
     URL: url,
   });
 }
-
-/** Internal hooks reserved for unit tests. */
-export const __testing = {
-  compileRegexForTest: compileRegex,
-};
