@@ -181,4 +181,41 @@ describe("background/errors", () => {
       (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage = originalStorage;
     }
   });
+
+  it("returns an empty error list when storage is unavailable", async () => {
+    const originalStorage = (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage;
+    delete (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage;
+
+    try {
+      const errors = await getStoredErrors();
+      expect(errors).toEqual([]);
+    } finally {
+      (sinonChrome as unknown as { storage?: typeof chrome.storage }).storage = originalStorage;
+    }
+  });
+
+  it("stringifies non-error objects before persisting", async () => {
+    sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+    await recordError(ERROR_CONTEXT.InitializeOptions, { detail: "boom" });
+
+    const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+      [ERROR_STORAGE_KEY]: Array<{ message: string }>;
+    };
+    expect(payload[ERROR_STORAGE_KEY][0].message).toContain('"detail":"boom"');
+  });
+
+  const generalContexts = Object.values(ERROR_CONTEXT);
+  for (const context of generalContexts) {
+    it(`persists entries for context \\"${context}\\"`, async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(context, "generic failure");
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ context: string }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].context).toBe(context);
+    });
+  }
 });
