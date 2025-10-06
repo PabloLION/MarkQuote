@@ -264,7 +264,8 @@ describe("formatWithOptions", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = applyTitleRules(rules, "Example", "https://example.com");
     expect(result).toBe("Example");
-    expect(consoleSpy).toHaveBeenCalled();
+    const [, details] = consoleSpy.mock.calls[0] ?? [];
+    expect(details?.preview).toContain("[[[");
     consoleSpy.mockRestore();
   });
 
@@ -282,7 +283,10 @@ describe("formatWithOptions", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = applyTitleRules(rules, "Example", "https://example.com");
     expect(result).toBe("Example");
-    expect(consoleSpy).toHaveBeenCalled();
+    const patternCalls = consoleSpy.mock.calls
+      .map(([, details]) => details?.pattern?.preview ?? details?.preview)
+      .filter(Boolean);
+    expect(patternCalls[0]).toContain("(unbalanced");
     consoleSpy.mockRestore();
   });
 
@@ -300,7 +304,10 @@ describe("formatWithOptions", () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = applyUrlRules(rules, "https://example.com");
     expect(result).toBe("https://example.com");
-    expect(consoleSpy).toHaveBeenCalled();
+    const patternCalls = consoleSpy.mock.calls
+      .map(([, details]) => details?.pattern?.preview ?? details?.preview)
+      .filter(Boolean);
+    expect(patternCalls[0]).toContain("(unbalanced");
     consoleSpy.mockRestore();
   });
 

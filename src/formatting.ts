@@ -24,7 +24,7 @@ function compileRegex(pattern: string, onError: (error: unknown) => void): RegEx
 
   try {
     if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
-      console.error("Refusing to compile unsafe regular expression.", { pattern });
+      console.error("Refusing to compile unsafe regular expression.", describePattern(pattern));
       return undefined;
     }
     return new RegExp(pattern);
@@ -34,13 +34,27 @@ function compileRegex(pattern: string, onError: (error: unknown) => void): RegEx
   }
 }
 
+function describePattern(pattern: string): { preview: string; length: number } {
+  const trimmed = pattern.trim();
+  const normalized = trimmed.replace(/\s+/g, " ");
+  const preview = normalized.length > 64 ? `${normalized.slice(0, 63)}…` : normalized;
+  return {
+    preview,
+    length: pattern.length,
+  };
+}
+
 function safeApplyRegex(
   source: string,
   pattern: string,
   replacement: string,
 ): RuleApplicationResult {
   const regex = compileRegex(pattern, (error) => {
-    console.error("Failed to apply regex replacement.", { pattern, replacement, error });
+    console.error("Failed to apply regex replacement.", {
+      pattern: describePattern(pattern),
+      replacement,
+      error,
+    });
   });
 
   if (!regex) {
@@ -61,7 +75,10 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
   }
 
   const regex = compileRegex(pattern, (error) => {
-    console.error("Invalid URL pattern; skipping rule.", { pattern, error });
+    console.error("Invalid URL pattern; skipping rule.", {
+      pattern: describePattern(pattern),
+      error,
+    });
   });
 
   if (!regex) {
