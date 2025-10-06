@@ -127,4 +127,30 @@ describe("options rule change tracker", () => {
     expect(titleConfig.saveButton.dataset.label).toBe("Store Title");
     expect(urlConfig.saveButton.dataset.label).toBe("Store URL");
   });
+
+  it("restores dirty state after overlapping saves complete", () => {
+    const titleConfig = createRuleConfig<TitleRule>("title");
+    titleConfig.saveButton.textContent = "Save Title";
+    const urlConfig = createRuleConfig<UrlRule>("url");
+
+    const tracker = createRuleChangeTracker({ title: titleConfig, url: urlConfig });
+    tracker.rememberSaveButtonLabels();
+
+    tracker.markDirty("title");
+    tracker.markDirty("url");
+
+    tracker.setSaving("title", true);
+    tracker.setDirty("title", true);
+
+    expect(tracker.isSaving("title")).toBe(true);
+    expect(titleConfig.saveButton.dataset.loading).toBe("true");
+    expect(titleConfig.saveButton.disabled).toBe(true);
+
+    tracker.setSaving("title", false);
+
+    expect(tracker.isSaving("title")).toBe(false);
+    expect(tracker.isDirty("title")).toBe(true);
+    expect(titleConfig.saveButton.disabled).toBe(false);
+    expect(urlConfig.saveButton.disabled).toBe(false);
+  });
 });
