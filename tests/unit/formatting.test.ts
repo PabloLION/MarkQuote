@@ -463,4 +463,28 @@ describe("formatWithOptions", () => {
       SAFE_REGEX_ALLOWLIST.delete(pattern);
     }
   });
+
+  it("rejects regex patterns that exceed the maximum allowed length", () => {
+    const longPattern = "a".repeat(600);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: longPattern,
+        titleReplace: "ignored",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyTitleRules(rules, "Headline", "https://example.com");
+
+    expect(result).toBe("Headline");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Regex pattern exceeds maximum length.",
+      expect.objectContaining({ length: longPattern.length }),
+    );
+    consoleSpy.mockRestore();
+  });
 });

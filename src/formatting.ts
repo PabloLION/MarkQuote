@@ -17,8 +17,15 @@ interface RuleApplicationResult {
   matched: boolean;
 }
 
+const MAX_REGEX_PATTERN_LENGTH = 500;
+
 function compileRegex(pattern: string, onError: (error: unknown) => void): RegExp | undefined {
   if (!pattern) {
+    return undefined;
+  }
+
+  if (pattern.length > MAX_REGEX_PATTERN_LENGTH) {
+    console.error("Regex pattern exceeds maximum length.", describePattern(pattern));
     return undefined;
   }
 
