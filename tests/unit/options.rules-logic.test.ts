@@ -93,6 +93,25 @@ describe("options/rules-logic moveRule", () => {
     expect(rules).toEqual(["a", "b"]);
   });
 
+  it("ignores moves when indices are equal", () => {
+    const rules = ["a", "b", "c"];
+    moveRule(rules, 1, 1);
+    expect(rules).toEqual(["a", "b", "c"]);
+  });
+
+  it("ignores moves with negative indices", () => {
+    const rules = ["a", "b", "c"];
+    moveRule(rules, -1, 1);
+    moveRule(rules, 1, -2);
+    expect(rules).toEqual(["a", "b", "c"]);
+  });
+
+  it("clamps target index when it exceeds list length", () => {
+    const rules = ["a", "b", "c"];
+    moveRule(rules, 0, 10);
+    expect(rules).toEqual(["a", "b", "c"]);
+  });
+
   it("filters rules and trims them", () => {
     const rules: FakeRule[] = [
       {
