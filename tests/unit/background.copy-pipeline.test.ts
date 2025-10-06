@@ -435,4 +435,37 @@ describe("background/copy-pipeline", () => {
       }
     }
   });
+
+  it("logs when fallback error persistence fails", async () => {
+    vi.useFakeTimers();
+    const persistError = new Error("persist failed");
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(errorsModule, "recordError").mockImplementation(async (context, error, extra) => {
+      if (context === ERROR_CONTEXT.PopupClipboardFallback) {
+        throw persistError;
+      }
+      return Promise.resolve();
+    });
+    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
+    Object.defineProperty(sinonChrome.runtime, "lastError", {
+      configurable: true,
+      get: () => ({ message: "fatal" }),
+    });
+    getScriptingMock().mockRejectedValueOnce(new Error("inject failed"));
+
+    await runCopyPipeline("Body", "Title", "https://example.com", "popup", 777);
+    markPopupReady();
+
+    await vi.runOnlyPendingTimersAsync();
+    await flushPromises();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[MarkQuote] Failed to record popup fallback error",
+      persistError,
+      expect.objectContaining({ tabId: 777, originalError: expect.any(Error) }),
+    );
+
+    consoleSpy.mockRestore();
+    vi.useRealTimers();
+  });
 });

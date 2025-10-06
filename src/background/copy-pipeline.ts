@@ -195,7 +195,14 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
       });
     }
   } catch (error) {
-    await recordError(ERROR_CONTEXT.PopupClipboardFallback, error, { tabId });
+    try {
+      await recordError(ERROR_CONTEXT.PopupClipboardFallback, error, { tabId });
+    } catch (persistError) {
+      console.error("[MarkQuote] Failed to record popup fallback error", persistError, {
+        tabId,
+        originalError: error,
+      });
+    }
   }
 }
 
