@@ -189,4 +189,35 @@ describe("rule drag manager", () => {
 
     expect(targetRow.classList.contains("drag-over")).toBe(false);
   });
+
+  it("allows dispose to be called multiple times", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const row = createRow(0);
+    manager.registerRow(row, "title", controller.signal);
+
+    manager.dispose();
+    expect(() => manager.dispose()).not.toThrow();
+  });
+
+  it("clears dragging state when disposed mid-drag", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const row = createRow(0);
+    manager.registerRow(row, "title", controller.signal);
+    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
+    manager.dispose();
+
+    const dropEvent = dispatchDragEvent(row, "drop");
+    expect(dropEvent.defaultPrevented).toBe(false);
+    expect(onReorder).not.toHaveBeenCalled();
+    expect(row.classList.contains("dragging")).toBe(false);
+  });
 });

@@ -141,6 +141,9 @@ export function createRuleDragManager(options: DragManagerOptions): RuleDragMana
   return {
     registerRow,
     dispose(): void {
+      if (draggingState) {
+        draggingState.row.classList.remove("dragging");
+      }
       draggingState = undefined;
     },
   };
