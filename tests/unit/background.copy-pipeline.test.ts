@@ -180,6 +180,38 @@ describe("background/copy-pipeline", () => {
     vi.useRealTimers();
   });
 
+  it("clears pending preview retries when popup closes and reopens quickly", async () => {
+    vi.useFakeTimers();
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    const sendMessageStub = sinonChrome.runtime.sendMessage;
+    sendMessageStub.onFirstCall().rejects(new Error("transient"));
+    sendMessageStub.onSecondCall().resolves();
+
+    await runCopyPipeline("Body", "Title", "https://example.com", "popup", 555);
+    markPopupReady();
+    await flushPromises();
+
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    markPopupClosed();
+    expect(vi.getTimerCount()).toBe(0);
+
+    await vi.runAllTimers();
+    expect(sendMessageStub.callCount).toBe(1);
+
+    await runCopyPipeline("Body two", "Next", "https://example.com/next", "popup", 556);
+    markPopupReady();
+    await flushPromises();
+
+    expect(sendMessageStub.callCount).toBe(2);
+
+    await vi.runAllTimers();
+    expect(sendMessageStub.callCount).toBe(2);
+    expect(recordErrorSpy).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
   it("captures last formatted preview in e2e mode", async () => {
     const originalEnv = process.env.VITE_E2E;
     process.env.VITE_E2E = "true";

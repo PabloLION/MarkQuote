@@ -82,4 +82,80 @@ describe("popup runtime bridge", () => {
       expect(onSelectionCopyError).toHaveBeenCalledWith(requestError);
     });
   });
+
+  it("removes lifecycle listeners on cleanup even when forced state skips runtime wiring", () => {
+    const runtime = createRuntimeMock();
+    const windowStub = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    } as unknown as Window;
+
+    const bridge = createRuntimeBridge({
+      runtime,
+      windowRef: windowStub,
+      onMessage: vi.fn(),
+      forcedState: {},
+    });
+
+    expect(windowStub.addEventListener).toHaveBeenCalledWith("pagehide", expect.any(Function));
+    expect(windowStub.addEventListener).toHaveBeenCalledWith("beforeunload", expect.any(Function));
+
+    bridge.cleanup();
+
+    expect(windowStub.removeEventListener).toHaveBeenCalledWith("pagehide", expect.any(Function));
+    expect(windowStub.removeEventListener).toHaveBeenCalledWith(
+      "beforeunload",
+      expect.any(Function),
+    );
+    expect(runtime.onMessage.removeListener).not.toHaveBeenCalled();
+  });
+
+  it("ignores async return values from message handlers", async () => {
+    const runtime = createRuntimeMock();
+    const onMessage = vi.fn(() => Promise.resolve("done"));
+
+    createRuntimeBridge({
+      runtime,
+      windowRef: window,
+      onMessage,
+    });
+
+    const sampleMessage = { type: "copy-protected" } as RuntimeMessage;
+    (runtime as unknown as { emit: (message: RuntimeMessage) => void }).emit(sampleMessage);
+
+    await vi.waitFor(() => {
+      expect(onMessage).toHaveBeenCalledWith(sampleMessage);
+    });
+  });
+
+  it("only notifies popup closed once across multiple lifecycle events", async () => {
+    const runtime = createRuntimeMock();
+    const listenerMap = new Map<string, EventListener>();
+    const windowStub = {
+      addEventListener: vi.fn((event: string, listener: EventListener) => {
+        listenerMap.set(event, listener);
+      }),
+      removeEventListener: vi.fn(),
+    } as unknown as Window;
+
+    createRuntimeBridge({
+      runtime,
+      windowRef: windowStub,
+      onMessage: vi.fn(),
+    });
+
+    const pagehideListener = listenerMap.get("pagehide");
+    const beforeunloadListener = listenerMap.get("beforeunload");
+    expect(pagehideListener).toBeTruthy();
+    expect(beforeunloadListener).toBeTruthy();
+
+    pagehideListener?.(new Event("pagehide"));
+    beforeunloadListener?.(new Event("beforeunload"));
+
+    const sendMessageMock = runtime.sendMessage as unknown as ReturnType<typeof vi.fn>;
+    const closedCalls = sendMessageMock.mock.calls.filter(
+      (args) => args[0]?.type === "popup-closed",
+    );
+    expect(closedCalls.length).toBe(1);
+  });
 });
