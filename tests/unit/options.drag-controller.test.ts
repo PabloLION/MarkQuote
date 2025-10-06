@@ -25,9 +25,9 @@ describe("rule drag manager", () => {
     const row = createRow(0);
     manager.registerRow(row, "title", controller.signal);
 
-    const handle = row.querySelector<HTMLButtonElement>(".drag-handle")!;
-
-    dispatchDragEvent(handle, "dragstart");
+    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
 
     const targetRow = row;
     targetRow.dataset.index = "1";
@@ -46,8 +46,9 @@ describe("rule drag manager", () => {
     const row = createRow(0);
     manager.registerRow(row, "url", controller.signal);
 
-    const handle = row.querySelector<HTMLButtonElement>(".drag-handle")!;
-    dispatchDragEvent(handle, "dragstart");
+    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
 
     row.dataset.index = "not-a-number";
     dispatchDragEvent(row, "drop");

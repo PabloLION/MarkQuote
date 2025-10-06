@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  getLastFormattedPreview,
   getLastPreviewError,
   markPopupClosed,
   markPopupReady,
@@ -395,7 +394,7 @@ describe("background/copy-pipeline", () => {
       expect(callbacks.length).toBe(1);
 
       markPopupClosed();
-      callbacks[0]!();
+      callbacks[0]?.();
 
       expect(setTimeoutSpy).toHaveBeenCalled();
       expect(clearTimeoutSpy).toHaveBeenCalled();

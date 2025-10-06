@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   filteredRulesInternal,
   handleRuleInputChangeFor,
@@ -17,7 +17,7 @@ type FakeRule = {
 
 const createConfig = (rules: FakeRule[]): RuleConfig<FakeRule> => {
   const body = document.createElement("tbody");
-  rules.forEach((rule, index) => {
+  rules.forEach((_rule, index) => {
     const row = document.createElement("tr");
     row.dataset.index = String(index);
     const patternInput = document.createElement("input");
