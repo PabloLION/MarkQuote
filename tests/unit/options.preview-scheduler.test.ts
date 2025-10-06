@@ -49,4 +49,37 @@ describe("preview scheduler", () => {
     scheduler.dispose();
     expect(window.cancelAnimationFrame).toHaveBeenCalledTimes(1);
   });
+
+  it("cancels scheduled frame when disposed before flush", () => {
+    const callbacks: FrameRequestCallback[] = [];
+    window.requestAnimationFrame = vi.fn((callback: FrameRequestCallback) => {
+      callbacks.push(callback);
+      return 42;
+    });
+    window.cancelAnimationFrame = vi.fn();
+
+    const update = vi.fn();
+    const scheduler = createPreviewScheduler(update);
+
+    scheduler.schedule();
+    scheduler.dispose();
+
+    expect(window.cancelAnimationFrame).toHaveBeenCalledWith(42);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("allows dispose to be called multiple times without side effects", () => {
+    window.requestAnimationFrame = vi.fn().mockReturnValue(99);
+    window.cancelAnimationFrame = vi.fn();
+
+    const update = vi.fn();
+    const scheduler = createPreviewScheduler(update);
+
+    scheduler.schedule();
+    scheduler.dispose();
+    scheduler.dispose();
+
+    expect(window.cancelAnimationFrame).toHaveBeenCalledTimes(1);
+    expect(update).not.toHaveBeenCalled();
+  });
 });
