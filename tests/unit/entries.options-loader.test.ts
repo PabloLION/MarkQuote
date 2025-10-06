@@ -105,4 +105,16 @@ describe("entries/options-loader", () => {
       vi.useRealTimers();
     }
   });
+
+  it("supports concurrent load requests without leaving timers dangling", async () => {
+    const importer = vi.fn(() => Promise.resolve(undefined));
+
+    await vi.resetModules();
+    const module = await import("../../src/entries/options-loader.js");
+    module.__setOptionsModuleImporter(importer);
+
+    await Promise.all([module.loadOptionsModule(), module.loadOptionsModule()]);
+
+    expect(importer).toHaveBeenCalledTimes(2);
+  });
 });

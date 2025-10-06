@@ -171,4 +171,17 @@ describe("entries/popup-loader", () => {
       vi.useRealTimers();
     }
   });
+
+  it("handles concurrent popup load requests", async () => {
+    const importer = vi.fn(() => Promise.resolve(undefined));
+
+    await vi.resetModules();
+    stubWindowLocation("http://localhost:5173/popup.html");
+    const module = await import("../../src/entries/popup-loader.js");
+    module.__setPopupModuleImporter(importer);
+
+    await Promise.all([module.loadPopupModule(), module.loadPopupModule()]);
+
+    expect(importer).toHaveBeenCalledTimes(2);
+  });
 });
