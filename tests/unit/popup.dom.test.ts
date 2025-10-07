@@ -29,6 +29,16 @@ describe("popup dom loader", () => {
     expect(dom.optionsButton?.id).toBe("options-button");
   });
 
+  it("returns null previewCode when the element is absent", () => {
+    document.body.innerHTML = `
+      <div id="message"><span id="message-text"></span></div>
+      <section id="preview"></section>
+    `;
+
+    const dom = loadPopupDom();
+    expect(dom.previewCode).toBeNull();
+  });
+
   it("throws when a required element is missing", () => {
     document.body.innerHTML = `<section id="preview"></section>`;
     expect(() => loadPopupDom()).toThrowError(/missing required element/);

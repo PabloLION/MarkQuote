@@ -133,6 +133,19 @@ describe("popup error controller", () => {
     controller.dispose();
   });
 
+  it("ignores malformed error payloads", async () => {
+    const dom = buildDom();
+    const runtime = {
+      sendMessage: vi.fn().mockResolvedValue({ errors: "not-an-array" }),
+    } as unknown as typeof chrome.runtime;
+
+    const controller = createErrorController(dom, runtime, () => {});
+    await controller.refresh();
+
+    expect(dom.errorContainer?.hidden).toBe(true);
+    expect(dom.errorList?.childElementCount).toBe(0);
+  });
+
   it("refreshes gracefully when runtime is unavailable", async () => {
     const dom = buildDom();
     const controller = createErrorController(dom, undefined, () => {});

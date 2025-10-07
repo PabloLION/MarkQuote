@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_OPTIONS, type TitleRule, type UrlRule } from "../../src/options-schema.js";
+import {
+  DEFAULT_OPTIONS,
+  SAFE_REGEX_ALLOWLIST,
+  type TitleRule,
+  type UrlRule,
+} from "../../src/options-schema.js";
 import {
   cloneOptions,
   cloneTitleRule,
@@ -100,6 +105,30 @@ describe("options/state", () => {
     expect(validateRegex("(unbalanced")).toBe(false);
     expect(consoleSpy).toHaveBeenCalled();
     expect(validateRegex("")).toBe(false);
+    consoleSpy.mockRestore();
+  });
+
+  it("logs when regex compilation throws", () => {
+    const originalRegExp = globalThis.RegExp;
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    SAFE_REGEX_ALLOWLIST.add("safe pattern");
+    globalThis.RegExp = vi.fn(() => {
+      throw new Error("boom");
+    }) as unknown as RegExpConstructor;
+
+    try {
+      expect(validateRegex("safe pattern")).toBe(false);
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Invalid regex pattern.",
+        expect.objectContaining({
+          pattern: expect.objectContaining({ preview: expect.any(String) }),
+        }),
+      );
+    } finally {
+      SAFE_REGEX_ALLOWLIST.delete("safe pattern");
+      globalThis.RegExp = originalRegExp;
+      consoleSpy.mockRestore();
+    }
   });
 
   it("normalizes format from textarea or fallback", () => {

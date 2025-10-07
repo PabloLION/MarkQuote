@@ -87,6 +87,12 @@ describe("options/rules-logic moveRule", () => {
     expect(rules).toEqual(["b", "c", "a", "d"]);
   });
 
+  it("clamps insertion when moving element toward the end", () => {
+    const rules = ["a", "b", "c", "d"];
+    moveRule(rules, 0, 3);
+    expect(rules).toEqual(["b", "c", "d", "a"]);
+  });
+
   it("ignores moves with out-of-range indices", () => {
     const rules = ["a", "b"];
     moveRule(rules, 5, 1);
