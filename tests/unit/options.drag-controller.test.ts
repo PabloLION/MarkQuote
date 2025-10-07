@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { createRuleDragManager } from "../../src/surfaces/options/helpers/drag-controller.js";
 
 describe("rule drag manager", () => {
-  function createRow(index: number): HTMLTableRowElement {
+  function createRow(index: number | null): HTMLTableRowElement {
     const row = document.createElement("tr");
-    row.dataset.index = String(index);
+    if (index !== null) {
+      row.dataset.index = String(index);
+    }
     const handle = document.createElement("button");
     handle.className = "drag-handle";
     handle.draggable = true;
@@ -12,8 +15,27 @@ describe("rule drag manager", () => {
     return row;
   }
 
-  function dispatchDragEvent(target: EventTarget, type: string): DragEvent {
+  function makeDataTransferStub() {
+    return {
+      setData: vi.fn(),
+      setDragImage: vi.fn(),
+      effectAllowed: "",
+      dropEffect: "",
+    };
+  }
+
+  function dispatchDragEvent(
+    target: EventTarget,
+    type: string,
+    init?: { dataTransfer?: Record<string, unknown> },
+  ): DragEvent {
     const event = new Event(type, { bubbles: true, cancelable: true }) as DragEvent;
+    if (init?.dataTransfer) {
+      Object.defineProperty(event, "dataTransfer", {
+        configurable: true,
+        value: init.dataTransfer,
+      });
+    }
     target.dispatchEvent(event);
     return event;
   }
@@ -39,23 +61,40 @@ describe("rule drag manager", () => {
     expect(onReorder).toHaveBeenCalledWith("title", 0, 1);
   });
 
-  it("ignores drops when indices are invalid", () => {
+  it("prevents drag start when the row index is missing", () => {
     const onReorder = vi.fn();
     const manager = createRuleDragManager({ onReorder });
     const controller = new AbortController();
 
-    const row = createRow(0);
-    manager.registerRow(row, "url", controller.signal);
+    const row = createRow(null);
+    manager.registerRow(row, "title", controller.signal);
 
     const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
     expect(handle).not.toBeNull();
-    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
 
-    row.dataset.index = "not-a-number";
-    dispatchDragEvent(row, "drop");
-
-    expect(onReorder).not.toHaveBeenCalled();
+    const event = dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
+    expect(event.defaultPrevented).toBe(true);
     expect(row.classList.contains("dragging")).toBe(false);
+  });
+
+  it("populates dataTransfer metadata during drag start", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const row = createRow(2);
+    manager.registerRow(row, "title", controller.signal);
+    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    const dataTransfer = makeDataTransferStub();
+    const event = dispatchDragEvent(handle as HTMLButtonElement, "dragstart", { dataTransfer });
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(dataTransfer.setData).toHaveBeenCalledWith("text/plain", "2");
+    expect(dataTransfer.setDragImage).toHaveBeenCalledWith(row, 0, 0);
+    expect(dataTransfer.effectAllowed).toBe("move");
+    expect(row.classList.contains("dragging")).toBe(true);
   });
 
   it("toggles visual state classes during drag lifecycle", () => {
@@ -96,6 +135,26 @@ describe("rule drag manager", () => {
     const overEvent = dispatchDragEvent(row, "dragover");
     expect(overEvent.defaultPrevented).toBe(false);
     expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it("updates dropEffect during dragover when dataTransfer is present", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const row = createRow(0);
+    manager.registerRow(row, "title", controller.signal);
+    const handle = row.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart", {
+      dataTransfer: makeDataTransferStub(),
+    });
+
+    const overTransfer = makeDataTransferStub();
+    const overEvent = dispatchDragEvent(row, "dragover", { dataTransfer: overTransfer });
+    expect(overEvent.defaultPrevented).toBe(true);
+    expect(overTransfer.dropEffect).toBe("move");
   });
 
   it("ignores drag events that cross scopes", () => {
