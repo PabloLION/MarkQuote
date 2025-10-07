@@ -119,6 +119,11 @@ describe("options-schema", () => {
           continueMatching: "true",
           enabled: "true",
         },
+        {
+          urlPattern: "   ",
+          titleSearch: "  ",
+          titleReplace: "  ",
+        },
       ],
     };
 
@@ -164,6 +169,11 @@ describe("options-schema", () => {
             comment: "noop",
             continueMatching: false,
             enabled: true,
+          },
+          {
+            urlPattern: " ",
+            urlSearch: " ",
+            urlReplace: " ",
           },
         ],
       },
