@@ -23,8 +23,7 @@ This file tracks features and tasks that are planned for future development cycl
 
 **Tasks:**
 
-- Add an onboarding smoke test that resets storage, opens the popup with default settings, triggers a copy, and asserts the default template output.
-- After the onboarding flow exists, add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
+- Add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
 
 ## Epic 4: Host Access UX
 

@@ -24,36 +24,58 @@
 Instead of an isolated table, the following graph outlines the shared setup and branching user flows the Playwright specs exercise. Nodes with multiple outgoing edges represent points where different user actions reuse the same groundwork.
 
 ```mermaid
-flowchart TD
-    A["Launch extension context<br>`launchExtensionContext`"] --> B["Route test page / seed storage"]
-    B --> C["Open content tab<br>prepare selection or stub"]
-    C --> D["Trigger copy source"]
+flowchart LR
+    subgraph "Arrange"
+        direction TB
+        A["launchExtensionContext()"] --> B["resetExtensionState()<br/>routeTestPage()"]
+        B --> C["openExtensionPage()<br/>prepareSelection()/DOM stub"]
+    end
 
-    D --> D1["Popup message (request-selection-copy)<br>`tests/e2e/copy-selection.spec.ts`"]
-    D --> D2["Hotkey command (toolbar pinned)<br>`tests/e2e/copy-selection.spec.ts`"]
-    D --> D3["Hotkey fallback (action unpinned)<br>`tests/e2e/hotkey-flow.spec.ts`"]
-    D --> D4["Context menu request<br>`tests/e2e/context-menu-flow.spec.ts`"]
+    subgraph "Act"
+        direction TB
+        D["invokeCopySource()"]
+        D --> D1["Popup bridge<br/>tests/e2e/copy-selection.spec.ts"]
+        D --> D2["Action hotkey (pinned)<br/>tests/e2e/copy-selection.spec.ts"]
+        D --> D3["Hotkey fallback (unpinned)<br/>tests/e2e/hotkey-flow.spec.ts"]
+        D --> D4["Context menu bridge<br/>tests/e2e/context-menu-flow.spec.ts"]
+        D --> D5["Onboarding bridge<br/>tests/e2e/onboarding-flow.spec.ts"]
+    end
 
-    D1 --> E["Preview rendered & clipboard asserted"]
+    subgraph "Assert"
+        direction TB
+        E["readLastFormatted()<br/>expect preview"] --> F["getBackgroundErrors()<br/>badge/assertions"] --> G["afterEach activeCleanup()<br/>dispose context"]
+    end
+
+    C --> D
+    D1 --> E
     D2 --> E
     D3 --> E
     D4 --> E
-
-    E --> F["Validate background state<br>(preview text, error log, badge)"]
-    F --> G["Cleanup via shared `afterEach`<br>(`activeCleanup` closes context)"]
+    D5 --> E
 ```
+
+
+
 
 ### Flow Highlights
 
-- **Shared setup**: every spec launches a fresh persistent-context Chromium profile, navigates to the test page, and prepares a selection (either by DOM manipulation or background stub via `primeSelectionStub`).
-- **Trigger stage** (`D` above) branches per user action:
+*(AAA = Arrange → Act → Assert — this is the structure the diagram follows.)*
+
+- **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `primeSelectionStub`, and `open content tab` to provide a real selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
+- **Act (Trigger)**: the graph highlights each user action after Arrange.
   - `tests/e2e/copy-selection.spec.ts` covers popup requests (`chrome.runtime.sendMessage` on load) and the standard hotkey path (action pinned).
+  - `tests/e2e/onboarding-flow.spec.ts` resets storage to defaults and confirms the popup produces the default template on the first copy.
   - `tests/e2e/hotkey-flow.spec.ts` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The test verifies both the copied preview and the recorded warning.
   - `tests/e2e/context-menu-flow.spec.ts` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
-- **Validation**: all flows assert the formatted markdown returned by `e2e:get-last-formatted` and check the relevant side effects (badge/errors where applicable). Clipboard success is accepted when the preview text matches—actual OS clipboard access remains outside automated scope.
-- **Cleanup**: `test.afterEach` stores a disposer in `activeCleanup` so every Playwright spec closes its persistent context and temporary user data dir.
+- **Assert (Validation + cleanup)**: all flows assert the formatted markdown returned by `e2e:get-last-formatted` and check the relevant side effects (badge/errors where applicable). Clipboard success is accepted when the preview text matches—actual OS clipboard access remains outside automated scope.
 
 ## Upcoming Coverage (Story 3.9)
 
-1. **Error log lifecycle** — seed errors through the bridge, confirm the badge and popup list reflect them, then clear the log and verify badge reset.
-2. **First-run onboarding** — reset storage to defaults, open the popup without visiting options, trigger a copy, and assert the default template/preview succeeds without prior configuration.
+- **Error log lifecycle** — seed errors through the bridge, confirm the badge and popup list reflect them, then clear the log and verify badge reset.
+
+
+### Additional Scenarios to Cover
+
+- Duplicate copy events (e.g., hotkey triggered twice without closing popup).
+- Toolbar action click once Chrome exposes a safe automation API (currently manual).
+- Protected page copy followed by manual fallback acknowledgement.
