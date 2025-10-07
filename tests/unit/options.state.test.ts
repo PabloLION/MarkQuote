@@ -99,6 +99,7 @@ describe("options/state", () => {
     expect(validateRegex("[[[")).toBe(false);
     expect(validateRegex("(unbalanced")).toBe(false);
     expect(consoleSpy).toHaveBeenCalled();
+    expect(validateRegex("")).toBe(false);
   });
 
   it("normalizes format from textarea or fallback", () => {
