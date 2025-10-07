@@ -5,6 +5,8 @@ import {
   copySelectionToClipboard,
 } from "../../src/background/clipboard-injection.js";
 
+const encoder = new TextEncoder();
+
 describe("background/clipboard-injection", () => {
   const originalNavigator = navigator;
   const originalExecCommand = document.execCommand;
@@ -113,7 +115,32 @@ describe("background/clipboard-injection", () => {
     expect(writeSpy).not.toHaveBeenCalled();
     expect(consoleSpy).toHaveBeenCalledWith(
       "[MarkQuote] Refusing to copy oversized clipboard payload",
-      expect.objectContaining({ length: oversized.length }),
+      expect.objectContaining({ bytes: oversized.length }),
+    );
+
+    consoleSpy.mockRestore();
+  });
+
+  it("measures byte length when enforcing the clipboard cap", async () => {
+    const writeSpy = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { clipboard: { writeText: writeSpy } },
+    });
+    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const multibyte = "🙂";
+    const bytesPerChar = encoder.encode(multibyte).length;
+    const repetitions = Math.floor(CLIPBOARD_MAX_BYTES / bytesPerChar) + 1;
+    const payload = multibyte.repeat(repetitions);
+
+    const result = await copySelectionToClipboard(payload);
+
+    expect(result).toBe(false);
+    expect(writeSpy).not.toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[MarkQuote] Refusing to copy oversized clipboard payload",
+      expect.objectContaining({ bytes: encoder.encode(payload).length }),
     );
 
     consoleSpy.mockRestore();

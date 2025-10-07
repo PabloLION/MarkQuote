@@ -4,10 +4,13 @@
  */
 export const CLIPBOARD_MAX_BYTES = 1_000_000; // Prevent unbounded writes that could hang target pages.
 
+const textEncoder = new TextEncoder();
+
 export async function copySelectionToClipboard(value: string): Promise<boolean> {
-  if (value.length > CLIPBOARD_MAX_BYTES) {
+  const byteLength = textEncoder.encode(value).length;
+  if (byteLength > CLIPBOARD_MAX_BYTES) {
     console.warn("[MarkQuote] Refusing to copy oversized clipboard payload", {
-      length: value.length,
+      bytes: byteLength,
     });
     return false;
   }
