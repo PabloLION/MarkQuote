@@ -82,6 +82,20 @@ describe("popup copy flow", () => {
     );
   });
 
+  it("handles generic clipboard failures", async () => {
+    (copyMarkdownToClipboard as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("boom"));
+    const preview = createPreview();
+    const messages = createMessages();
+    const copyFlow = createCopyFlow({ preview, messages });
+
+    await copyFlow.handleMessage({ type: "copied-text-preview", text: "Generic" });
+
+    expect(messages.set).toHaveBeenLastCalledWith(
+      "Clipboard permission denied. Copy manually below.",
+      expect.objectContaining({ variant: "warning" }),
+    );
+  });
+
   it("handles protected messages", async () => {
     const preview = createPreview();
     const messages = createMessages();
