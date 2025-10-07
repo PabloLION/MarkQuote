@@ -6,7 +6,11 @@ import {
   DEFAULT_TEMPLATE,
   type OptionsPayload,
 } from "../../src/options-schema.js";
-import { readLastFormatted, sendSelectionMessage, setOptionsPayload } from "./helpers/e2e.js";
+import {
+  readLastFormatted,
+  sendSelectionMessage,
+  setOptionsPayload,
+} from "./helpers/background-bridge.js";
 import {
   getExtensionId,
   launchExtensionContext,

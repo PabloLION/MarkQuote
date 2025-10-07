@@ -38,7 +38,7 @@ describe("handleE2eMessage", () => {
     expect(handled).toBe(true);
     await flushMicrotasks();
 
-    expect(triggerCommand).toHaveBeenCalledWith(tab);
+    expect(triggerCommand).toHaveBeenCalledWith(tab, undefined);
     expect(sendResponse).toHaveBeenCalledWith({ ok: true });
   });
 
@@ -195,5 +195,64 @@ describe("handleE2eMessage", () => {
 
     expect(resetStorage).toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+  });
+  it("returns the active tab metadata", async () => {
+    chrome.tabs.query.resolves([
+      { id: 9, windowId: 100, url: "https://example.com", title: "Example" },
+    ]);
+    const sendResponse = vi.fn();
+
+    const handled = handleE2eMessage({
+      request: { type: "e2e:get-active-tab" },
+      sender: { tab: undefined } as any,
+      sendResponse,
+      persistOptions: vi.fn(),
+      recordError: vi.fn(),
+      triggerCopy: vi.fn(),
+      triggerCommand: vi.fn(),
+      getErrorLog: vi.fn(),
+      clearErrorLog: vi.fn(),
+      resetStorage: vi.fn(),
+    });
+
+    expect(handled).toBe(true);
+    await flushMicrotasks();
+
+    expect(sendResponse).toHaveBeenCalledWith({
+      id: 9,
+      windowId: 100,
+      url: "https://example.com",
+      title: "Example",
+    });
+  });
+
+  it("finds a tab by URL pattern", async () => {
+    chrome.tabs.query.resolves([
+      { id: 7, windowId: 2, url: "https://example.com/article", title: "Example" },
+    ]);
+    const sendResponse = vi.fn();
+
+    const handled = handleE2eMessage({
+      request: { type: "e2e:find-tab", url: "https://example.com/*" },
+      sender: { tab: undefined } as any,
+      sendResponse,
+      persistOptions: vi.fn(),
+      recordError: vi.fn(),
+      triggerCopy: vi.fn(),
+      triggerCommand: vi.fn(),
+      getErrorLog: vi.fn(),
+      clearErrorLog: vi.fn(),
+      resetStorage: vi.fn(),
+    });
+
+    expect(handled).toBe(true);
+    await flushMicrotasks();
+
+    expect(sendResponse).toHaveBeenCalledWith({
+      id: 7,
+      windowId: 2,
+      url: "https://example.com/article",
+      title: "Example",
+    });
   });
 });

@@ -55,14 +55,17 @@ export async function primeSelectionStub(
   }
 }
 
-export async function triggerHotkeyCommand(page: Page, tabId?: number): Promise<void> {
-  const result = await page.evaluate((id) => {
+export async function triggerHotkeyCommand(
+  page: Page,
+  options: { tabId?: number; forcePinned?: boolean } = {},
+): Promise<void> {
+  const result = await page.evaluate((payload) => {
     return new Promise<{ ok: boolean; error?: string }>((resolve) => {
-      chrome.runtime.sendMessage({ type: "e2e:trigger-command", tabId: id }, (response) => {
+      chrome.runtime.sendMessage({ type: "e2e:trigger-command", ...payload }, (response) => {
         resolve(response ?? { ok: false, error: "No response received" });
       });
     });
-  }, tabId);
+  }, options);
 
   if (!result?.ok) {
     throw new Error(`Failed to trigger command: ${result?.error ?? "unknown error"}`);
@@ -86,18 +89,28 @@ export async function triggerContextCopy(
   }
 }
 
-export async function getBackgroundErrors(page: Page): Promise<unknown> {
+export async function getBackgroundErrors(
+  page: Page,
+): Promise<Array<{ message: string; context: string; timestamp: number }>> {
   return page.evaluate(() => {
-    return new Promise<unknown>((resolve, reject) => {
-      chrome.runtime.sendMessage({ type: "e2e:get-error-log" }, (response) => {
-        if (!response) {
-          reject(new Error("No response received"));
-          return;
-        }
+    return new Promise<Array<{ message: string; context: string; timestamp: number }>>(
+      (resolve, reject) => {
+        chrome.runtime.sendMessage({ type: "e2e:get-error-log" }, (response) => {
+          if (!response) {
+            reject(new Error("No response received"));
+            return;
+          }
 
-        resolve(response.errors ?? []);
-      });
-    });
+          resolve(
+            (response.errors ?? []) as Array<{
+              message: string;
+              context: string;
+              timestamp: number;
+            }>,
+          );
+        });
+      },
+    );
   });
 }
 
@@ -144,4 +157,65 @@ export async function resetExtensionState(page: Page): Promise<void> {
   if (!result?.ok) {
     throw new Error(`Failed to reset extension state: ${result?.error ?? "unknown error"}`);
   }
+}
+
+export async function getActiveTab(page: Page): Promise<{
+  id: number | null;
+  windowId: number | null;
+  url: string | null;
+  title: string | null;
+}> {
+  const response = await page.evaluate(() => {
+    return new Promise<
+      | { id: number | null; windowId: number | null; url: string | null; title: string | null }
+      | { ok: false; error?: string }
+    >((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:get-active-tab" }, (payload) => {
+        resolve(payload ?? { ok: false, error: "No response received" });
+      });
+    });
+  });
+
+  if ("ok" in response && response.ok === false) {
+    throw new Error(response.error ?? "Failed to read active tab");
+  }
+
+  return response as {
+    id: number | null;
+    windowId: number | null;
+    url: string | null;
+    title: string | null;
+  };
+}
+
+export async function findTabByUrl(
+  page: Page,
+  urlPattern: string,
+): Promise<{
+  id: number | null;
+  windowId: number | null;
+  url: string | null;
+  title: string | null;
+}> {
+  const response = await page.evaluate((pattern) => {
+    return new Promise<
+      | { id: number | null; windowId: number | null; url: string | null; title: string | null }
+      | { ok: false; error?: string }
+    >((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:find-tab", url: pattern }, (payload) => {
+        resolve(payload ?? { ok: false, error: "No response received" });
+      });
+    });
+  }, urlPattern);
+
+  if ("ok" in response && response.ok === false) {
+    throw new Error(response.error ?? "Failed to locate tab");
+  }
+
+  return response as {
+    id: number | null;
+    windowId: number | null;
+    url: string | null;
+    title: string | null;
+  };
 }

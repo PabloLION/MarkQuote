@@ -10,6 +10,8 @@ import {
   DEFAULT_URL,
   E2E_CLEAR_ERROR_LOG_MESSAGE,
   E2E_CONTEXT_COPY_MESSAGE,
+  E2E_FIND_TAB_MESSAGE,
+  E2E_GET_ACTIVE_TAB_MESSAGE,
   E2E_GET_ERROR_LOG_MESSAGE,
   E2E_LAST_FORMATTED_MESSAGE,
   E2E_RESET_STORAGE_MESSAGE,
@@ -39,7 +41,7 @@ type MessageContext = {
     extra?: Record<string, unknown>,
   ) => Promise<void>;
   triggerCopy: (tab: chrome.tabs.Tab | undefined, source: CopySource) => Promise<void>;
-  triggerCommand: (tab: chrome.tabs.Tab | undefined) => Promise<void>;
+  triggerCommand: (tab: chrome.tabs.Tab | undefined, forcePinned?: boolean) => Promise<void>;
   getErrorLog: () => Promise<LoggedError[]>;
   clearErrorLog: () => Promise<void>;
   resetStorage: () => Promise<void>;
@@ -138,7 +140,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
   }
 
   if (message.type === E2E_TRIGGER_COMMAND_MESSAGE) {
-    const { tabId } = request as { tabId?: number };
+    const { tabId, forcePinned } = request as { tabId?: number; forcePinned?: boolean };
     void (async () => {
       let tab: chrome.tabs.Tab | undefined;
       try {
@@ -151,7 +153,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
         return;
       }
 
-      await triggerCommand(tab);
+      await triggerCommand(tab, forcePinned);
       sendResponse?.({ ok: true });
     })().catch((error) => {
       sendResponse?.({ ok: false, error: error instanceof Error ? error.message : String(error) });
@@ -237,6 +239,51 @@ export function handleE2eMessage(context: MessageContext): boolean {
     void resetStorage()
       .then(() => {
         sendResponse?.({ ok: true });
+      })
+      .catch((error) => {
+        sendResponse?.({
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    return true;
+  }
+
+  if (message.type === E2E_GET_ACTIVE_TAB_MESSAGE) {
+    void chrome.tabs
+      .query({ active: true, lastFocusedWindow: true })
+      .then((tabs) => {
+        const [tab] = tabs;
+        sendResponse?.({
+          id: tab?.id ?? null,
+          windowId: tab?.windowId ?? null,
+          url: tab?.url ?? null,
+          title: tab?.title ?? null,
+        });
+      })
+      .catch((error) => {
+        sendResponse?.({
+          ok: false,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+    return true;
+  }
+
+  if (message.type === E2E_FIND_TAB_MESSAGE) {
+    const { url } = request as { url?: string };
+    const query: chrome.tabs.QueryInfo = url ? { url } : {};
+
+    void chrome.tabs
+      .query(query)
+      .then((tabs) => {
+        const [tab] = tabs;
+        sendResponse?.({
+          id: tab?.id ?? null,
+          windowId: tab?.windowId ?? null,
+          url: tab?.url ?? null,
+          title: tab?.title ?? null,
+        });
       })
       .catch((error) => {
         sendResponse?.({

@@ -1,5 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { primeSelectionStub, readLastFormatted, sendSelectionMessage } from "./helpers/e2e.js";
+import {
+  primeSelectionStub,
+  readLastFormatted,
+  sendSelectionMessage,
+} from "./helpers/background-bridge.js";
 import {
   getExtensionId,
   type LaunchExtensionResult,

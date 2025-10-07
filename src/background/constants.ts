@@ -9,6 +9,8 @@ export const E2E_GET_ERROR_LOG_MESSAGE = "e2e:get-error-log";
 export const E2E_CLEAR_ERROR_LOG_MESSAGE = "e2e:clear-error-log";
 export const E2E_SEED_ERROR_MESSAGE = "e2e:seed-error";
 export const E2E_RESET_STORAGE_MESSAGE = "e2e:reset-storage";
+export const E2E_GET_ACTIVE_TAB_MESSAGE = "e2e:get-active-tab";
+export const E2E_FIND_TAB_MESSAGE = "e2e:find-tab";
 export const ERROR_STORAGE_KEY = "markquote-error-log";
 export const ACTIVE_TAB_PERMISSION_MESSAGE =
   'Chrome only grants keyboard shortcuts access after you allow the site in the extension\'s "Site access" settings.';

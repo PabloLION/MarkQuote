@@ -237,13 +237,28 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
     return;
   }
 
+  const tabId = tab.id;
+
+  if (isE2ETest) {
+    const stub = consumeSelectionStub();
+    if (stub) {
+      setPendingSource(tabId, source);
+      try {
+        await runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e");
+      } catch (error) {
+        void recordError(ERROR_CONTEXT.E2EStubSelection, error);
+      } finally {
+        clearPendingSource(tabId);
+      }
+      return;
+    }
+  }
+
   try {
     await pendingSourcesRestored;
   } catch (error) {
     console.debug("[MarkQuote] Pending copy sources failed to restore before triggerCopy", error);
   }
-
-  const tabId = tab.id;
   const targetUrl = getTabUrl(tab);
   if (isUrlProtected(targetUrl)) {
     notifyCopyProtected(tab, source, targetUrl);
@@ -299,22 +314,29 @@ chrome.commands.onCommand.addListener((command, tab) => {
  * Handles the keyboard shortcut flow. Chrome requires the action to be pinned before the popup can
  * open, so we detect that case and fall back to direct copying.
  */
-async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<void> {
+async function handleHotkeyCommand(
+  tab: chrome.tabs.Tab | undefined,
+  overridePinned?: boolean,
+): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
 
   let isPinned = true;
-  try {
-    const settings = await chrome.action.getUserSettings();
-    isPinned = Boolean(settings?.isOnToolbar);
-    console.info("[MarkQuote] Hotkey: action settings", settings);
-  } catch (error) {
-    console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
-    await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
-    if (tab) {
-      await triggerCopy(tab, source);
+  if (overridePinned === undefined) {
+    try {
+      const settings = await chrome.action.getUserSettings();
+      isPinned = Boolean(settings?.isOnToolbar);
+      console.info("[MarkQuote] Hotkey: action settings", settings);
+    } catch (error) {
+      console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
+      await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
+      if (tab) {
+        await triggerCopy(tab, source);
+      }
+      return;
     }
-    return;
+  } else {
+    isPinned = overridePinned;
   }
 
   if (!isPinned) {
@@ -517,8 +539,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       triggerCopy: async (tab, source) => {
         await triggerCopy(tab, source);
       },
-      triggerCommand: async (tab) => {
-        await handleHotkeyCommand(tab);
+      triggerCommand: async (tab, forcePinned) => {
+        await handleHotkeyCommand(tab, forcePinned);
       },
       getErrorLog: getStoredErrors,
       clearErrorLog: clearStoredErrors,
