@@ -147,6 +147,36 @@ function clearPendingSource(tabId: number): void {
   }
 }
 
+async function resetExtensionState(): Promise<void> {
+  pendingCopySources.clear();
+  hotkeyFallbackTab = undefined;
+  cancelHotkeyFallback();
+  setPopupDocumentId(undefined);
+  markPopupClosed();
+  setLastPreviewError(undefined);
+
+  const tasks: Promise<unknown>[] = [];
+  const sessionStorage = getSessionStorage();
+  if (sessionStorage) {
+    tasks.push(sessionStorage.clear());
+  }
+
+  const syncStorage = chrome.storage?.sync;
+  if (syncStorage) {
+    tasks.push(syncStorage.clear());
+  }
+
+  tasks.push(clearStoredErrors());
+
+  try {
+    await Promise.all(tasks);
+  } catch (error) {
+    console.warn("[MarkQuote] Failed to reset storage during E2E reset", error);
+  }
+
+  await ensureOptionsInitialized();
+}
+
 /**
  * Helper that normalises chrome runtime errors into a human-readable string. Chrome occasionally
  * returns undefined messages, so we supply a fallback.
@@ -484,6 +514,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse,
       persistOptions,
       recordError,
+      triggerCopy: async (tab, source) => {
+        await triggerCopy(tab, source);
+      },
+      triggerCommand: async (tab) => {
+        await handleHotkeyCommand(tab);
+      },
+      getErrorLog: getStoredErrors,
+      clearErrorLog: clearStoredErrors,
+      resetStorage: resetExtensionState,
     });
     if (handled) {
       return true;
