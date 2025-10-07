@@ -71,6 +71,9 @@ export function validateRegex(pattern: string): boolean {
     return false;
   }
 
+  // `compileRegex` handles both the maximum length guard and the safety check; when it reports an
+  // error we simply surface the failure and allow the caller to keep editing. Throwing here would
+  // break the optimistic form UX, so we rely on the shared helper to capture diagnostics.
   return (
     compileRegex(pattern, (error) => {
       console.error("Invalid regex pattern.", { pattern: describePattern(pattern), error });
