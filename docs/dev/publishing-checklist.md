@@ -20,10 +20,10 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
    - Open the options page and validate rule edits persist.
 
 ## 3. Bundle
-- Preferred: `pnpm bundle` (runs the release bundle script, verifies manifest version, and drops
-  `.dev/releases/markquote-v<version>.zip`). The `.dev/` directory is git-ignored, so remember to
-  upload the archive before cleaning your workspace.
-- If packaging manually, zip the `dist/` folder and place the archive under `.dev/releases/`.
+- Preferred: `pnpm bundle` (runs the release bundle script, verifies manifest version, and produces
+  `dist/markquote-v<version>.zip`). Use this artifact when drafting the GitHub Release.
+- If packaging manually, zip the `dist/` folder and upload the archive directly to the GitHub
+  Release draft; keeping duplicates under `.dev/releases/` is optional.
 
 ## 4. Refresh Store Assets
 - `pnpm tools:chrome-assets` (use `--confirm` to review each capture). The script opens the
@@ -32,7 +32,8 @@ This guide covers the steps required to ship MarkQuote to the Chrome Web Store w
 
 ## 5. Store Submission / Automation
 - Source `.dev/secrets/chrome-web-store.env` (or export env vars) and run `pnpm publish:chrome dist/markquote-v<version>.zip`.
-- Inspect the script output; on success capture the JSON response in release notes.
+- Inspect the script output; on success capture the JSON response in the GitHub Release draft.
+- Attach the bundled ZIP and changelog to the GitHub Release (marks our canonical archive).
 - If manual submission is required, sign in to the Chrome Web Store Developer Dashboard, upload the ZIP, and publish.
 - Update listing copy, privacy policy, support URL, and release notes as needed.
 
