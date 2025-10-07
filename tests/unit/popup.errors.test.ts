@@ -132,4 +132,16 @@ describe("popup error controller", () => {
     warnSpy.mockRestore();
     controller.dispose();
   });
+
+  it("refreshes gracefully when runtime is unavailable", async () => {
+    const dom = buildDom();
+    const controller = createErrorController(dom, undefined, () => {});
+
+    await controller.refresh();
+    expect(dom.problemBadge?.hasAttribute("hidden")).toBe(true);
+
+    dom.dismissErrorsButton?.click();
+    await expect(controller.refresh()).resolves.toBeUndefined();
+    controller.dispose();
+  });
 });
