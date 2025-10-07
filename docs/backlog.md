@@ -42,3 +42,15 @@ This file tracks features and tasks that are planned for future development cycl
 - Introduce focusable move controls (e.g., up/down buttons or keyboard shortcuts) for each rule row.
 - Announce position changes via ARIA live regions to keep screen reader users informed.
 - Update documentation and tests to cover the non-pointer interaction path.
+
+## Epic 6: Configuration Hygiene
+
+### Story: Centralize Shared Runtime Constants
+
+**Goal:** Reduce duplication and misalignment by moving clipboard limits, loader timeouts, and UI status values into a single configuration module.
+
+**Tasks:**
+
+- Audit the extension for duplicated configuration literals (e.g., loader timeouts, clipboard caps, status labels).
+- Create a shared runtime constants module that can be imported by background, popup, and options surfaces without circular dependencies.
+- Update existing modules to consume the shared constants and adjust tests/documentation accordingly.
