@@ -66,6 +66,9 @@ function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplic
   }
 
   if (!rule.titleSearch) {
+    // A blank search string represents a simple "rewrite the title whenever the URL matches"
+    // rule. Treat it as a match so the calling loop can respect `continueMatching` semantics
+    // without forcing the user to provide a redundant pattern.
     return { value: title, matched: true };
   }
 
@@ -101,6 +104,8 @@ function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
   }
 
   if (!rule.urlSearch) {
+    // Empty search values intentionally short-circuit: the caller wants to rewrite the URL based on
+    // the pattern match alone, so we mark it as matched while preserving the original value.
     return { value: url, matched: true };
   }
 
