@@ -71,10 +71,7 @@ export function markPopupReady(): void {
 export function markPopupClosed(): void {
   popupReady = false;
   activePopupDocumentId = undefined;
-  if (queuedPopupRetryTimer) {
-    clearTimeout(queuedPopupRetryTimer);
-    queuedPopupRetryTimer = undefined;
-  }
+  cancelPopupPreviewRetry();
 
   if (queuedPopupPreview && typeof queuedPopupPreview.tabId === "number") {
     void fallbackCopyToTab(queuedPopupPreview.tabId, queuedPopupPreview.text);
@@ -90,10 +87,7 @@ export function setPopupDocumentId(documentId: string | undefined): void {
 function queuePopupPreview(payload: PopupPreviewPayload): void {
   queuedPopupPreview = payload;
 
-  if (queuedPopupRetryTimer) {
-    clearTimeout(queuedPopupRetryTimer);
-    queuedPopupRetryTimer = undefined;
-  }
+  cancelPopupPreviewRetry();
 
   if (!popupReady) {
     return;
@@ -104,9 +98,7 @@ function queuePopupPreview(payload: PopupPreviewPayload): void {
 }
 
 function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number): void {
-  if (queuedPopupRetryTimer) {
-    clearTimeout(queuedPopupRetryTimer);
-  }
+  cancelPopupPreviewRetry();
 
   const delay = POPUP_PREVIEW_RETRY_DELAY_MS * Math.max(attempt, 1);
   queuedPopupRetryTimer = setTimeout(() => {
@@ -121,12 +113,14 @@ function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number
   }, delay);
 }
 
-async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number): Promise<void> {
-  if (!popupReady) {
-    queuedPopupPreview = payload;
-    return;
+function cancelPopupPreviewRetry(): void {
+  if (queuedPopupRetryTimer) {
+    clearTimeout(queuedPopupRetryTimer);
+    queuedPopupRetryTimer = undefined;
   }
+}
 
+async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number): Promise<void> {
   try {
     const documentId = activePopupDocumentId;
     const runtimeId = chrome.runtime?.id;
