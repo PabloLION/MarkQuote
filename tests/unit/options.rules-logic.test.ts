@@ -214,6 +214,28 @@ describe("options/rules-logic moveRule", () => {
     expect(rules[0].search).toBe("    spaced");
   });
 
+  it("returns false when dataset field is missing", () => {
+    const rules: FakeRule[] = [
+      { pattern: "value", search: "", replace: "", continueMatching: false, enabled: true },
+    ];
+    const config = createConfig(rules);
+    const input = document.createElement("input");
+    input.dataset.index = "0";
+
+    expect(handleRuleInputChangeFor(config, input)).toBe(false);
+  });
+
+  it("returns false when the addressed rule is undefined", () => {
+    const rules = [undefined as unknown as FakeRule];
+    const config = createConfig(rules);
+    const input = document.createElement("input");
+    input.dataset.index = "0";
+    input.dataset.field = "pattern";
+    input.value = "next";
+
+    expect(handleRuleInputChangeFor(config, input)).toBe(false);
+  });
+
   it("validates rule fields and marks invalid inputs", () => {
     const rules: FakeRule[] = [
       {

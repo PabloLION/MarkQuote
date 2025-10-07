@@ -419,6 +419,43 @@ describe("background/copy-pipeline", () => {
     );
   });
 
+  it("normalizes non-error runtime failures", async () => {
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
+      callback: (...cbArgs: unknown[]) => void,
+      _delay?: number,
+      ...args: unknown[]
+    ) => {
+      callback(...args);
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    }) as typeof setTimeout);
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout").mockImplementation(() => {});
+
+    sinonChrome.runtime.sendMessage.rejects({
+      toString: () => "string failure",
+    } as unknown as Error);
+    Object.defineProperty(sinonChrome.runtime, "lastError", {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+
+    try {
+      await runCopyPipeline("Body", "Title", "https://example.com", "popup", 77);
+      setPopupDocumentId("doc");
+      markPopupReady();
+      await flushPromises();
+
+      expect(recordErrorSpy).toHaveBeenCalledWith(
+        ERROR_CONTEXT.NotifyPopupPreview,
+        "string failure",
+      );
+    } finally {
+      setTimeoutSpy.mockRestore();
+      clearTimeoutSpy.mockRestore();
+    }
+  });
+
   it("requeues preview when retry fires while popup is not ready", async () => {
     const callbacks: Array<() => void> = [];
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation((callback) => {

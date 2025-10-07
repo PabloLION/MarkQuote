@@ -19,6 +19,14 @@ describe("entries/loader-helpers", () => {
     await expect(controller.importWithTimeout("foo.js")).resolves.toEqual({ specifier: "foo.js" });
   });
 
+  it("falls back to dynamic import when no importer is provided", async () => {
+    const controller = createImportController();
+    controller.setModuleImporter();
+
+    const module = await controller.importWithTimeout("../options-schema.js");
+    expect(module).toHaveProperty("DEFAULT_OPTIONS");
+  });
+
   it("rejects when a module load exceeds the timeout", async () => {
     const realClearTimeout = globalThis.clearTimeout;
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((
