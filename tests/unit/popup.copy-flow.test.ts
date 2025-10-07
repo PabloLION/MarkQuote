@@ -83,6 +83,7 @@ describe("popup copy flow", () => {
   });
 
   it("handles generic clipboard failures", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     (copyMarkdownToClipboard as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("boom"));
     const preview = createPreview();
     const messages = createMessages();
@@ -91,9 +92,15 @@ describe("popup copy flow", () => {
     await copyFlow.handleMessage({ type: "copied-text-preview", text: "Generic" });
 
     expect(messages.set).toHaveBeenLastCalledWith(
-      "Clipboard permission denied. Copy manually below.",
+      "Unable to copy automatically. Text is ready below.",
       expect.objectContaining({ variant: "warning" }),
     );
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[MarkQuote] Clipboard copy failed",
+      expect.objectContaining({ reason: "boom" }),
+    );
+
+    warnSpy.mockRestore();
   });
 
   it("handles protected messages", async () => {

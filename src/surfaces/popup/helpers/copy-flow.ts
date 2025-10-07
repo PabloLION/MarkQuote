@@ -40,8 +40,11 @@ export function createCopyFlow(deps: CopyFlowDeps): CopyFlow {
         message = "Clipboard permission denied. Copy manually below.";
       } else if (failureName === "QuotaExceededError") {
         message = "Clipboard quota exceeded. Copy manually below.";
-      } else if (failureReason) {
-        message = "Clipboard permission denied. Copy manually below.";
+      } else if (failureReason || failureName) {
+        console.warn("[MarkQuote] Clipboard copy failed", {
+          name: failureName,
+          reason: failureReason,
+        });
       }
       deps.messages.set(message, {
         variant: "warning",
