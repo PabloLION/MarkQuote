@@ -14,8 +14,17 @@ This file tracks features and tasks that are planned for future development cycl
 - Write E2E tests for the core user journeys:
   - Copying a selection and verifying the clipboard content.
   - Verifying the functionality of the options page, including saving and applying title transformation rules.
-  - Testing the popup page UI and interactions.
+- Testing the popup page UI and interactions.
 - Integrate the E2E test suite into a CI/CD pipeline to run automatically.
+
+### Follow-up: Story 3.9 Completion Tasks
+
+**Goal:** Finish the remaining Playwright coverage required for the 1.1 release.
+
+**Tasks:**
+
+- Add an onboarding smoke test that resets storage, opens the popup with default settings, triggers a copy, and asserts the default template output.
+- After the onboarding flow exists, add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
 
 ## Epic 4: Host Access UX
 
