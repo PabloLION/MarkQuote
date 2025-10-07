@@ -111,7 +111,7 @@ describe("background/copy-pipeline", () => {
     expect(call?.args?.length).toBe(1);
   });
 
-  it("uses the captured document id when the runtime getter mutates state", async () => {
+  it("falls back to broadcast when the runtime getter clears the document id", async () => {
     const originalDescriptor = Object.getOwnPropertyDescriptor(sinonChrome.runtime, "id");
     Object.defineProperty(sinonChrome.runtime, "id", {
       configurable: true,
@@ -122,14 +122,18 @@ describe("background/copy-pipeline", () => {
     });
 
     try {
-      await runCopyPipeline("Body", "Title", "https://example.com", "popup", 654);
+      const result = await runCopyPipeline("Body", "Title", "https://example.com", "popup", 654);
       setPopupDocumentId("doc-stable");
       markPopupReady();
       await flushPromises();
 
       expect(sinonChrome.runtime.sendMessage.calledOnce).toBe(true);
       const call = sinonChrome.runtime.sendMessage.firstCall;
-      expect((call?.args?.[2] as { documentId?: string })?.documentId).toBe("doc-stable");
+      expect(call?.args?.[0]).toEqual({
+        type: "copied-text-preview",
+        text: result,
+      });
+      expect(call?.args?.length).toBe(1);
     } finally {
       if (originalDescriptor) {
         Object.defineProperty(sinonChrome.runtime, "id", originalDescriptor);
@@ -169,26 +173,40 @@ describe("background/copy-pipeline", () => {
 
   it("falls back to broadcast delivery when popup document id changes mid-send", async () => {
     const sendMessage = sinonChrome.runtime.sendMessage;
-    sendMessage.callsFake(async (...args: unknown[]) => {
-      // Simulate a popup teardown that clears the active document ID before the runtime message
-      // resolves. The pipeline should detect the mismatch and default to broadcast delivery.
-      setPopupDocumentId(undefined);
-      return args[0];
+
+    const originalDescriptor = Object.getOwnPropertyDescriptor(sinonChrome.runtime, "id");
+    Object.defineProperty(sinonChrome.runtime, "id", {
+      configurable: true,
+      get: () => {
+        setPopupDocumentId("doc-replacement");
+        return "test-extension";
+      },
     });
 
-    const result = await runCopyPipeline("Body", "Title", "https://example.com", "popup", 777);
+    try {
+      const result = await runCopyPipeline("Body", "Title", "https://example.com", "popup", 777);
 
-    setPopupDocumentId("doc-stale");
-    markPopupReady();
-    await flushPromises();
+      setPopupDocumentId("doc-stale");
+      markPopupReady();
+      await flushPromises();
 
-    expect(sendMessage.calledOnce).toBe(true);
-    const call = sendMessage.firstCall;
-    expect(call?.args?.[0]).toEqual({
-      type: "copied-text-preview",
-      text: result,
-    });
-    expect(call?.args?.length).toBe(1);
+      expect(sendMessage.calledOnce).toBe(true);
+      const call = sendMessage.firstCall;
+      expect(call?.args?.[0]).toEqual({
+        type: "copied-text-preview",
+        text: result,
+      });
+      expect(call?.args?.length).toBe(1);
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(sinonChrome.runtime, "id", originalDescriptor);
+      } else {
+        Object.defineProperty(sinonChrome.runtime, "id", {
+          configurable: true,
+          value: "test-extension",
+        });
+      }
+    }
   });
 
   it("retries transient failures and records an error when sending ultimately fails", async () => {
