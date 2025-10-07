@@ -129,7 +129,12 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
       text: payload.text,
     } as const;
 
-    if (documentId && runtimeId) {
+    const currentDocumentId = activePopupDocumentId;
+    const shouldTargetDocument = Boolean(
+      documentId && runtimeId && documentId === currentDocumentId,
+    );
+
+    if (shouldTargetDocument) {
       await chrome.runtime.sendMessage(runtimeId, message, {
         documentId,
       } as RuntimeMessageOptionsWithDocument);

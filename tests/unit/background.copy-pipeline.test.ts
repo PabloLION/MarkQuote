@@ -167,6 +167,30 @@ describe("background/copy-pipeline", () => {
     sinonChrome.runtime.id = originalId;
   });
 
+  it("falls back to broadcast delivery when popup document id changes mid-send", async () => {
+    const sendMessage = sinonChrome.runtime.sendMessage;
+    sendMessage.callsFake(async (...args: unknown[]) => {
+      // Simulate a popup teardown that clears the active document ID before the runtime message
+      // resolves. The pipeline should detect the mismatch and default to broadcast delivery.
+      setPopupDocumentId(undefined);
+      return args[0];
+    });
+
+    const result = await runCopyPipeline("Body", "Title", "https://example.com", "popup", 777);
+
+    setPopupDocumentId("doc-stale");
+    markPopupReady();
+    await flushPromises();
+
+    expect(sendMessage.calledOnce).toBe(true);
+    const call = sendMessage.firstCall;
+    expect(call?.args?.[0]).toEqual({
+      type: "copied-text-preview",
+      text: result,
+    });
+    expect(call?.args?.length).toBe(1);
+  });
+
   it("retries transient failures and records an error when sending ultimately fails", async () => {
     vi.useFakeTimers();
     const failure = new Error("send failed");
