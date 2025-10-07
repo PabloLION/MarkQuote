@@ -182,8 +182,5 @@ export function moveRule<TRule>(rules: TRule[], fromIndex: number, toIndex: numb
     // insertion point to the new array length to avoid leaving a sparse gap at the end.
     insertIndex = Math.min(insertIndex, rules.length);
   }
-  if (insertIndex > rules.length) {
-    insertIndex = rules.length;
-  }
   rules.splice(insertIndex, 0, rule);
 }
