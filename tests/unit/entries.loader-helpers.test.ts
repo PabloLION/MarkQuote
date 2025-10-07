@@ -77,4 +77,20 @@ describe("entries/loader-helpers", () => {
       }
     }
   });
+
+  it("detects Vitest worker flag on global", () => {
+    const workerKey = "__vitest_worker__";
+    const original = (globalThis as Record<string, unknown>)[workerKey];
+    (globalThis as Record<string, unknown>)[workerKey] = true;
+
+    try {
+      expect(isRunningUnderVitest({} as ImportMeta)).toBe(true);
+    } finally {
+      if (original !== undefined) {
+        (globalThis as Record<string, unknown>)[workerKey] = original;
+      } else {
+        delete (globalThis as Record<string, unknown>)[workerKey];
+      }
+    }
+  });
 });
