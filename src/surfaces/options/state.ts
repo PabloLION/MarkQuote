@@ -1,11 +1,10 @@
-import { compileRegex, describePattern, isPatternAllowed } from "../../lib/regex.js";
+import { compileRegex, describePattern } from "../../lib/regex.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_OPTIONS,
   DEFAULT_TEMPLATE,
   type OptionsPayload,
-  SAFE_REGEX_ALLOWLIST,
   type TitleRule,
   type UrlRule,
 } from "../../options-schema.js";
@@ -72,20 +71,11 @@ export function validateRegex(pattern: string): boolean {
     return false;
   }
 
-  try {
-    if (!isPatternAllowed(pattern)) {
-      console.error("Regex pattern flagged as potentially unsafe.", { pattern });
-      return false;
-    }
-    return (
-      compileRegex(pattern, (error) => {
-        console.error("Invalid regex pattern.", { pattern: describePattern(pattern), error });
-      }) !== undefined
-    );
-  } catch (error) {
-    console.error("Invalid regex pattern.", { pattern, error });
-    return false;
-  }
+  return (
+    compileRegex(pattern, (error) => {
+      console.error("Invalid regex pattern.", { pattern: describePattern(pattern), error });
+    }) !== undefined
+  );
 }
 
 export function normalizeFormat(templateField: HTMLTextAreaElement | null, draft: DraftOptions) {
