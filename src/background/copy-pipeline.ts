@@ -3,10 +3,28 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { copySelectionToClipboard } from "./clipboard-injection.js";
 import { isE2ETest } from "./constants.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
 import type { CopySource } from "./types.js";
+
+type RuntimeMessageOptionsWithDocument = chrome.runtime.MessageOptions & {
+  documentId?: string;
+};
+
+type PopupPreviewPayload = {
+  text: string;
+  tabId?: number;
+};
+
+const POPUP_PREVIEW_RETRY_DELAY_MS = 100; // Short retry window helps bridge popup startup races without noticeable delay.
+const POPUP_PREVIEW_MAX_RETRIES = 3;
+
+let popupReady = false;
+let queuedPopupPreview: PopupPreviewPayload | undefined;
+let queuedPopupRetryTimer: ReturnType<typeof setTimeout> | undefined;
+let activePopupDocumentId: string | undefined;
 
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
@@ -25,62 +43,143 @@ export async function runCopyPipeline(
   const formatted = await formatForClipboard(markdown, title, url);
 
   if (source === "popup") {
-    chrome.runtime
-      .sendMessage({ type: "copied-text-preview", text: formatted })
-      .then(() => {
-        if (isE2ETest) {
-          lastPreviewError = undefined;
-        }
-      })
-      .catch((error) => {
-        void recordError(ERROR_CONTEXT.NotifyPopupPreview, error);
-        if (typeof tabId === "number") {
-          void fallbackCopyToTab(tabId, formatted);
-        }
-        if (isE2ETest) {
-          lastPreviewError = error instanceof Error ? error.message : String(error);
-        }
-      });
+    queuePopupPreview({ text: formatted, tabId });
   }
 
   if (isE2ETest) {
     lastFormattedPreview = formatted;
+    lastPreviewError = undefined;
   }
 
   return formatted;
 }
 
+export function markPopupReady(): void {
+  popupReady = true;
+  if (queuedPopupRetryTimer) {
+    clearTimeout(queuedPopupRetryTimer);
+    queuedPopupRetryTimer = undefined;
+  }
+  if (!queuedPopupPreview) {
+    return;
+  }
+  const pending = queuedPopupPreview;
+  queuedPopupPreview = undefined;
+  void deliverPopupPreview(pending, 0);
+}
+
+export function markPopupClosed(): void {
+  popupReady = false;
+  activePopupDocumentId = undefined;
+  cancelPopupPreviewRetry();
+
+  if (queuedPopupPreview && typeof queuedPopupPreview.tabId === "number") {
+    void fallbackCopyToTab(queuedPopupPreview.tabId, queuedPopupPreview.text);
+  }
+
+  queuedPopupPreview = undefined;
+}
+
+export function setPopupDocumentId(documentId: string | undefined): void {
+  activePopupDocumentId = documentId;
+}
+
+function queuePopupPreview(payload: PopupPreviewPayload): void {
+  queuedPopupPreview = payload;
+
+  cancelPopupPreviewRetry();
+
+  if (!popupReady) {
+    return;
+  }
+
+  queuedPopupPreview = undefined;
+  void deliverPopupPreview(payload, 0);
+}
+
+function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number): void {
+  cancelPopupPreviewRetry();
+
+  const delay = POPUP_PREVIEW_RETRY_DELAY_MS * Math.max(attempt, 1);
+  queuedPopupRetryTimer = setTimeout(() => {
+    queuedPopupRetryTimer = undefined;
+    if (!popupReady) {
+      queuedPopupPreview = payload;
+      return;
+    }
+
+    queuedPopupPreview = undefined;
+    void deliverPopupPreview(payload, attempt);
+  }, delay);
+}
+
+function cancelPopupPreviewRetry(): void {
+  if (queuedPopupRetryTimer) {
+    clearTimeout(queuedPopupRetryTimer);
+    queuedPopupRetryTimer = undefined;
+  }
+}
+
+async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number): Promise<void> {
+  try {
+    const documentId = activePopupDocumentId;
+    const runtimeId = chrome.runtime?.id;
+    const message = {
+      type: "copied-text-preview",
+      text: payload.text,
+    } as const;
+
+    const currentDocumentId = activePopupDocumentId;
+    const shouldTargetDocument = Boolean(
+      documentId && runtimeId && documentId === currentDocumentId,
+    );
+
+    if (shouldTargetDocument) {
+      await chrome.runtime.sendMessage(runtimeId, message, {
+        documentId,
+      } as RuntimeMessageOptionsWithDocument);
+    } else {
+      await chrome.runtime.sendMessage(message);
+    }
+    if (isE2ETest) {
+      lastPreviewError = undefined;
+    }
+  } catch (error) {
+    const runtimeErrorMessage = chrome.runtime.lastError?.message;
+    const normalizedError =
+      runtimeErrorMessage ?? (error instanceof Error ? error.message : String(error));
+    const isTransient =
+      !runtimeErrorMessage || runtimeErrorMessage.includes("Receiving end does not exist");
+
+    if (isTransient && attempt + 1 < POPUP_PREVIEW_MAX_RETRIES) {
+      schedulePopupPreviewRetry(payload, attempt + 1);
+      return;
+    }
+
+    void recordError(ERROR_CONTEXT.NotifyPopupPreview, normalizedError);
+
+    if (typeof payload.tabId === "number") {
+      void fallbackCopyToTab(payload.tabId, payload.text);
+    }
+
+    if (isE2ETest) {
+      lastPreviewError = normalizedError;
+    }
+  }
+}
+
 async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  if (!Number.isInteger(tabId) || tabId < 0) {
+    await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Invalid tabId for fallback copy", {
+      tabId,
+    });
+    return;
+  }
+
   try {
     const [injection] = await chrome.scripting.executeScript({
       target: { tabId },
-      func: async (value: string) => {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(value);
-            return true;
-          }
-        } catch (_error) {
-          // Ignore and fall back to execCommand approach below.
-        }
-
-        const textarea = document.createElement("textarea");
-        textarea.value = value;
-        textarea.setAttribute("readonly", "true");
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.append(textarea);
-        textarea.select();
-
-        let success = false;
-        try {
-          success = document.execCommand("copy");
-        } finally {
-          textarea.remove();
-        }
-
-        return success;
-      },
+      func: copySelectionToClipboard,
       args: [text],
     });
 
@@ -91,7 +190,14 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
       });
     }
   } catch (error) {
-    await recordError(ERROR_CONTEXT.PopupClipboardFallback, error, { tabId });
+    try {
+      await recordError(ERROR_CONTEXT.PopupClipboardFallback, error, { tabId });
+    } catch (persistError) {
+      console.error("[MarkQuote] Failed to record popup fallback error", persistError, {
+        tabId,
+        originalError: error,
+      });
+    }
   }
 }
 

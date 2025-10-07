@@ -1,11 +1,10 @@
-import safeRegex from "safe-regex";
+import { compileRegex, describePattern } from "../../lib/regex.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_AMAZON_SAMPLE_URL,
   DEFAULT_OPTIONS,
   DEFAULT_TEMPLATE,
   type OptionsPayload,
-  SAFE_REGEX_ALLOWLIST,
   type TitleRule,
   type UrlRule,
 } from "../../options-schema.js";
@@ -68,20 +67,18 @@ export function sanitizeUrlRule(rule: UrlRule): UrlRule {
 
 export function validateRegex(pattern: string): boolean {
   if (!pattern) {
+    // Empty inputs are common while the user is editing; treat as "not yet valid" without logging.
     return false;
   }
 
-  try {
-    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
-      console.error("Regex pattern flagged as potentially unsafe.", { pattern });
-      return false;
-    }
-    new RegExp(pattern);
-    return true;
-  } catch (error) {
-    console.error("Invalid regex pattern.", { pattern, error });
-    return false;
-  }
+  // `compileRegex` handles both the maximum length guard and the safety check; when it reports an
+  // error we simply surface the failure and allow the caller to keep editing. Throwing here would
+  // break the optimistic form UX, so we rely on the shared helper to capture diagnostics.
+  return (
+    compileRegex(pattern, (error) => {
+      console.error("Invalid regex pattern.", { pattern: describePattern(pattern), error });
+    }) !== undefined
+  );
 }
 
 export function normalizeFormat(templateField: HTMLTextAreaElement | null, draft: DraftOptions) {

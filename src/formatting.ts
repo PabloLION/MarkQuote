@@ -1,10 +1,5 @@
-import safeRegex from "safe-regex";
-import {
-  type OptionsPayload,
-  SAFE_REGEX_ALLOWLIST,
-  type TitleRule,
-  type UrlRule,
-} from "./options-schema.js";
+import { compileRegex, describePattern } from "./lib/regex.js";
+import type { OptionsPayload, TitleRule, UrlRule } from "./options-schema.js";
 
 export interface TemplateTokens {
   text: string;
@@ -17,30 +12,17 @@ interface RuleApplicationResult {
   matched: boolean;
 }
 
-function compileRegex(pattern: string, onError: (error: unknown) => void): RegExp | undefined {
-  if (!pattern) {
-    return undefined;
-  }
-
-  try {
-    if (!SAFE_REGEX_ALLOWLIST.has(pattern) && !safeRegex(pattern)) {
-      console.error("Refusing to compile unsafe regular expression.", { pattern });
-      return undefined;
-    }
-    return new RegExp(pattern);
-  } catch (error) {
-    onError(error);
-    return undefined;
-  }
-}
-
 function safeApplyRegex(
   source: string,
   pattern: string,
   replacement: string,
 ): RuleApplicationResult {
   const regex = compileRegex(pattern, (error) => {
-    console.error("Failed to apply regex replacement.", { pattern, replacement, error });
+    console.error("Failed to apply regex replacement.", {
+      pattern: describePattern(pattern),
+      replacement,
+      error,
+    });
   });
 
   if (!regex) {
@@ -61,7 +43,10 @@ function matchesUrlPattern(pattern: string, url: string): boolean {
   }
 
   const regex = compileRegex(pattern, (error) => {
-    console.error("Invalid URL pattern; skipping rule.", { pattern, error });
+    console.error("Invalid URL pattern; skipping rule.", {
+      pattern: describePattern(pattern),
+      error,
+    });
   });
 
   if (!regex) {
@@ -81,6 +66,9 @@ function applyTitleRule(rule: TitleRule, title: string, url: string): RuleApplic
   }
 
   if (!rule.titleSearch) {
+    // A blank search string represents a simple "rewrite the title whenever the URL matches"
+    // rule. Treat it as a match so the calling loop can respect `continueMatching` semantics
+    // without forcing the user to provide a redundant pattern.
     return { value: title, matched: true };
   }
 
@@ -116,6 +104,8 @@ function applyUrlRule(rule: UrlRule, url: string): RuleApplicationResult {
   }
 
   if (!rule.urlSearch) {
+    // Empty search values intentionally short-circuit: the caller wants to rewrite the URL based on
+    // the pattern match alone, so we mark it as matched while preserving the original value.
     return { value: url, matched: true };
   }
 

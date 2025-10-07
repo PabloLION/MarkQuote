@@ -35,6 +35,8 @@ export default defineConfig(({ command }) => {
           selection: resolve(__dirname, "src/content-scripts/selection.ts"),
           options: resolve(__dirname, "src/surfaces/options/main.ts"),
           popup: resolve(__dirname, "src/surfaces/popup/main.ts"),
+          "options-loader": resolve(__dirname, "src/entries/options-loader.ts"),
+          "popup-loader": resolve(__dirname, "src/entries/popup-loader.ts"),
         },
         output: {
           entryFileNames: "[name].js",

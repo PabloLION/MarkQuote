@@ -14,7 +14,13 @@ import {
 } from "../options-schema.js";
 import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
-import { runCopyPipeline, setLastPreviewError } from "./copy-pipeline.js";
+import {
+  markPopupClosed,
+  markPopupReady,
+  runCopyPipeline,
+  setLastPreviewError,
+  setPopupDocumentId,
+} from "./copy-pipeline.js";
 import { consumeSelectionStub, handleE2eMessage } from "./e2e.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import {
@@ -437,12 +443,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request?.type === "popup-ready") {
+    setPopupDocumentId(sender.documentId);
+    markPopupReady();
     cancelHotkeyFallback();
     sendResponse?.({ ok: true });
     return false;
   }
 
   if (request?.type === "popup-closed") {
+    setPopupDocumentId(undefined);
+    markPopupClosed();
     if (hotkeyFallbackTab && hasValidTabId(hotkeyFallbackTab)) {
       const tabId = hotkeyFallbackTab.id;
       if (pendingCopySources.has(tabId)) {

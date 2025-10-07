@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { formatForClipboard } from "../../src/clipboard.js";
 import { getSinonChrome } from "../../src/dev/chrome-dev-mock.js";
 
@@ -24,9 +24,44 @@ describe("formatForClipboard", () => {
     const customFormat = `*Source: {{title}} ({{url}})*`;
     const expected = `> Line 1\n> Line 2\n*Source: Another Page (https://example.org)*`;
 
-    await chrome.storage.sync.set({ format: customFormat });
+    sinonChrome.storage.sync.get.resolves({ format: customFormat });
 
     const result = await formatForClipboard(markdown, title, url);
     expect(result).toBe(expected);
+  });
+
+  it("falls back to defaults when sync storage is unavailable", async () => {
+    const markdown = "Body";
+    const title = "Title";
+    const url = "https://example.com/article";
+    const originalChrome = globalThis.chrome;
+    // @ts-expect-error test scenario removes chrome API surface
+    globalThis.chrome = undefined;
+
+    const result = await formatForClipboard(markdown, title, url);
+
+    expect(result).toBe(`> Body\n> Source: [Title](https://example.com/article)`);
+    expect(sinonChrome.storage.sync.get.called).toBe(false);
+
+    globalThis.chrome = originalChrome;
+  });
+
+  it("logs an error and uses defaults when storage retrieval fails", async () => {
+    const markdown = "Body";
+    const title = "Title";
+    const url = "https://example.com/article";
+    const error = new Error("sync failure");
+    sinonChrome.storage.sync.get.rejects(error);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await formatForClipboard(markdown, title, url);
+
+    expect(result).toBe(`> Body\n> Source: [Title](https://example.com/article)`);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Failed to retrieve formatting options, using defaults.",
+      error,
+    );
+
+    consoleSpy.mockRestore();
   });
 });

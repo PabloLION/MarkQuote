@@ -26,4 +26,16 @@ describe("convertHtmlToMarkdown", () => {
     const expectedMarkdown = "![An example image](https://example.com/image.png)";
     expect(convertHtmlToMarkdown(html)).toBe(expectedMarkdown);
   });
+
+  it("should fall back to empty alt text when missing", () => {
+    const html = '<img src="https://example.com/image.png">';
+    const expectedMarkdown = "![](https://example.com/image.png)";
+    expect(convertHtmlToMarkdown(html)).toBe(expectedMarkdown);
+  });
+
+  it("should return empty URL when src attribute is missing", () => {
+    const html = '<img alt="No source provided">';
+    const expectedMarkdown = "![No source provided]()";
+    expect(convertHtmlToMarkdown(html)).toBe(expectedMarkdown);
+  });
 });

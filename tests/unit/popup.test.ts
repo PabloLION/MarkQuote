@@ -157,7 +157,11 @@ describe("popup", () => {
     it("falls back to window.open when shortcut settings API is unavailable", () => {
       document.getElementById("hotkeys-button")?.dispatchEvent(new Event("click"));
 
-      expect(windowOpenSpy).toHaveBeenCalledWith("chrome://extensions/shortcuts", "_blank");
+      expect(windowOpenSpy).toHaveBeenCalledWith(
+        "chrome://extensions/shortcuts",
+        "_blank",
+        undefined,
+      );
     });
   });
 

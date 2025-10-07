@@ -1,6 +1,17 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("safe-regex", async () => {
+  type SafeRegexFn = (pattern: string | RegExp, options?: { limit?: number }) => boolean;
+  const actual = await vi.importActual<SafeRegexFn | { default: SafeRegexFn }>("safe-regex");
+  const implementation: SafeRegexFn = typeof actual === "function" ? actual : actual.default;
+  const spy = vi.fn(implementation);
+  return { default: spy };
+});
+
+import safeRegex from "safe-regex";
 
 import { applyTitleRules, applyUrlRules, formatWithOptions } from "../../src/formatting.js";
+import { compileRegex } from "../../src/lib/regex.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_CHATGPT_UTM_TRAILING_REPLACE,
@@ -9,6 +20,7 @@ import {
   DEFAULT_CHATGPT_UTM_WITH_NEXT_REPLACE,
   DEFAULT_CHATGPT_UTM_WITH_NEXT_SEARCH,
   type OptionsPayload,
+  SAFE_REGEX_ALLOWLIST,
   type TitleRule,
   type UrlRule,
 } from "../../src/options-schema.js";
@@ -248,5 +260,256 @@ describe("formatWithOptions", () => {
 
     const soloResult = applyUrlRules(rules, "https://example.com/article?utm_source=chatgpt.com");
     expect(soloResult).toBe("https://example.com/article");
+  });
+
+  it("skips unsafe regex patterns and logs errors", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: "[[[",
+        titleReplace: "Unsafe",
+        comment: "",
+        continueMatching: true,
+        enabled: true,
+      },
+    ];
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = applyTitleRules(rules, "Example", "https://example.com");
+    expect(result).toBe("Example");
+    const [, details] = consoleSpy.mock.calls[0] ?? [];
+    expect(details?.preview).toContain("[[[");
+    consoleSpy.mockRestore();
+  });
+
+  it("skips invalid regex patterns and preserves original text", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: "(unbalanced",
+        titleReplace: "Broken",
+        comment: "",
+        continueMatching: true,
+        enabled: true,
+      },
+    ];
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = applyTitleRules(rules, "Example", "https://example.com");
+    expect(result).toBe("Example");
+    const patternCalls = consoleSpy.mock.calls
+      .map(([, details]) => details?.pattern?.preview ?? details?.preview)
+      .filter(Boolean);
+    expect(patternCalls[0]).toContain("(unbalanced");
+    consoleSpy.mockRestore();
+  });
+
+  it("skips url rules when regex compilation fails", () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: "",
+        urlSearch: "(unbalanced",
+        urlReplace: "value",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = applyUrlRules(rules, "https://example.com");
+    expect(result).toBe("https://example.com");
+    const patternCalls = consoleSpy.mock.calls
+      .map(([, details]) => details?.pattern?.preview ?? details?.preview)
+      .filter(Boolean);
+    expect(patternCalls[0]).toContain("(unbalanced");
+    consoleSpy.mockRestore();
+  });
+
+  it("treats empty title search as a match and short-circuits the chain", () => {
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: "",
+        titleReplace: "unused",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+      {
+        urlPattern: "",
+        titleSearch: "Original",
+        titleReplace: "Modified",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyTitleRules(rules, "Original", "https://example.com");
+    expect(result).toBe("Original");
+  });
+
+  it("treats empty url search as a match and short-circuits", () => {
+    const rules: UrlRule[] = [
+      {
+        urlPattern: "",
+        urlSearch: "",
+        urlReplace: "unused",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+      {
+        urlPattern: "",
+        urlSearch: "example",
+        urlReplace: "sample",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyUrlRules(rules, "https://example.com");
+    expect(result).toBe("https://example.com");
+  });
+
+  it("logs and skips invalid regex replacements", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const originalRegExp = globalThis.RegExp;
+    const failingRegExp = vi.fn(() => {
+      throw new Error("RegExp failure");
+    }) as unknown as RegExpConstructor;
+    globalThis.RegExp = failingRegExp;
+
+    const pattern = "(.+)+";
+    const wasAllowlisted = SAFE_REGEX_ALLOWLIST.has(pattern);
+    SAFE_REGEX_ALLOWLIST.add(pattern);
+
+    try {
+      const rules: TitleRule[] = [
+        {
+          urlPattern: "",
+          titleSearch: pattern,
+          titleReplace: "ignored",
+          comment: "",
+          continueMatching: false,
+          enabled: true,
+        },
+      ];
+
+      const result = applyTitleRules(rules, "Title", "https://example.com");
+
+      expect(result).toBe("Title");
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Failed to apply regex replacement.",
+        expect.objectContaining({ pattern: expect.objectContaining({ preview: pattern }) }),
+      );
+    } finally {
+      globalThis.RegExp = originalRegExp;
+      if (!wasAllowlisted) {
+        SAFE_REGEX_ALLOWLIST.delete(pattern);
+      }
+      consoleSpy.mockRestore();
+    }
+  });
+
+  it("logs and skips invalid URL pattern matches", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const originalRegExp = globalThis.RegExp;
+    const failingRegExp = vi.fn(() => {
+      throw new Error("RegExp failure");
+    }) as unknown as RegExpConstructor;
+    globalThis.RegExp = failingRegExp;
+
+    const pattern = "allowlisted";
+    const wasAllowlisted = SAFE_REGEX_ALLOWLIST.has(pattern);
+    SAFE_REGEX_ALLOWLIST.add(pattern);
+
+    try {
+      const rules: UrlRule[] = [
+        {
+          urlPattern: pattern,
+          urlSearch: "a",
+          urlReplace: "b",
+          comment: "",
+          continueMatching: false,
+          enabled: true,
+        },
+      ];
+
+      const result = applyUrlRules(rules, "https://example.com");
+
+      expect(result).toBe("https://example.com");
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Invalid URL pattern; skipping rule.",
+        expect.objectContaining({ pattern: expect.objectContaining({ preview: pattern }) }),
+      );
+    } finally {
+      globalThis.RegExp = originalRegExp;
+      if (!wasAllowlisted) {
+        SAFE_REGEX_ALLOWLIST.delete(pattern);
+      }
+      consoleSpy.mockRestore();
+    }
+  });
+
+  it("allows explicit bypass for vetted complex regex patterns", () => {
+    const pattern = "(.+)+";
+    const wasAllowlisted = SAFE_REGEX_ALLOWLIST.has(pattern);
+    SAFE_REGEX_ALLOWLIST.add(pattern);
+
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: pattern,
+        titleReplace: "ok",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const output = applyTitleRules(rules, "value", "https://example.com");
+    expect(output).toBe("ok");
+
+    if (!wasAllowlisted) {
+      SAFE_REGEX_ALLOWLIST.delete(pattern);
+    }
+  });
+
+  it("rejects regex patterns that exceed the maximum allowed length", () => {
+    const longPattern = "a".repeat(600);
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const rules: TitleRule[] = [
+      {
+        urlPattern: "",
+        titleSearch: longPattern,
+        titleReplace: "ignored",
+        comment: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+
+    const result = applyTitleRules(rules, "Headline", "https://example.com");
+
+    expect(result).toBe("Headline");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "Regex pattern exceeds maximum length.",
+      expect.objectContaining({ length: longPattern.length }),
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("treats empty patterns as disabled without invoking error handler", () => {
+    const onError = vi.fn();
+    const safeRegexMock = safeRegex as unknown as {
+      mockClear: () => void;
+      mock: { calls: unknown[] };
+    };
+    safeRegexMock.mockClear();
+
+    const regex = compileRegex("", onError);
+    expect(regex).toBeUndefined();
+    expect(onError).not.toHaveBeenCalled();
+    expect(safeRegexMock.mock.calls.length).toBe(0);
   });
 });
