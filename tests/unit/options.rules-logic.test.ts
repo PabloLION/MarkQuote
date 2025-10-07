@@ -277,4 +277,21 @@ describe("options/rules-logic moveRule", () => {
     const searchInput = config.body.querySelector<HTMLInputElement>("input[data-field='search']");
     expect(searchInput?.getAttribute("aria-invalid")).toBe("true");
   });
+
+  it("skips validation when the DOM row is missing", () => {
+    const rules: FakeRule[] = [
+      {
+        pattern: "value",
+        search: "",
+        replace: "",
+        continueMatching: false,
+        enabled: true,
+      },
+    ];
+    const config = createConfig(rules);
+    config.body.innerHTML = "";
+
+    const result = validateRulesFor(config);
+    expect(result.valid).toBe(true);
+  });
 });
