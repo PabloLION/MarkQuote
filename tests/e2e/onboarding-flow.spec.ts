@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
   getBackgroundErrors,
-  primeSelectionStub,
   readLastFormatted,
   resetExtensionState,
 } from "./helpers/background-bridge.js";
@@ -11,6 +10,7 @@ import {
   openExtensionPage,
   openPopupPage,
 } from "./helpers/extension.js";
+import { selectElementText } from "./helpers/selection.js";
 
 const SAMPLE_TITLE = "Onboarding Target";
 const SAMPLE_SELECTION = "First run selection";
@@ -35,11 +35,22 @@ test("first run copy uses default template", async () => {
   const bridgePage = await openExtensionPage(context, extensionId, "options.html");
 
   await resetExtensionState(bridgePage);
-  await primeSelectionStub(bridgePage, {
-    markdown: SAMPLE_SELECTION,
-    title: SAMPLE_TITLE,
-    url: SAMPLE_URL,
+
+  await context.route(SAMPLE_URL, async (route) => {
+    const html = `<!DOCTYPE html>
+      <html lang="en">
+        <head><meta charset="utf-8" /><title>${SAMPLE_TITLE}</title></head>
+        <body>
+          <main><p id="quote">${SAMPLE_SELECTION}</p></main>
+        </body>
+      </html>`;
+    await route.fulfill({ contentType: "text/html", body: html });
   });
+
+  const articlePage = await context.newPage();
+  await articlePage.goto(SAMPLE_URL, { waitUntil: "domcontentloaded" });
+  await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
+  await articlePage.bringToFront();
 
   const popupPage = await openPopupPage(context, extensionId);
 
@@ -53,6 +64,7 @@ test("first run copy uses default template", async () => {
   const backgroundErrors = await getBackgroundErrors(bridgePage);
   expect(backgroundErrors).toHaveLength(0);
 
+  await articlePage.close();
   await popupPage.close();
   await bridgePage.close();
 });

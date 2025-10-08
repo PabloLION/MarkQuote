@@ -2,11 +2,11 @@ import { expect, test } from "@playwright/test";
 import {
   findTabByUrl,
   getBackgroundErrors,
-  primeSelectionStub,
   readLastFormatted,
   triggerContextCopy,
 } from "./helpers/background-bridge.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
+import { selectElementText } from "./helpers/selection.js";
 
 const TARGET_URL = "https://example.com/context-menu";
 const SAMPLE_SELECTION = "Context menu sample";
@@ -43,27 +43,12 @@ test("context menu copy requests background pipeline", async () => {
   const extensionId = await getExtensionId(context);
   const articlePage = await context.newPage();
   await articlePage.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
-  await articlePage.evaluate(() => {
-    const target = document.getElementById("quote");
-    const selection = window.getSelection();
-    if (!target || !selection) {
-      throw new Error("Unable to create selection for context-menu test.");
-    }
-    const range = document.createRange();
-    range.selectNodeContents(target);
-    selection.removeAllRanges();
-    selection.addRange(range);
-  });
+  await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
+  await articlePage.bringToFront();
 
   const bridgePage = await openExtensionPage(context, extensionId, "options.html");
   const tabInfo = await findTabByUrl(bridgePage, `${new URL(TARGET_URL).origin}/*`);
   expect(tabInfo.id).not.toBeNull();
-
-  await primeSelectionStub(bridgePage, {
-    markdown: SAMPLE_SELECTION,
-    title: SAMPLE_TITLE,
-    url: TARGET_URL,
-  });
 
   await triggerContextCopy(bridgePage, {
     tabId: tabInfo.id ?? undefined,

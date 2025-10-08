@@ -4,12 +4,12 @@ import {
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
-  primeSelectionStub,
   readLastFormatted,
   setHotkeyPinnedState,
   triggerHotkeyCommand,
 } from "./helpers/background-bridge.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
+import { selectElementText } from "./helpers/selection.js";
 
 const SAMPLE_MARKDOWN = "Body text";
 const SAMPLE_TITLE = "Example Article";
@@ -59,17 +59,23 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
   const nonce = randomUUID();
   const nonceMarkdown = `${SAMPLE_MARKDOWN} [${nonce}]`;
   const nonceTitle = `${SAMPLE_TITLE} (${nonce.slice(0, 8)})`;
-  const expectedPreview = `> ${nonceMarkdown}\n> Source: [${nonceTitle}](${SAMPLE_URL})`;
+  const escapedNonceMarkdown = nonceMarkdown.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
+  const expectedPreview = `> ${escapedNonceMarkdown}\n> Source: [${nonceTitle}](${SAMPLE_URL})`;
+
+  await articlePage.evaluate(
+    ({ text, title }) => {
+      const quote = document.getElementById("quote");
+      if (!quote) {
+        throw new Error("Unable to locate quote element for hotkey test.");
+      }
+      quote.textContent = text;
+      document.title = title;
+    },
+    { text: nonceMarkdown, title: nonceTitle },
+  );
+  await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
 
   const bridgePage = await openExtensionPage(context, extensionId, "options.html");
-
-  await articlePage.bringToFront();
-
-  await primeSelectionStub(bridgePage, {
-    markdown: nonceMarkdown,
-    title: nonceTitle,
-    url: SAMPLE_URL,
-  });
 
   await setHotkeyPinnedState(bridgePage, false);
   const articleTab = await findTabByUrl(bridgePage, SAMPLE_URL);
@@ -77,7 +83,7 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
     throw new Error("Unable to locate article tab for hotkey test.");
   }
 
-  await articlePage.click("body");
+  await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
   await articlePage.keyboard.press("Alt+C");
 
   const hardwareAttempt = await getHotkeyDiagnostics(bridgePage);
@@ -90,12 +96,27 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
     tabId: articleTab.id,
   });
 
-  await expect
-    .poll(async () => (await readLastFormatted(bridgePage)).formatted, {
-      timeout: 10_000,
-      message: "Waiting for hotkey fallback copy to finish.",
-    })
-    .toBe(expectedPreview);
+  let formattedPreview = "";
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const snapshot = await readLastFormatted(bridgePage);
+    formattedPreview = snapshot.formatted;
+    if (formattedPreview) {
+      break;
+    }
+    await bridgePage.waitForTimeout(250);
+  }
+
+  if (!formattedPreview) {
+    const diagnostics = await getHotkeyDiagnostics(bridgePage);
+    const errors = await getBackgroundErrors(bridgePage);
+    throw new Error(
+      `Hotkey fallback did not capture selection. Diagnostics: ${JSON.stringify(
+        diagnostics,
+      )} Errors: ${JSON.stringify(errors)}`,
+    );
+  }
+
+  expect(formattedPreview).toBe(expectedPreview);
 
   const clipboardText = await articlePage.evaluate(async () => {
     try {
@@ -121,9 +142,10 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
   expect(diagnostics.eventTabId).toBe(articleTab.id);
   expect(diagnostics.resolvedTabId).toBe(articleTab.id);
   expect(diagnostics.timestamp).toBeGreaterThan(0);
-  expect(diagnostics.stubSelectionUsed).toBe(true);
-  expect(diagnostics.injectionAttempted).toBe(false);
-  expect(diagnostics.injectionSucceeded).toBeNull();
+  expect(diagnostics.stubSelectionUsed).toBe(false);
+  expect(diagnostics.injectionAttempted).toBe(true);
+  expect(diagnostics.injectionSucceeded).toBe(true);
+  expect(diagnostics.injectionError).toBeNull();
 
   await bridgePage.close();
   await articlePage.close();
