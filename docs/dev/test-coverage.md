@@ -30,7 +30,7 @@ flowchart LR
     direction TB
     A["launchExtensionContext()"] --> B["resetExtensionState()<br/>routeTestPage()"] --> C["openExtensionPage()<br/>prepareSelection()/DOM stub"]
   end
-  ARR -- "via C → D" --> ACT
+  ARR ----> ACT
 
   subgraph ACT[Act]
     direction LR
@@ -41,7 +41,7 @@ flowchart LR
     D --> D4["Context menu bridge<br/>tests/e2e/context-menu-flow.spec.ts"]
     D --> D5["Onboarding bridge<br/>tests/e2e/onboarding-flow.spec.ts"]
   end
-  ACT -- "via D1…D5 → E" --> ASS
+  ACT ----> ASS
 
   subgraph ASS[Assert]
     direction TB
@@ -58,6 +58,7 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
   - `tests/e2e/onboarding-flow.spec.ts` resets storage to defaults and confirms the popup produces the default template on the first copy.
   - `tests/e2e/hotkey-flow.spec.ts` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The test verifies both the copied preview and the recorded warning.
   - `tests/e2e/context-menu-flow.spec.ts` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
+- **Act limitations**: Chromium ignores `chrome.action.openPopup()` from automation, so the _pinned_ hotkey path still requires manual verification at release time. The fallback path remains covered automatically.
 - **Assert (Validation + cleanup)**: all flows assert the formatted markdown returned by `e2e:get-last-formatted` and check the relevant side effects (badge/errors where applicable). Clipboard success is accepted when the preview text matches—actual OS clipboard access remains outside automated scope.
 
 ## Upcoming Coverage (Story 3.9)
