@@ -24,6 +24,7 @@ This file tracks features and tasks that are planned for future development cycl
 **Tasks:**
 
 - Add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
+- Add a “Copy error details” action in the popup error panel so users (and testers) can copy structured diagnostics (context, tab URL, stack) into bug reports quickly.
 
 ## Epic 4: Host Access UX
 
