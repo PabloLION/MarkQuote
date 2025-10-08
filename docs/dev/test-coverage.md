@@ -28,7 +28,7 @@ flowchart LR
   %% Use IDs so we can link the subgraphs (not their inner nodes)
   subgraph ARR[Arrange]
     direction TB
-    A["launchExtensionContext()"] --> B["resetExtensionState()<br/>routeTestPage()"] --> C["openExtensionPage()<br/>prepareSelection()/DOM stub"]
+    A["launchExtensionContext()"] --> B["resetExtensionState()<br/>routeTestPage()"] --> C["openExtensionPage()<br/>prepareSelection()/selectElementText()"]
   end
   ARR ----> ACT
 
@@ -53,7 +53,7 @@ flowchart LR
 
 AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
-- **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `primeSelectionStub`, and `open content tab` to provide a real selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
+- **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `routeTestPage`, and `selectElementText` to generate an authentic DOM selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
 - **Act (Trigger)**: the graph highlights each user action after Arrange.
   - `tests/e2e/popup-copy-flow.spec.ts` covers popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
   - `tests/e2e/popup-feedback.spec.ts` exercises the feedback CTA to ensure it opens the repository issue tracker.

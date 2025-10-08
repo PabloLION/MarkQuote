@@ -11,26 +11,27 @@
 
 ## Implementation Tasks (each must land as its own atomic commit)
 
-1. **Prototype real shortcut in Playwright**
+1. **[x] Prototype real shortcut in Playwright**
    - Update the hotkey spec to send the actual keyboard shortcut via
      Playwright/DevTools.
    - Log whether `handleHotkeyCommand` receives a tab ID and whether
      `chrome.scripting.executeScript` succeeds.
-2. **Decide & wire clipboard strategy**
+2. **[x] Decide & wire clipboard strategy**
    - If Chromium still blocks the write, add the clipboard permission
      and switch the fallback copy to `chrome.clipboard.writeText` in
      the background worker.
    - Otherwise, rely on the new shortcut helper and keep existing
      permissions.
-3. **Rewrite E2E flows**
+3. **[x] Rewrite E2E flows**
    - Remove `primeSelectionStub` / `consumeSelectionStub` and the
      related message types.
    - Refactor helpers and specs to operate on real DOM selections
-     (using the shortcut helper).
-4. **Guard production builds**
+     using Playwright DOM APIs (`selectElementText`, clipboard
+     assertions, etc.).
+4. **[ ] Guard production builds**
    - Introduce a build-time flag (e.g., Vite `define`) so test-only
      branches are eliminated from production bundles.
-5. **Docs & cleanup**
+5. **[ ] Docs & cleanup**
    - Update `docs/dev/test-coverage.md` to describe the new Arrange
      and Act steps.
    - Note the clipboard/permission decision in the relevant release
