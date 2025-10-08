@@ -23,7 +23,6 @@ import {
 } from "./copy-pipeline.js";
 import {
   consumeForcedHotkeyPinnedState,
-  consumeSelectionStub,
   handleE2eMessage,
   resetHotkeyDiagnostics,
   updateHotkeyDiagnostics,
@@ -244,29 +243,6 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
   }
 
   const tabId = tab.id;
-
-  if (isE2ETest) {
-    const stub = consumeSelectionStub();
-    if (stub) {
-      if (source === "hotkey") {
-        updateHotkeyDiagnostics({
-          stubSelectionUsed: true,
-          injectionAttempted: false,
-          injectionSucceeded: null,
-          injectionError: null,
-        });
-      }
-      setPendingSource(tabId, source);
-      try {
-        await runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e");
-      } catch (error) {
-        void recordError(ERROR_CONTEXT.E2EStubSelection, error);
-      } finally {
-        clearPendingSource(tabId);
-      }
-      return;
-    }
-  }
 
   try {
     await pendingSourcesRestored;
@@ -620,17 +596,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request?.type === "request-selection-copy") {
-    if (isE2ETest) {
-      const stub = consumeSelectionStub();
-      if (stub) {
-        void runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e").catch((error) => {
-          void recordError(ERROR_CONTEXT.E2EStubSelection, error);
-        });
-        sendResponse?.({ ok: true });
-        return false;
-      }
-    }
-
     return handleSelectionCopyRequest(sendResponse);
   }
 

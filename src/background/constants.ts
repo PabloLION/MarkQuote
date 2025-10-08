@@ -1,6 +1,5 @@
 export const DEFAULT_TITLE = "Page Title";
 export const DEFAULT_URL = "https://example.com";
-export const E2E_SELECTION_MESSAGE = "e2e:selection";
 export const E2E_LAST_FORMATTED_MESSAGE = "e2e:get-last-formatted";
 export const E2E_SET_OPTIONS_MESSAGE = "e2e:set-options";
 export const E2E_TRIGGER_COMMAND_MESSAGE = "e2e:trigger-command";

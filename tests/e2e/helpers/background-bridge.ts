@@ -11,15 +11,6 @@ export interface HotkeyDiagnostics {
   timestamp: number;
 }
 
-export async function sendSelectionMessage(
-  page: Page,
-  payload: { markdown: string; title: string; url: string },
-): Promise<void> {
-  await page.evaluate((message) => {
-    chrome.runtime.sendMessage({ type: "e2e:selection", ...message });
-  }, payload);
-}
-
 export async function setOptionsPayload(page: Page, options: OptionsPayload): Promise<void> {
   const result = await page.evaluate((candidate) => {
     return new Promise<{ ok: boolean; error?: string }>((resolve) => {
@@ -46,23 +37,6 @@ export async function readLastFormatted(
       });
     });
   });
-}
-
-export async function primeSelectionStub(
-  page: Page,
-  payload: { markdown: string; title: string; url: string },
-): Promise<void> {
-  const result = await page.evaluate((message) => {
-    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
-      chrome.runtime.sendMessage({ type: "e2e:prime-selection", ...message }, (response) => {
-        resolve(response ?? { ok: false, error: "No response received" });
-      });
-    });
-  }, payload);
-
-  if (!result?.ok) {
-    throw new Error(`Failed to prime selection stub: ${result?.error ?? "unknown error"}`);
-  }
 }
 
 export async function triggerHotkeyCommand(

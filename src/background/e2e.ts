@@ -6,8 +6,6 @@
 import type { OptionsPayload } from "../options-schema.js";
 import { CURRENT_OPTIONS_VERSION } from "../options-schema.js";
 import {
-  DEFAULT_TITLE,
-  DEFAULT_URL,
   E2E_CLEAR_ERROR_LOG_MESSAGE,
   E2E_CONTEXT_COPY_MESSAGE,
   E2E_FIND_TAB_MESSAGE,
@@ -17,20 +15,13 @@ import {
   E2E_LAST_FORMATTED_MESSAGE,
   E2E_RESET_STORAGE_MESSAGE,
   E2E_SEED_ERROR_MESSAGE,
-  E2E_SELECTION_MESSAGE,
   E2E_SET_HOTKEY_PINNED_STATE_MESSAGE,
   E2E_SET_OPTIONS_MESSAGE,
   E2E_TRIGGER_COMMAND_MESSAGE,
 } from "./constants.js";
-import { getLastFormattedPreview, getLastPreviewError, runCopyPipeline } from "./copy-pipeline.js";
+import { getLastFormattedPreview, getLastPreviewError } from "./copy-pipeline.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import type { CopySource, LoggedError } from "./types.js";
-
-export type SelectionStub = {
-  markdown: string;
-  title: string;
-  url: string;
-};
 
 export type HotkeyDiagnostics = {
   eventTabId: number | null;
@@ -59,7 +50,6 @@ type MessageContext = {
   resetStorage: () => Promise<void>;
 };
 
-let selectionStub: SelectionStub | undefined;
 const DEFAULT_HOTKEY_DIAGNOSTICS: HotkeyDiagnostics = {
   eventTabId: null,
   resolvedTabId: null,
@@ -71,28 +61,6 @@ const DEFAULT_HOTKEY_DIAGNOSTICS: HotkeyDiagnostics = {
 };
 let hotkeyDiagnostics: HotkeyDiagnostics = { ...DEFAULT_HOTKEY_DIAGNOSTICS };
 let forcedHotkeyPinnedState: boolean | undefined;
-
-export function consumeSelectionStub(): SelectionStub | undefined {
-  const stub = selectionStub;
-  selectionStub = undefined;
-  return stub;
-}
-
-export function primeSelectionStub(
-  markdown: string,
-  title: string,
-  url: string,
-): {
-  ok: boolean;
-  error?: string;
-} {
-  if (!markdown) {
-    return { ok: false, error: "Missing markdown payload for stub selection." };
-  }
-
-  selectionStub = { markdown, title, url };
-  return { ok: true };
-}
 
 async function resolveTab(tabId: unknown): Promise<chrome.tabs.Tab | undefined> {
   if (typeof tabId !== "number") {
@@ -139,23 +107,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
     clearErrorLog,
     resetStorage,
   } = context;
-  const message = request as { type?: string; markdown?: unknown; title?: unknown; url?: unknown };
-
-  if (message.type === E2E_SELECTION_MESSAGE) {
-    if (typeof message.markdown !== "string" || !message.markdown) {
-      console.warn("E2E selection message missing markdown payload.");
-      return false;
-    }
-
-    const title =
-      typeof message.title === "string" && message.title ? message.title : DEFAULT_TITLE;
-    const url = typeof message.url === "string" && message.url ? message.url : DEFAULT_URL;
-
-    void runCopyPipeline(message.markdown, title, url, "e2e").then((formatted) => {
-      sendResponse?.({ formatted });
-    });
-    return true;
-  }
+  const message = request as { type?: string };
 
   if (message.type === E2E_SET_OPTIONS_MESSAGE) {
     const candidate = (request as { options?: OptionsPayload }).options;
@@ -356,17 +308,6 @@ export function handleE2eMessage(context: MessageContext): boolean {
         });
       });
     return true;
-  }
-
-  if (message.type === "e2e:prime-selection") {
-    const markdown = typeof message.markdown === "string" ? message.markdown : "";
-    const title =
-      typeof message.title === "string" && message.title ? message.title : DEFAULT_TITLE;
-    const url = typeof message.url === "string" && message.url ? message.url : DEFAULT_URL;
-
-    const result = primeSelectionStub(markdown, title, url);
-    sendResponse?.(result);
-    return result.ok;
   }
 
   return false;
