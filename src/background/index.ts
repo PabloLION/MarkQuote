@@ -438,21 +438,6 @@ async function ensureOptionsInitialized(): Promise<void> {
       "rules",
     ]);
 
-    if (snapshot.options && !validateOptionsPayload(snapshot.options)) {
-      console.warn("Invalid options payload detected; resetting to defaults.");
-      await recordError(
-        ERROR_CONTEXT.InvalidOptionsPayload,
-        "Stored options payload failed validation.",
-      );
-      await storageArea.set({
-        options: DEFAULT_OPTIONS,
-        format: DEFAULT_OPTIONS.format,
-        titleRules: DEFAULT_OPTIONS.titleRules,
-        urlRules: DEFAULT_OPTIONS.urlRules,
-      });
-      return;
-    }
-
     const hasExistingData = Object.values(snapshot).some((value) => {
       if (Array.isArray(value)) {
         return value.length > 0;
@@ -473,9 +458,21 @@ async function ensureOptionsInitialized(): Promise<void> {
       return;
     }
 
+    const normalized = normalizeStoredOptions(snapshot);
+
+    if (!validateOptionsPayload(snapshot.options)) {
+      console.info("[MarkQuote] Normalizing legacy options payload before continuing.");
+      await storageArea.set({
+        options: normalized,
+        format: normalized.format,
+        titleRules: normalized.titleRules,
+        urlRules: normalized.urlRules,
+      });
+      return;
+    }
+
     const existingOptions = snapshot.options as { version?: number } | undefined;
     if (existingOptions?.version !== CURRENT_OPTIONS_VERSION) {
-      const normalized = normalizeStoredOptions(snapshot);
       await storageArea.set({
         options: normalized,
         format: normalized.format,
