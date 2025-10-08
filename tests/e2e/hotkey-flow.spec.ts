@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
+  findTabByUrl,
   getBackgroundErrors,
+  getHotkeyDiagnostics,
   primeSelectionStub,
   readLastFormatted,
+  setHotkeyPinnedState,
   triggerHotkeyCommand,
 } from "./helpers/background-bridge.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
@@ -68,8 +71,23 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
     url: SAMPLE_URL,
   });
 
+  await setHotkeyPinnedState(bridgePage, false);
+  const articleTab = await findTabByUrl(bridgePage, SAMPLE_URL);
+  if (articleTab.id === null) {
+    throw new Error("Unable to locate article tab for hotkey test.");
+  }
+
+  await articlePage.click("body");
+  await articlePage.keyboard.press("Alt+C");
+
+  const hardwareAttempt = await getHotkeyDiagnostics(bridgePage);
+  expect(hardwareAttempt.eventTabId).toBeNull();
+  expect(hardwareAttempt.resolvedTabId).toBeNull();
+  expect(hardwareAttempt.timestamp).toBe(0);
+
   await triggerHotkeyCommand(bridgePage, {
     forcePinned: false,
+    tabId: articleTab.id,
   });
 
   await expect
@@ -98,6 +116,14 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
   expect(contexts).toContain("hotkey-open-popup");
   expect(contexts).not.toContain("popup-clipboard-fallback");
   expect(clipboardText).toBe(initialClipboard);
+
+  const diagnostics = await getHotkeyDiagnostics(bridgePage);
+  expect(diagnostics.eventTabId).toBe(articleTab.id);
+  expect(diagnostics.resolvedTabId).toBe(articleTab.id);
+  expect(diagnostics.timestamp).toBeGreaterThan(0);
+  expect(diagnostics.stubSelectionUsed).toBe(true);
+  expect(diagnostics.injectionAttempted).toBe(false);
+  expect(diagnostics.injectionSucceeded).toBeNull();
 
   await bridgePage.close();
   await articlePage.close();

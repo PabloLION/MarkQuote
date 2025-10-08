@@ -13,10 +13,12 @@ import {
   E2E_FIND_TAB_MESSAGE,
   E2E_GET_ACTIVE_TAB_MESSAGE,
   E2E_GET_ERROR_LOG_MESSAGE,
+  E2E_GET_HOTKEY_DIAGNOSTICS_MESSAGE,
   E2E_LAST_FORMATTED_MESSAGE,
   E2E_RESET_STORAGE_MESSAGE,
   E2E_SEED_ERROR_MESSAGE,
   E2E_SELECTION_MESSAGE,
+  E2E_SET_HOTKEY_PINNED_STATE_MESSAGE,
   E2E_SET_OPTIONS_MESSAGE,
   E2E_TRIGGER_COMMAND_MESSAGE,
 } from "./constants.js";
@@ -28,6 +30,16 @@ export type SelectionStub = {
   markdown: string;
   title: string;
   url: string;
+};
+
+export type HotkeyDiagnostics = {
+  eventTabId: number | null;
+  resolvedTabId: number | null;
+  stubSelectionUsed: boolean;
+  injectionAttempted: boolean;
+  injectionSucceeded: boolean | null;
+  injectionError: string | null;
+  timestamp: number;
 };
 
 type MessageContext = {
@@ -48,6 +60,17 @@ type MessageContext = {
 };
 
 let selectionStub: SelectionStub | undefined;
+const DEFAULT_HOTKEY_DIAGNOSTICS: HotkeyDiagnostics = {
+  eventTabId: null,
+  resolvedTabId: null,
+  stubSelectionUsed: false,
+  injectionAttempted: false,
+  injectionSucceeded: null,
+  injectionError: null,
+  timestamp: 0,
+};
+let hotkeyDiagnostics: HotkeyDiagnostics = { ...DEFAULT_HOTKEY_DIAGNOSTICS };
+let forcedHotkeyPinnedState: boolean | undefined;
 
 export function consumeSelectionStub(): SelectionStub | undefined {
   const stub = selectionStub;
@@ -77,6 +100,31 @@ async function resolveTab(tabId: unknown): Promise<chrome.tabs.Tab | undefined> 
   }
 
   return chrome.tabs.get(tabId);
+}
+
+export function resetHotkeyDiagnostics(): void {
+  hotkeyDiagnostics = {
+    ...DEFAULT_HOTKEY_DIAGNOSTICS,
+    timestamp: Date.now(),
+  };
+}
+
+export function updateHotkeyDiagnostics(patch: Partial<HotkeyDiagnostics>): void {
+  hotkeyDiagnostics = {
+    ...hotkeyDiagnostics,
+    ...patch,
+    timestamp: Date.now(),
+  };
+}
+
+export function getHotkeyDiagnostics(): HotkeyDiagnostics {
+  return { ...hotkeyDiagnostics };
+}
+
+export function consumeForcedHotkeyPinnedState(): boolean | undefined {
+  const value = forcedHotkeyPinnedState;
+  forcedHotkeyPinnedState = undefined;
+  return value;
 }
 
 export function handleE2eMessage(context: MessageContext): boolean {
@@ -158,6 +206,22 @@ export function handleE2eMessage(context: MessageContext): boolean {
     })().catch((error) => {
       sendResponse?.({ ok: false, error: error instanceof Error ? error.message : String(error) });
     });
+    return true;
+  }
+
+  if (message.type === E2E_GET_HOTKEY_DIAGNOSTICS_MESSAGE) {
+    sendResponse?.(getHotkeyDiagnostics());
+    return true;
+  }
+
+  if (message.type === E2E_SET_HOTKEY_PINNED_STATE_MESSAGE) {
+    const payload = request as { pinned?: boolean | null };
+    if (typeof payload.pinned === "boolean") {
+      forcedHotkeyPinnedState = payload.pinned;
+    } else {
+      forcedHotkeyPinnedState = undefined;
+    }
+    sendResponse?.({ ok: true });
     return true;
   }
 

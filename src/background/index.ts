@@ -21,7 +21,13 @@ import {
   setLastPreviewError,
   setPopupDocumentId,
 } from "./copy-pipeline.js";
-import { consumeSelectionStub, handleE2eMessage } from "./e2e.js";
+import {
+  consumeForcedHotkeyPinnedState,
+  consumeSelectionStub,
+  handleE2eMessage,
+  resetHotkeyDiagnostics,
+  updateHotkeyDiagnostics,
+} from "./e2e.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import {
   clearStoredErrors,
@@ -242,6 +248,14 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
   if (isE2ETest) {
     const stub = consumeSelectionStub();
     if (stub) {
+      if (source === "hotkey") {
+        updateHotkeyDiagnostics({
+          stubSelectionUsed: true,
+          injectionAttempted: false,
+          injectionSucceeded: null,
+          injectionError: null,
+        });
+      }
       setPendingSource(tabId, source);
       try {
         await runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e");
@@ -270,6 +284,14 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
   let injectionResults:
     | Array<chrome.scripting.InjectionResult<{ success?: boolean; details?: unknown }>>
     | undefined;
+  if (isE2ETest && source === "hotkey") {
+    updateHotkeyDiagnostics({
+      stubSelectionUsed: false,
+      injectionAttempted: true,
+      injectionSucceeded: null,
+      injectionError: null,
+    });
+  }
   try {
     injectionResults = await chrome.scripting.executeScript({
       target: { tabId },
@@ -283,11 +305,23 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
         hasResult: Boolean(result?.result),
       });
     }
+    if (isE2ETest && source === "hotkey") {
+      updateHotkeyDiagnostics({
+        injectionSucceeded: true,
+        injectionError: null,
+      });
+    }
   } catch (_error) {
     const lastErrorMessage = getRuntimeLastErrorMessage();
     if (lastErrorMessage.includes("must request permission")) {
       notifyCopyProtected(tab, source, targetUrl);
       clearPendingSource(tabId);
+      if (isE2ETest && source === "hotkey") {
+        updateHotkeyDiagnostics({
+          injectionSucceeded: false,
+          injectionError: lastErrorMessage,
+        });
+      }
       return;
     }
 
@@ -298,6 +332,13 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
     });
 
     clearPendingSource(tabId);
+
+    if (isE2ETest && source === "hotkey") {
+      updateHotkeyDiagnostics({
+        injectionSucceeded: false,
+        injectionError: lastErrorMessage,
+      });
+    }
 
     if (isE2ETest) {
       setLastPreviewError(lastErrorMessage);
@@ -332,10 +373,26 @@ async function handleHotkeyCommand(
 ): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
+  if (isE2ETest) {
+    resetHotkeyDiagnostics();
+    updateHotkeyDiagnostics({
+      eventTabId: hasValidTabId(tab) ? tab.id : null,
+    });
+  }
   const resolvedTab = await resolveHotkeyTab(tab);
+  if (isE2ETest) {
+    updateHotkeyDiagnostics({
+      resolvedTabId: hasValidTabId(resolvedTab) ? resolvedTab.id : null,
+    });
+  }
 
   let isPinned = true;
-  if (overridePinned === undefined) {
+  const forcedPinned = isE2ETest ? consumeForcedHotkeyPinnedState() : undefined;
+  if (overridePinned !== undefined) {
+    isPinned = overridePinned;
+  } else if (forcedPinned !== undefined) {
+    isPinned = forcedPinned;
+  } else {
     try {
       const settings = await chrome.action.getUserSettings();
       isPinned = Boolean(settings?.isOnToolbar);
@@ -348,10 +405,7 @@ async function handleHotkeyCommand(
       }
       return;
     }
-  } else {
-    isPinned = overridePinned;
   }
-
   if (!isPinned) {
     await recordError(
       ERROR_CONTEXT.HotkeyOpenPopup,
@@ -366,6 +420,13 @@ async function handleHotkeyCommand(
       },
     );
     if (resolvedTab) {
+      if (isE2ETest) {
+        updateHotkeyDiagnostics({
+          injectionAttempted: false,
+          injectionSucceeded: null,
+          injectionError: null,
+        });
+      }
       await triggerCopy(resolvedTab, source);
     } else {
       console.warn("[MarkQuote] Hotkey: unable to resolve active tab for fallback copy.");

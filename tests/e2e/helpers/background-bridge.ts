@@ -1,6 +1,16 @@
 import type { Page } from "@playwright/test";
 import type { OptionsPayload } from "../../../src/options-schema.js";
 
+export interface HotkeyDiagnostics {
+  eventTabId: number | null;
+  resolvedTabId: number | null;
+  stubSelectionUsed: boolean;
+  injectionAttempted: boolean;
+  injectionSucceeded: boolean | null;
+  injectionError: string | null;
+  timestamp: number;
+}
+
 export async function sendSelectionMessage(
   page: Page,
   payload: { markdown: string; title: string; url: string },
@@ -69,6 +79,22 @@ export async function triggerHotkeyCommand(
 
   if (!result?.ok) {
     throw new Error(`Failed to trigger command: ${result?.error ?? "unknown error"}`);
+  }
+}
+
+export async function setHotkeyPinnedState(page: Page, pinned: boolean | null): Promise<void> {
+  const result = await page.evaluate((state) => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:set-hotkey-pinned", pinned: state }, (response) => {
+        resolve(response ?? { ok: false, error: "No response received" });
+      });
+    });
+  }, pinned);
+
+  if (!result?.ok) {
+    throw new Error(
+      `Failed to set hotkey pinned state: ${result?.error ?? "unknown error setting pinned state"}`,
+    );
   }
 }
 
@@ -186,6 +212,27 @@ export async function getActiveTab(page: Page): Promise<{
     url: string | null;
     title: string | null;
   };
+}
+
+export async function getHotkeyDiagnostics(page: Page): Promise<HotkeyDiagnostics> {
+  const response = await page.evaluate(() => {
+    return new Promise<HotkeyDiagnostics | { ok: false; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:get-hotkey-diagnostics" }, (payload) => {
+        resolve(
+          (payload as HotkeyDiagnostics | { ok: false; error?: string }) ?? {
+            ok: false,
+            error: "No response received",
+          },
+        );
+      });
+    });
+  });
+
+  if ("ok" in response && response.ok === false) {
+    throw new Error(response.error ?? "Failed to read hotkey diagnostics");
+  }
+
+  return response as HotkeyDiagnostics;
 }
 
 export async function findTabByUrl(
