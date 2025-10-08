@@ -293,6 +293,7 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
 
     void recordError(ERROR_CONTEXT.InjectSelectionScript, lastErrorMessage, {
       tabUrl: tab.url,
+      tabId,
       source,
     });
 
@@ -354,8 +355,15 @@ async function handleHotkeyCommand(
   if (!isPinned) {
     await recordError(
       ERROR_CONTEXT.HotkeyOpenPopup,
-      "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
-      { source },
+      "Shortcut ran while the toolbar icon was hidden. Pin MarkQuote to finish copying automatically.",
+      {
+        source,
+        tabUrl: resolvedTab?.url,
+        tabId: resolvedTab?.id ?? null,
+        tabProvidedInEvent: Boolean(tab && hasValidTabId(tab)),
+        resolvedTab: Boolean(resolvedTab && hasValidTabId(resolvedTab)),
+        fallbackTriggered: Boolean(resolvedTab),
+      },
     );
     if (resolvedTab) {
       await triggerCopy(resolvedTab, source);
@@ -382,7 +390,13 @@ async function handleHotkeyCommand(
     })
     .catch((error) => {
       cancelHotkeyFallback();
-      void recordError(ERROR_CONTEXT.OpenPopupForHotkey, error, { source });
+      void recordError(ERROR_CONTEXT.OpenPopupForHotkey, error, {
+        source,
+        tabUrl: resolvedTab?.url,
+        tabId: resolvedTab?.id ?? null,
+        tabProvidedInEvent: Boolean(tab && hasValidTabId(tab)),
+        resolvedTab: Boolean(resolvedTab && hasValidTabId(resolvedTab)),
+      });
       if (resolvedTab) {
         triggerCopy(resolvedTab, source);
       }

@@ -57,30 +57,46 @@ export async function recordError(
     return;
   }
 
-  const tabUrl = typeof extra?.tabUrl === "string" ? extra.tabUrl : undefined;
-  if (tabUrl && isUrlProtected(tabUrl) && context === ERROR_CONTEXT.InjectSelectionScript) {
-    console.info("[MarkQuote] Skipping protected-page injection error", { tabUrl, message });
+  const { tabUrl, source, ...metadata } = extra ?? {};
+  const normalizedTabUrl = typeof tabUrl === "string" ? tabUrl : undefined;
+  if (
+    normalizedTabUrl &&
+    isUrlProtected(normalizedTabUrl) &&
+    context === ERROR_CONTEXT.InjectSelectionScript
+  ) {
+    console.info("[MarkQuote] Skipping protected-page injection error", {
+      tabUrl: normalizedTabUrl,
+      message,
+    });
     return;
   }
 
   const existing = await getStoredErrors();
   let contextDetails = message;
-  if (tabUrl) {
+  if (normalizedTabUrl) {
     if (message.includes("must request permission")) {
-      contextDetails = `${message} (tab: ${tabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`;
+      contextDetails = `${message} (tab: ${normalizedTabUrl}). ${ACTIVE_TAB_PERMISSION_MESSAGE}`;
     } else if (message.includes("Cannot access contents of the page")) {
-      contextDetails = `${message} (tab: ${tabUrl}). Grant host access from the extension action's "Site access" menu.`;
+      contextDetails = `${message} (tab: ${normalizedTabUrl}). Grant host access from the extension action's "Site access" menu.`;
     }
   }
 
   const decoratedMessage =
-    typeof extra?.source === "string" && extra.source.length > 0
-      ? `${contextDetails} [source: ${extra.source}]`
+    typeof source === "string" && source.length > 0
+      ? `${contextDetails} [source: ${source}]`
       : contextDetails;
+
+  const metadataEntries = Object.entries(metadata).filter(
+    ([, value]) => value !== undefined && value !== null,
+  );
+  const appendedMessage =
+    metadataEntries.length > 0
+      ? `${decoratedMessage}\n${JSON.stringify(Object.fromEntries(metadataEntries), null, 2)}`
+      : decoratedMessage;
 
   const updated: LoggedError[] = [
     {
-      message: decoratedMessage,
+      message: appendedMessage,
       context,
       timestamp: Date.now(),
     },
