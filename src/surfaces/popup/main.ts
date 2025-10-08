@@ -1,10 +1,7 @@
 import { initializePopup } from "./page.js";
 
 async function bootstrap(): Promise<void> {
-  const isDevEnvironment =
-    window.location.hostname === "localhost" || window.location.port === "5173";
-
-  if (isDevEnvironment) {
+  if (import.meta.env.DEV) {
     const { ensureChromeMock } = await import("../../dev/chrome-dev-mock.js");
     ensureChromeMock();
   }
