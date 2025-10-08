@@ -3,6 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { writeClipboardTextFromBackground } from "./background-clipboard.js";
 import { copySelectionToClipboard } from "./clipboard-injection.js";
 import { isE2ETest } from "./constants.js";
 import { ERROR_CONTEXT } from "./error-context.js";
@@ -169,6 +170,11 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
 }
 
 async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
+  if (backgroundCopySucceeded) {
+    return;
+  }
+
   if (!Number.isInteger(tabId) || tabId < 0) {
     await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Invalid tabId for fallback copy", {
       tabId,

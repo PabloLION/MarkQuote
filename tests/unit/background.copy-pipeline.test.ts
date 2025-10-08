@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
+import * as backgroundClipboard from "../../src/background/background-clipboard.js";
 import {
   getLastPreviewError,
   markPopupClosed,
@@ -41,6 +42,7 @@ function resetRuntimeLastError(): void {
 
 describe("background/copy-pipeline", () => {
   const originalChrome = globalThis.chrome;
+  let writeClipboardSpy: MockInstance<typeof backgroundClipboard.writeClipboardTextFromBackground>;
 
   beforeEach(() => {
     sinonChrome.reset();
@@ -59,6 +61,10 @@ describe("background/copy-pipeline", () => {
 
     sinonChrome.runtime.id = "test-extension";
     globalThis.chrome = sinonChrome as unknown as typeof chrome;
+
+    writeClipboardSpy = vi
+      .spyOn(backgroundClipboard, "writeClipboardTextFromBackground")
+      .mockResolvedValue(false);
   });
 
   afterEach(() => {
@@ -68,6 +74,28 @@ describe("background/copy-pipeline", () => {
     resetRuntimeLastError();
     globalThis.chrome = originalChrome;
     vi.restoreAllMocks();
+  });
+
+  it("uses background clipboard write when available", async () => {
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    writeClipboardSpy.mockResolvedValueOnce(true);
+    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
+    Object.defineProperty(sinonChrome.runtime, "lastError", {
+      configurable: true,
+      get: () => ({ message: "fatal" }),
+    });
+
+    await runCopyPipeline("Body", "Title", "https://example.com", "popup", 51);
+    markPopupReady();
+    await flushPromises();
+
+    expect(writeClipboardSpy).toHaveBeenCalled();
+    expect(getScriptingMock().mock.calls.length).toBe(0);
+    expect(recordErrorSpy).not.toHaveBeenCalledWith(
+      ERROR_CONTEXT.PopupClipboardFallback,
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   it("queues preview until the popup ready handshake and uses document targeting", async () => {
