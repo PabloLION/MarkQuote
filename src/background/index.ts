@@ -267,11 +267,22 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
 
   setPendingSource(tabId, source);
 
+  let injectionResults:
+    | Array<chrome.scripting.InjectionResult<{ success?: boolean; details?: unknown }>>
+    | undefined;
   try {
-    await chrome.scripting.executeScript({
+    injectionResults = await chrome.scripting.executeScript({
       target: { tabId },
       files: ["selection.js"],
     });
+    if (import.meta.env.DEV) {
+      const [result] = injectionResults ?? [];
+      console.debug("[MarkQuote] Selection script injected", {
+        tabId,
+        source,
+        hasResult: Boolean(result?.result),
+      });
+    }
   } catch (_error) {
     const lastErrorMessage = getRuntimeLastErrorMessage();
     if (lastErrorMessage.includes("must request permission")) {
