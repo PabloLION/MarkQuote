@@ -320,6 +320,7 @@ async function handleHotkeyCommand(
 ): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
+  const resolvedTab = await resolveHotkeyTab(tab);
 
   let isPinned = true;
   if (overridePinned === undefined) {
@@ -345,34 +346,55 @@ async function handleHotkeyCommand(
       "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
       { source },
     );
-    if (tab) {
-      await triggerCopy(tab, source);
+    if (resolvedTab) {
+      await triggerCopy(resolvedTab, source);
+    } else {
+      console.warn("[MarkQuote] Hotkey: unable to resolve active tab for fallback copy.");
     }
     return;
   }
 
-  if (tab?.windowId !== undefined) {
-    await chrome.windows.update(tab.windowId, { focused: true }).catch((error) => {
+  if (resolvedTab?.windowId !== undefined) {
+    await chrome.windows.update(resolvedTab.windowId, { focused: true }).catch((error) => {
       console.warn("[MarkQuote] Failed to focus window before opening popup", error);
     });
   }
 
-  if (hasValidTabId(tab)) {
-    scheduleHotkeyFallback(tab);
+  if (resolvedTab && hasValidTabId(resolvedTab)) {
+    scheduleHotkeyFallback(resolvedTab);
   }
 
   chrome.action
-    .openPopup({ windowId: tab?.windowId })
+    .openPopup({ windowId: resolvedTab?.windowId })
     .then(() => {
       console.info("[MarkQuote] Hotkey: openPopup resolved");
     })
     .catch((error) => {
       cancelHotkeyFallback();
       void recordError(ERROR_CONTEXT.OpenPopupForHotkey, error, { source });
-      if (tab) {
-        triggerCopy(tab, source);
+      if (resolvedTab) {
+        triggerCopy(resolvedTab, source);
       }
     });
+}
+
+async function resolveHotkeyTab(
+  tab: chrome.tabs.Tab | undefined,
+): Promise<chrome.tabs.Tab | undefined> {
+  if (tab && hasValidTabId(tab)) {
+    return tab;
+  }
+
+  try {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab && hasValidTabId(activeTab)) {
+      return activeTab;
+    }
+  } catch (error) {
+    console.warn("[MarkQuote] Hotkey: failed to resolve active tab for shortcut", error);
+  }
+
+  return tab;
 }
 
 /**

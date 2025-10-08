@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import {
-  findTabByUrl,
   getBackgroundErrors,
   primeSelectionStub,
   readLastFormatted,
@@ -43,17 +42,15 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
 
   const bridgePage = await openExtensionPage(context, extensionId, "options.html");
 
-  const articleTab = await findTabByUrl(bridgePage, `${new URL(SAMPLE_URL).origin}/*`);
-  expect(articleTab.id).not.toBeNull();
-
   await primeSelectionStub(bridgePage, {
     markdown: SAMPLE_MARKDOWN,
     title: SAMPLE_TITLE,
     url: SAMPLE_URL,
   });
 
+  await articlePage.bringToFront();
+
   await triggerHotkeyCommand(bridgePage, {
-    tabId: articleTab.id ?? undefined,
     forcePinned: false,
   });
 
