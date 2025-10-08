@@ -25,6 +25,7 @@ This file tracks features and tasks that are planned for future development cycl
 
 - Add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
 - Add a “Copy error details” action in the popup error panel so users (and testers) can copy structured diagnostics (context, tab URL, stack) into bug reports quickly.
+- Strip test-only branches (e.g., `isE2ETest` selection stubs) from production bundles by wiring dead-code elimination into the Vite build.
 
 ## Epic 4: Host Access UX
 
