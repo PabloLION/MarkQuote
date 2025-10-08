@@ -35,7 +35,7 @@ flowchart LR
   subgraph ACT[Act]
     direction LR
     D["invokeCopySource()"]
-    D --> D1["Popup bridge<br/>tests/e2e/copy-selection.spec.ts"]
+    D --> D1["Popup bridge<br/>tests/e2e/popup-copy-flow.spec.ts"]
     D --> D2["Toolbar hotkey (pinned)<br/><em>manual validation</em>"]
     D --> D3["Hotkey fallback (unpinned)<br/>tests/e2e/hotkey-flow.spec.ts"]
     D --> D4["Context menu bridge<br/>tests/e2e/context-menu-flow.spec.ts"]
@@ -55,7 +55,8 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
 - **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `primeSelectionStub`, and `open content tab` to provide a real selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
 - **Act (Trigger)**: the graph highlights each user action after Arrange.
-  - `tests/e2e/copy-selection.spec.ts` covers popup requests (`chrome.runtime.sendMessage` on load), feedback navigation, and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
+  - `tests/e2e/popup-copy-flow.spec.ts` covers popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
+  - `tests/e2e/popup-feedback.spec.ts` exercises the feedback CTA to ensure it opens the repository issue tracker.
   - `tests/e2e/options-rules.spec.ts` edits title and URL rules, then confirms the popup preview mirrors the new formatting.
   - `tests/e2e/onboarding-flow.spec.ts` resets storage to defaults and confirms the popup produces the default template on the first copy.
   - `tests/e2e/hotkey-flow.spec.ts` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The test verifies both the copied preview and the recorded warning.
@@ -67,7 +68,8 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
 | Flow / Behaviour                      | Coverage status                         | Notes |
 | ------------------------------------- | --------------------------------------- | ----- |
-| Popup runtime message + preview       | ✅ `tests/e2e/copy-selection.spec.ts`    | Includes feedback link & theme variants |
+| Popup runtime message + preview       | ✅ `tests/e2e/popup-copy-flow.spec.ts`   | Covers runtime message + theme variants |
+| Popup feedback CTA                    | ✅ `tests/e2e/popup-feedback.spec.ts`    | Ensures the repo link opens in new tab |
 | Options rule editing -> popup preview | ✅ `tests/e2e/options-rules.spec.ts`     | Confirms DOM updates + badge hidden |
 | Onboarding first copy                 | ✅ `tests/e2e/onboarding-flow.spec.ts`   | Resets storage, checks default template |
 | Context menu copy                     | ✅ `tests/e2e/context-menu-flow.spec.ts` | Preview generated, no errors logged |
