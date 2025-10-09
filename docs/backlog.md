@@ -25,6 +25,9 @@ This file tracks features and tasks that are planned for future development cycl
 
 - Add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
 - Add a “Copy error details” action in the popup error panel so users (and testers) can copy structured diagnostics (context, tab URL, stack) into bug reports quickly.
+- Expand Playwright coverage to exercise consecutive cross-trigger flows (e.g., hotkey → context menu → popup) and same-trigger repeats without resets.
+- Strengthen clipboard assertions so E2E specs confirm unique clipboard contents after each copy.
+- Enhance error telemetry and reporting so captured errors include actionable metadata (source trigger, tab URL, stack) and can be exported easily.
 
 ## Epic 4: Host Access UX
 
