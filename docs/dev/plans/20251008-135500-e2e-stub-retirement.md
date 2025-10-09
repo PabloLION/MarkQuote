@@ -31,7 +31,7 @@
 4. **[x] Guard production builds**
    - Remove `isE2ETest` branches from runtime logic and centralise
      E2E hooks so production bundles always execute the same pathway.
-5. **[ ] Docs & cleanup**
+5. **[x] Docs & cleanup**
    - Update `docs/dev/test-coverage.md` to describe the new Arrange
      and Act steps.
    - Note the clipboard/permission decision in the relevant release

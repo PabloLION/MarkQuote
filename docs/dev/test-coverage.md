@@ -5,6 +5,7 @@
 - `pnpm test:unit` — runs Vitest with coverage across `tests/unit/**`.
 - `pnpm exec playwright test --project=chromium-extension` — runs the Playwright suite in headless Chromium with the packaged extension.
 - `pnpm test:e2e` — convenience task that builds the extension and executes every Playwright project defined in `playwright.config.ts`.
+- `VITE_E2E=true pnpm build` — rebuild the extension with E2E hooks enabled (automatically executed by `pnpm test:e2e`, but handy when debugging Playwright flows manually).
 
 ## Unit Suites (Vitest)
 
@@ -90,3 +91,13 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 - Protected page copy followed by manual fallback acknowledgement.
 - Error badge state for popup-reported errors (e.g., background errors seeded before open).
 - Toolbar hotkey (pinned) end-to-end confirmation — manual check until Chromium allows scripted `chrome.action.openPopup()`.
+
+### Smoke Subset
+
+Each critical happy-path scenario is tagged with `[smoke]` in the test title. Run the fastest regression loop with:
+
+```bash
+pnpm test:e2e -- --grep "\\[smoke\\]"
+```
+
+This executes one representative flow for popup, context-menu, hotkey fallback, onboarding, options update, and the feedback CTA.
