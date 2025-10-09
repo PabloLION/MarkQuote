@@ -52,7 +52,7 @@ test.afterEach(async () => {
   }
 });
 
-test("popup request pipeline formats the active tab selection", async () => {
+test("[smoke] popup request pipeline formats the active tab selection", async () => {
   const { context, cleanup } = await launchExtensionContext({ colorScheme: "dark" });
   activeCleanup = cleanup;
 

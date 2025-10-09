@@ -23,7 +23,7 @@ test.afterEach(async () => {
   }
 });
 
-test("context menu copy requests background pipeline", async () => {
+test("[smoke] context menu copy requests background pipeline", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 

@@ -13,7 +13,7 @@ test.afterEach(async () => {
   }
 });
 
-test("feedback button opens repository in new tab", async () => {
+test("[smoke] feedback button opens repository in new tab", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 

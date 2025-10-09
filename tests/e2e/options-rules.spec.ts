@@ -25,7 +25,7 @@ test.afterEach(async () => {
   }
 });
 
-test("options UI edits update popup preview", async () => {
+test("[smoke] options UI edits update popup preview", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
