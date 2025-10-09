@@ -370,8 +370,16 @@ async function handleHotkeyCommand(
     } catch (error) {
       console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
       await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
-      if (tab) {
-        await triggerCopy(tab, source);
+      const fallbackTab = resolvedTab ?? tab;
+      if (fallbackTab) {
+        updateHotkeyDiagnostics({
+          injectionAttempted: false,
+          injectionSucceeded: null,
+          injectionError: null,
+        });
+        await triggerCopy(fallbackTab, source);
+      } else {
+        console.warn("[MarkQuote] Hotkey: unable to resolve tab after settings failure.");
       }
       return;
     }
