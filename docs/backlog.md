@@ -1,68 +1,22 @@
 # Project Backlog
 
-This file tracks features and tasks that are planned for future development cycles.
+Compact list of pending fixes and refactors. Items link to their story docs when
+available.
 
-## Epic 3: Quality and Test Automation
+## Stories
 
-### Story: Implement End-to-End (E2E) Test Suite
+- [ ] Story 3.10 – E2E Scenario Matrix Hardening (`docs/stories/3.10-e2e-scenario-matrix.md`)
+- [ ] Story 3.11 – Error Diagnostics and Reporting (`docs/stories/3.11-error-diagnostics-overhaul.md`)
+- [ ] Story 3.12 – Background Initialization Alignment (`docs/stories/3.12-background-initialization-alignment.md`)
+- [ ] Streamline Hotkey Permissions — guide users through granting host access
+  so hotkey copies can run without forcing the popup. (Story doc pending.)
+- [ ] Keyboard Reordering for Rules Tables — provide an accessible alternative
+  to drag-and-drop in the options UI. (Story doc pending.)
+- [ ] Centralize Shared Runtime Constants — consolidate duplicated clipboard
+  caps, loader timeouts, and status labels. (Story doc pending.)
 
-**Goal:** To ensure long-term stability and prevent regressions by creating a comprehensive automated E2E test suite.
+## Tasks
 
-**Tasks:**
-
-- Set up and configure the Playwright test runner.
-- Write E2E tests for the core user journeys:
-  - Copying a selection and verifying the clipboard content.
-  - Verifying the functionality of the options page, including saving and applying title transformation rules.
-- Testing the popup page UI and interactions.
-- Integrate the E2E test suite into a CI/CD pipeline to run automatically.
-
-### Follow-up: Story 3.9 Completion Tasks
-
-**Goal:** Finish the remaining Playwright coverage required for the 1.1 release.
-
-**Tasks:**
-
-- Add an error-log lifecycle test that seeds background errors, confirms badge + popup list state, and clears the log via the UI.
-- Add a “Copy error details” action in the popup error panel so users (and testers) can copy structured diagnostics (context, tab URL, stack) into bug reports quickly.
-- Expand Playwright coverage to exercise consecutive cross-trigger flows (e.g., hotkey → context menu → popup) and same-trigger repeats without resets.
-- Strengthen clipboard assertions so E2E specs confirm unique clipboard contents after each copy.
-- Enhance error telemetry and reporting so captured errors include actionable metadata (source trigger, tab URL, stack) and can be exported easily.
-
-## Epic 4: Host Access UX
-
-### Story: Streamline Hotkey Permissions
-
-**Goal:** Let users copy without opening the popup by guiding them to grant per-site access for the keyboard shortcut.
-
-**Notes:** Interim behavior opens the popup whenever the hotkey fires so the action gains `activeTab` permissions. Restore the streamlined flow once optional host access is available.
-
-**Tasks:**
-
-- Surface a CTA in the popup error panel to request host access for the current site.
-- Update the background command to skip opening the popup when the site is already authorized.
-- Add automated coverage for the permission request + fallback behavior.
-
-## Epic 5: Accessibility Polish
-
-### Story: Keyboard Reordering for Rules Tables
-
-**Goal:** Provide a keyboard-accessible alternative to drag-and-drop when reordering title and URL rules on the options page.
-
-**Tasks:**
-
-- Introduce focusable move controls (e.g., up/down buttons or keyboard shortcuts) for each rule row.
-- Announce position changes via ARIA live regions to keep screen reader users informed.
-- Update documentation and tests to cover the non-pointer interaction path.
-
-## Epic 6: Configuration Hygiene
-
-### Story: Centralize Shared Runtime Constants
-
-**Goal:** Reduce duplication and misalignment by moving clipboard limits, loader timeouts, and UI status values into a single configuration module.
-
-**Tasks:**
-
-- Audit the extension for duplicated configuration literals (e.g., loader timeouts, clipboard caps, status labels).
-- Create a shared runtime constants module that can be imported by background, popup, and options surfaces without circular dependencies.
-- Update existing modules to consume the shared constants and adjust tests/documentation accordingly.
+- [ ] Add documentation for the E2E smoke subset (`--grep "[smoke]"`) and the
+  `VITE_E2E=true pnpm build` prerequisite.
+- [ ] Replace eval-based test timers (`lolex`/`nise`) with safer alternatives.
