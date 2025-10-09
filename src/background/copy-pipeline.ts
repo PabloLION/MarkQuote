@@ -240,3 +240,11 @@ export function setLastPreviewError(message: string | undefined): void {
   }
   lastPreviewError = message;
 }
+
+export function resetE2ePreviewState(): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  lastFormattedPreview = "";
+  lastPreviewError = undefined;
+}

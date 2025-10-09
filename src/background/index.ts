@@ -17,6 +17,7 @@ import { registerContextMenus } from "./context-menus.js";
 import {
   markPopupClosed,
   markPopupReady,
+  resetE2ePreviewState,
   runCopyPipeline,
   setLastPreviewError,
   setPopupDocumentId,
@@ -159,6 +160,17 @@ async function resetExtensionState(): Promise<void> {
   setPopupDocumentId(undefined);
   markPopupClosed();
   setLastPreviewError(undefined);
+  resetE2ePreviewState();
+  resetHotkeyDiagnostics();
+  consumeForcedHotkeyPinnedState();
+
+  updateHotkeyDiagnostics({
+    eventTabId: null,
+    resolvedTabId: null,
+    injectionAttempted: false,
+    injectionSucceeded: null,
+    injectionError: null,
+  });
 
   const tasks: Promise<unknown>[] = [];
   const sessionStorage = getSessionStorage();
