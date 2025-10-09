@@ -61,6 +61,32 @@ describe("rule drag manager", () => {
     expect(onReorder).toHaveBeenCalledWith("title", 0, 1);
   });
 
+  it("clears drag state when the drop target index is missing", () => {
+    const onReorder = vi.fn();
+    const manager = createRuleDragManager({ onReorder });
+    const controller = new AbortController();
+
+    const sourceRow = createRow(0);
+    const targetRow = createRow(null);
+    manager.registerRow(sourceRow, "title", controller.signal);
+    manager.registerRow(targetRow, "title", controller.signal);
+
+    const handle = sourceRow.querySelector<HTMLButtonElement>(".drag-handle");
+    expect(handle).not.toBeNull();
+
+    dispatchDragEvent(handle as HTMLButtonElement, "dragstart");
+    expect(sourceRow.classList.contains("dragging")).toBe(true);
+
+    dispatchDragEvent(targetRow, "dragenter");
+    expect(targetRow.classList.contains("drag-over")).toBe(true);
+
+    dispatchDragEvent(targetRow, "drop");
+
+    expect(targetRow.classList.contains("drag-over")).toBe(false);
+    expect(sourceRow.classList.contains("dragging")).toBe(false);
+    expect(onReorder).not.toHaveBeenCalled();
+  });
+
   it("prevents drag start when the row index is missing", () => {
     const onReorder = vi.fn();
     const manager = createRuleDragManager({ onReorder });
