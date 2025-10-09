@@ -28,9 +28,9 @@
    - Refactor helpers and specs to operate on real DOM selections
      using Playwright DOM APIs (`selectElementText`, clipboard
      assertions, etc.).
-4. **[ ] Guard production builds**
-   - Introduce a build-time flag (e.g., Vite `define`) so test-only
-     branches are eliminated from production bundles.
+4. **[x] Guard production builds**
+   - Remove `isE2ETest` branches from runtime logic and centralise
+     E2E hooks so production bundles always execute the same pathway.
 5. **[ ] Docs & cleanup**
    - Update `docs/dev/test-coverage.md` to describe the new Arrange
      and Act steps.

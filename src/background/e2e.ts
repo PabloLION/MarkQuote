@@ -62,6 +62,8 @@ const DEFAULT_HOTKEY_DIAGNOSTICS: HotkeyDiagnostics = {
 let hotkeyDiagnostics: HotkeyDiagnostics = { ...DEFAULT_HOTKEY_DIAGNOSTICS };
 let forcedHotkeyPinnedState: boolean | undefined;
 
+const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
+
 async function resolveTab(tabId: unknown): Promise<chrome.tabs.Tab | undefined> {
   if (typeof tabId !== "number") {
     return undefined;
@@ -71,6 +73,9 @@ async function resolveTab(tabId: unknown): Promise<chrome.tabs.Tab | undefined> 
 }
 
 export function resetHotkeyDiagnostics(): void {
+  if (!isE2EEnabled) {
+    return;
+  }
   hotkeyDiagnostics = {
     ...DEFAULT_HOTKEY_DIAGNOSTICS,
     timestamp: Date.now(),
@@ -78,6 +83,9 @@ export function resetHotkeyDiagnostics(): void {
 }
 
 export function updateHotkeyDiagnostics(patch: Partial<HotkeyDiagnostics>): void {
+  if (!isE2EEnabled) {
+    return;
+  }
   hotkeyDiagnostics = {
     ...hotkeyDiagnostics,
     ...patch,
@@ -86,16 +94,25 @@ export function updateHotkeyDiagnostics(patch: Partial<HotkeyDiagnostics>): void
 }
 
 export function getHotkeyDiagnostics(): HotkeyDiagnostics {
+  if (!isE2EEnabled) {
+    return { ...DEFAULT_HOTKEY_DIAGNOSTICS };
+  }
   return { ...hotkeyDiagnostics };
 }
 
 export function consumeForcedHotkeyPinnedState(): boolean | undefined {
+  if (!isE2EEnabled) {
+    return undefined;
+  }
   const value = forcedHotkeyPinnedState;
   forcedHotkeyPinnedState = undefined;
   return value;
 }
 
 export function handleE2eMessage(context: MessageContext): boolean {
+  if (!isE2EEnabled) {
+    return false;
+  }
   const {
     request,
     sendResponse,

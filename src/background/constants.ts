@@ -15,5 +15,3 @@ export const E2E_FIND_TAB_MESSAGE = "e2e:find-tab";
 export const ERROR_STORAGE_KEY = "markquote-error-log";
 export const ACTIVE_TAB_PERMISSION_MESSAGE =
   'Chrome only grants keyboard shortcuts access after you allow the site in the extension\'s "Site access" settings.';
-
-export const isE2ETest = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";

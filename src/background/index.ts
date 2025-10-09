@@ -12,7 +12,7 @@ import {
   type OptionsPayload,
   validateOptionsPayload,
 } from "../options-schema.js";
-import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./constants.js";
+import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import {
   markPopupClosed,
@@ -260,7 +260,7 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
   let injectionResults:
     | Array<chrome.scripting.InjectionResult<{ success?: boolean; details?: unknown }>>
     | undefined;
-  if (isE2ETest && source === "hotkey") {
+  if (source === "hotkey") {
     updateHotkeyDiagnostics({
       stubSelectionUsed: false,
       injectionAttempted: true,
@@ -281,7 +281,7 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
         hasResult: Boolean(result?.result),
       });
     }
-    if (isE2ETest && source === "hotkey") {
+    if (source === "hotkey") {
       updateHotkeyDiagnostics({
         injectionSucceeded: true,
         injectionError: null,
@@ -292,7 +292,7 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
     if (lastErrorMessage.includes("must request permission")) {
       notifyCopyProtected(tab, source, targetUrl);
       clearPendingSource(tabId);
-      if (isE2ETest && source === "hotkey") {
+      if (source === "hotkey") {
         updateHotkeyDiagnostics({
           injectionSucceeded: false,
           injectionError: lastErrorMessage,
@@ -309,16 +309,14 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
 
     clearPendingSource(tabId);
 
-    if (isE2ETest && source === "hotkey") {
+    if (source === "hotkey") {
       updateHotkeyDiagnostics({
         injectionSucceeded: false,
         injectionError: lastErrorMessage,
       });
     }
 
-    if (isE2ETest) {
-      setLastPreviewError(lastErrorMessage);
-    }
+    setLastPreviewError(lastErrorMessage);
   }
 }
 
@@ -349,21 +347,17 @@ async function handleHotkeyCommand(
 ): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
-  if (isE2ETest) {
-    resetHotkeyDiagnostics();
-    updateHotkeyDiagnostics({
-      eventTabId: hasValidTabId(tab) ? tab.id : null,
-    });
-  }
+  resetHotkeyDiagnostics();
+  updateHotkeyDiagnostics({
+    eventTabId: hasValidTabId(tab) ? tab.id : null,
+  });
   const resolvedTab = await resolveHotkeyTab(tab);
-  if (isE2ETest) {
-    updateHotkeyDiagnostics({
-      resolvedTabId: hasValidTabId(resolvedTab) ? resolvedTab.id : null,
-    });
-  }
+  updateHotkeyDiagnostics({
+    resolvedTabId: hasValidTabId(resolvedTab) ? resolvedTab.id : null,
+  });
 
   let isPinned = true;
-  const forcedPinned = isE2ETest ? consumeForcedHotkeyPinnedState() : undefined;
+  const forcedPinned = consumeForcedHotkeyPinnedState();
   if (overridePinned !== undefined) {
     isPinned = overridePinned;
   } else if (forcedPinned !== undefined) {
@@ -396,13 +390,11 @@ async function handleHotkeyCommand(
       },
     );
     if (resolvedTab) {
-      if (isE2ETest) {
-        updateHotkeyDiagnostics({
-          injectionAttempted: false,
-          injectionSucceeded: null,
-          injectionError: null,
-        });
-      }
+      updateHotkeyDiagnostics({
+        injectionAttempted: false,
+        injectionSucceeded: null,
+        injectionError: null,
+      });
       await triggerCopy(resolvedTab, source);
     } else {
       console.warn("[MarkQuote] Hotkey: unable to resolve active tab for fallback copy.");
@@ -599,26 +591,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return handleSelectionCopyRequest(sendResponse);
   }
 
-  if (isE2ETest) {
-    const handled = handleE2eMessage({
-      request,
-      sender,
-      sendResponse,
-      persistOptions,
-      recordError,
-      triggerCopy: async (tab, source) => {
-        await triggerCopy(tab, source);
-      },
-      triggerCommand: async (tab, forcePinned) => {
-        await handleHotkeyCommand(tab, forcePinned);
-      },
-      getErrorLog: getStoredErrors,
-      clearErrorLog: clearStoredErrors,
-      resetStorage: resetExtensionState,
-    });
-    if (handled) {
-      return true;
-    }
+  const handled = handleE2eMessage({
+    request,
+    sender,
+    sendResponse,
+    persistOptions,
+    recordError,
+    triggerCopy: async (tab, e2eSource) => {
+      await triggerCopy(tab, e2eSource);
+    },
+    triggerCommand: async (tab, forcePinned) => {
+      await handleHotkeyCommand(tab, forcePinned);
+    },
+    getErrorLog: getStoredErrors,
+    clearErrorLog: clearStoredErrors,
+    resetStorage: resetExtensionState,
+  });
+  if (handled) {
+    return true;
   }
 
   if (request?.markdown) {

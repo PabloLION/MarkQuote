@@ -1,6 +1,5 @@
 import chrome from "sinon-chrome";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleE2eMessage } from "../../src/background/e2e.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ERROR_CONTEXT, type ErrorContext } from "../../src/background/error-context.js";
 import type { CopySource } from "../../src/background/types.js";
 
@@ -8,11 +7,21 @@ const flushMicrotasks = async () => {
   await new Promise((resolve) => setImmediate(resolve));
 };
 
+let handleE2eMessage: typeof import("../../src/background/e2e.js").handleE2eMessage;
+const originalE2E = process.env.VITE_E2E;
+
 describe("handleE2eMessage", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     chrome.reset();
     // @ts-expect-error – vitest environment provides globals but we override for sinon-chrome.
     globalThis.chrome = chrome;
+    process.env.VITE_E2E = "true";
+    vi.resetModules();
+    ({ handleE2eMessage } = await import("../../src/background/e2e.js"));
+  });
+
+  afterEach(() => {
+    process.env.VITE_E2E = originalE2E;
   });
 
   it("invokes the hotkey command handler", async () => {
