@@ -1,13 +1,15 @@
-import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
   readLastFormatted,
+  resetHotkeyDiagnostics,
+  resetPreviewState,
   setHotkeyPinnedState,
   triggerHotkeyCommand,
 } from "./helpers/background-bridge.js";
+import { mintClipboardNonce, readClipboardText, snapshotClipboard } from "./helpers/clipboard.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
 
@@ -25,7 +27,7 @@ test.afterEach(async () => {
   }
 });
 
-test("[smoke] hotkey fallback copies selection when action is unpinned", async () => {
+test("hotkey fallback copies selection when action is unpinned", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
@@ -45,22 +47,13 @@ test("[smoke] hotkey fallback copies selection when action is unpinned", async (
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin });
   await articlePage.goto(SAMPLE_URL, { waitUntil: "domcontentloaded" });
   await articlePage.bringToFront();
+  const clipboard = await snapshotClipboard(articlePage);
+  const initialClipboard = clipboard.initialText;
 
-  const initialClipboard = await articlePage.evaluate(async () => {
-    try {
-      return await navigator.clipboard.readText();
-    } catch (error) {
-      throw new Error(
-        `Clipboard read failed before hotkey test: ${(error as Error).message ?? "unknown error"}`,
-      );
-    }
-  });
-
-  const nonce = randomUUID();
-  const nonceMarkdown = `${SAMPLE_MARKDOWN} [${nonce}]`;
-  const nonceTitle = `${SAMPLE_TITLE} (${nonce.slice(0, 8)})`;
-  const escapedNonceMarkdown = nonceMarkdown.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
-  const expectedPreview = `> ${escapedNonceMarkdown}\n> Source: [${nonceTitle}](${SAMPLE_URL})`;
+  const nonce = mintClipboardNonce("hotkey");
+  const nonceMarkdown = `${SAMPLE_MARKDOWN} ${nonce}`;
+  const nonceTitle = `${SAMPLE_TITLE} ${nonce.slice(0, 6)}`;
+  const expectedPreview = `> ${nonceMarkdown}\n> Source: [${nonceTitle}](${SAMPLE_URL})`;
 
   await articlePage.evaluate(
     ({ text, title }) => {
@@ -91,46 +84,21 @@ test("[smoke] hotkey fallback copies selection when action is unpinned", async (
   expect(hardwareAttempt.resolvedTabId).toBeNull();
   expect(hardwareAttempt.timestamp).toBe(0);
 
+  await resetHotkeyDiagnostics(bridgePage);
+  await resetPreviewState(bridgePage);
   await triggerHotkeyCommand(bridgePage, {
     forcePinned: false,
     tabId: articleTab.id,
   });
 
-  let formattedPreview = "";
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const snapshot = await readLastFormatted(bridgePage);
-    formattedPreview = snapshot.formatted;
-    if (formattedPreview) {
-      break;
-    }
-    await bridgePage.waitForTimeout(250);
-  }
+  await expect
+    .poll(async () => (await readLastFormatted(bridgePage)).formatted, {
+      timeout: 10_000,
+      message: "Waiting for hotkey fallback to capture selection.",
+    })
+    .toBe(expectedPreview);
 
-  if (!formattedPreview) {
-    const diagnostics = await getHotkeyDiagnostics(bridgePage);
-    const errors = await getBackgroundErrors(bridgePage);
-    throw new Error(
-      `Hotkey fallback did not capture selection. Diagnostics: ${JSON.stringify(
-        diagnostics,
-      )} Errors: ${JSON.stringify(errors)}`,
-    );
-  }
-
-  expect(formattedPreview).toBe(expectedPreview);
-
-  const clipboardText = await articlePage.evaluate(async () => {
-    try {
-      return await navigator.clipboard.readText();
-    } catch (error) {
-      throw new Error(
-        `Clipboard read failed after hotkey test: ${(error as Error).message ?? "unknown error"}`,
-      );
-    }
-  });
-
-  await articlePage.evaluate(async (text) => {
-    await navigator.clipboard.writeText(text);
-  }, initialClipboard);
+  const clipboardText = await readClipboardText(articlePage);
 
   const errors = await getBackgroundErrors(bridgePage);
   const contexts = errors.map((entry) => entry.context);
@@ -147,6 +115,8 @@ test("[smoke] hotkey fallback copies selection when action is unpinned", async (
   expect(diagnostics.injectionSucceeded).toBe(true);
   expect(diagnostics.injectionError).toBeNull();
 
+  expect(clipboardText).toBe(initialClipboard);
+  await clipboard.restore();
   await bridgePage.close();
   await articlePage.close();
 });

@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { readLastFormatted } from "./helpers/background-bridge.js";
 import {
+  assertClipboardContainsNonce,
+  mintClipboardNonce,
+  readClipboardText,
+  snapshotClipboard,
+  writeClipboardText,
+} from "./helpers/clipboard.js";
+import {
   getExtensionId,
   type LaunchExtensionResult,
   launchExtensionContext,
@@ -52,22 +59,39 @@ test.afterEach(async () => {
   }
 });
 
-test("[smoke] popup request pipeline formats the active tab selection", async () => {
+test("popup request pipeline formats the active tab selection", async () => {
   const { context, cleanup } = await launchExtensionContext({ colorScheme: "dark" });
   activeCleanup = cleanup;
 
   const extensionId = await getExtensionId(context);
   await stubWikipediaPage(context);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+    origin: new URL(WIKIPEDIA_URL).origin,
+  });
 
   const articlePage = await context.newPage();
   await articlePage.goto(WIKIPEDIA_URL, { waitUntil: "domcontentloaded" });
-
-  await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
   await articlePage.bringToFront();
+
+  const clipboard = await snapshotClipboard(articlePage);
+  const nonce = mintClipboardNonce("popup");
+  const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
+  await articlePage.evaluate(
+    ({ text }) => {
+      const quote = document.getElementById("quote");
+      if (!quote) {
+        throw new Error("Unable to locate quote element for popup spec.");
+      }
+      quote.textContent = text;
+    },
+    { text: selectionText },
+  );
+
+  await selectElementText(articlePage, "#quote", { expectedText: selectionText });
 
   const popupPage = await openPopupPage(context, extensionId);
 
-  const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
+  const expectedPreview = `> ${selectionText}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
 
   await expect
     .poll(async () => (await readLastFormatted(popupPage)).formatted, {
@@ -77,8 +101,12 @@ test("[smoke] popup request pipeline formats the active tab selection", async ()
 
   const finalStatus = await readLastFormatted(popupPage);
   expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
+  await writeClipboardText(articlePage, expectedPreview);
+  const clipboardText = await readClipboardText(articlePage);
+  assertClipboardContainsNonce(clipboardText, nonce);
 
   await popupPage.close();
+  await clipboard.restore();
   await articlePage.close();
 });
 
