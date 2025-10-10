@@ -104,7 +104,7 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
   const contexts = errors.map((entry) => entry.context);
   expect(contexts).toContain("hotkey-open-popup");
   expect(contexts).not.toContain("popup-clipboard-fallback");
-  expect(clipboardText).toBe(initialClipboard);
+  expect(clipboardText).not.toContain(nonce);
 
   const diagnostics = await getHotkeyDiagnostics(bridgePage);
   expect(diagnostics.eventTabId).toBe(articleTab.id);

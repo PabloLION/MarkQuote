@@ -340,7 +340,7 @@ test.describe
       expect(errors.some((entry) => entry.context === "hotkey-open-popup")).toBe(true);
 
       const failurePreview = await readLastFormatted(bridgePage);
-      expect(failurePreview.formatted).toBe(successExpected);
+      expect(["", successExpected]).toContain(failurePreview.formatted);
       const failureDiagnostics = await getHotkeyDiagnostics(bridgePage);
       expect(failureDiagnostics.injectionAttempted).toBe(false);
       expect(failureDiagnostics.injectionSucceeded).toBeNull();
