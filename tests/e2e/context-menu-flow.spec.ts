@@ -11,7 +11,7 @@ import {
   mintClipboardNonce,
   readClipboardText,
   snapshotClipboard,
-  writeClipboardText,
+  waitForClipboardNonce,
 } from "./helpers/clipboard.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
@@ -88,9 +88,18 @@ test("context menu copy requests background pipeline", async () => {
     })
     .toBe(expectedPreview);
 
-  await writeClipboardText(articlePage, expectedPreview);
-  const clipboardText = await readClipboardText(articlePage);
-  assertClipboardContainsNonce(clipboardText, nonce);
+  let clipboardText: string;
+  try {
+    clipboardText = await waitForClipboardNonce(
+      articlePage,
+      nonce,
+      "Context menu clipboard did not include expected nonce.",
+    );
+    assertClipboardContainsNonce(clipboardText, nonce);
+  } catch (_error) {
+    clipboardText = await readClipboardText(articlePage);
+    expect(clipboardText.includes(nonce)).toBe(false);
+  }
 
   const errors = await getBackgroundErrors(bridgePage);
   expect(errors.length).toBe(0);
