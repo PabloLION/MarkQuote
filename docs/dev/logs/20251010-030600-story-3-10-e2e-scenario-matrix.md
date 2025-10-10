@@ -50,6 +50,13 @@ untested.
 5. Run the validation commands (`pnpm test:e2e`, smoke subset, `pnpm test`) and
    record outcomes in this log.
 
+## Validation Results
+
+- 2025-10-10 `pnpm test:e2e` — ✅ pass (10.4s, 10 specs)
+- 2025-10-10 `pnpm exec playwright test --grep "\\[smoke\\]"` — ✅ pass
+  (multi-trigger matrix only)
+- 2025-10-10 `pnpm test` — ✅ pass (unit + full Playwright suite)
+
 ## Risks & Mitigations
 
 - Clipboard timing – rely on diagnostics polling instead of arbitrary sleeps.
