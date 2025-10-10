@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Development Logs
 
 This directory contains chronological records of development work, tracking the lifecycle from initial planning through implementation to completion.

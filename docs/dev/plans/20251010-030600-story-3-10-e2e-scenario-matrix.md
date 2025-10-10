@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD036 -->
+
 # Plan – Story 3.10 E2E Scenario Matrix Hardening
 
 ## Context
