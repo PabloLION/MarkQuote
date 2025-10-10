@@ -23,6 +23,7 @@ Each development log typically evolves through these phases:
 1. **📋 Planning Phase**
 
    - Break down tasks into atomic commits
+   - Capture a dedicated **Atomic Commit Breakdown** section in the log
    - Define acceptance criteria
    - Identify technical approach
 

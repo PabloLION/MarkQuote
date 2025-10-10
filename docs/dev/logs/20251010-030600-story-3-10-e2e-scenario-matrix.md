@@ -38,6 +38,18 @@ untested.
    - Run `pnpm test:e2e` and `pnpm test:e2e -- --grep "[smoke]"`.
    - Confirm `pnpm test` (unit + e2e) passes locally.
 
+## Atomic Commit Breakdown
+
+1. Introduce helper groundwork (nonce utilities, diagnostics reset, clipboard
+   restore) alongside focused unit coverage.
+2. Add the multi-trigger Playwright spec that exercises chained flows and tags
+   the smoke scenario.
+3. Refine existing specs to consume shared helpers and adjust smoke tagging.
+4. Update documentation (`tests/e2e/README.md`, `docs/dev/test-coverage.md`) to
+   describe the new flows and helper usage.
+5. Run the validation commands (`pnpm test:e2e`, smoke subset, `pnpm test`) and
+   record outcomes in this log.
+
 ## Risks & Mitigations
 
 - Clipboard timing – rely on diagnostics polling instead of arbitrary sleeps.
