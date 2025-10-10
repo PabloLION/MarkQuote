@@ -3,8 +3,8 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { writeClipboardTextFromBackground } from "./background-clipboard.js";
 import { copySelectionToClipboard } from "./clipboard-injection.js";
-import { isE2ETest } from "./constants.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
 import type { CopySource } from "./types.js";
@@ -26,8 +26,32 @@ let queuedPopupPreview: PopupPreviewPayload | undefined;
 let queuedPopupRetryTimer: ReturnType<typeof setTimeout> | undefined;
 let activePopupDocumentId: string | undefined;
 
+const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
+
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
+
+function recordE2ePreview(text: string): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  lastFormattedPreview = text;
+  lastPreviewError = undefined;
+}
+
+function clearE2ePreviewError(): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  lastPreviewError = undefined;
+}
+
+function recordE2ePreviewError(message: string): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  lastPreviewError = message;
+}
 
 /**
  * Formats the captured markdown for clipboard usage. When the popup initiated the copy we notify it
@@ -46,10 +70,7 @@ export async function runCopyPipeline(
     queuePopupPreview({ text: formatted, tabId });
   }
 
-  if (isE2ETest) {
-    lastFormattedPreview = formatted;
-    lastPreviewError = undefined;
-  }
+  recordE2ePreview(formatted);
 
   return formatted;
 }
@@ -141,9 +162,7 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     } else {
       await chrome.runtime.sendMessage(message);
     }
-    if (isE2ETest) {
-      lastPreviewError = undefined;
-    }
+    clearE2ePreviewError();
   } catch (error) {
     const runtimeErrorMessage = chrome.runtime.lastError?.message;
     const normalizedError =
@@ -162,13 +181,16 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
       void fallbackCopyToTab(payload.tabId, payload.text);
     }
 
-    if (isE2ETest) {
-      lastPreviewError = normalizedError;
-    }
+    recordE2ePreviewError(normalizedError);
   }
 }
 
 async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
+  if (backgroundCopySucceeded) {
+    return;
+  }
+
   if (!Number.isInteger(tabId) || tabId < 0) {
     await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Invalid tabId for fallback copy", {
       tabId,
@@ -203,15 +225,26 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
 
 /** Returns the last formatted preview (test-only helper). */
 export function getLastFormattedPreview(): string {
-  return lastFormattedPreview;
+  return isE2EEnabled ? lastFormattedPreview : "";
 }
 
 /** Returns the last preview error encountered (test-only helper). */
 export function getLastPreviewError(): string | undefined {
-  return lastPreviewError;
+  return isE2EEnabled ? lastPreviewError : undefined;
 }
 
 /** Overrides the stored preview error (test helper used by E2E suite). */
 export function setLastPreviewError(message: string | undefined): void {
+  if (!isE2EEnabled) {
+    return;
+  }
   lastPreviewError = message;
+}
+
+export function resetE2ePreviewState(): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  lastFormattedPreview = "";
+  lastPreviewError = undefined;
 }

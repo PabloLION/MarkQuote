@@ -103,6 +103,27 @@ describe("popup copy flow", () => {
     warnSpy.mockRestore();
   });
 
+  it("normalizes non-error clipboard rejections", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    (copyMarkdownToClipboard as ReturnType<typeof vi.fn>).mockRejectedValueOnce("string failure");
+    const preview = createPreview();
+    const messages = createMessages();
+    const copyFlow = createCopyFlow({ preview, messages });
+
+    await copyFlow.handleMessage({ type: "copied-text-preview", text: "Text" });
+
+    expect(messages.set).toHaveBeenLastCalledWith(
+      "Unable to copy automatically. Text is ready below.",
+      expect.objectContaining({ variant: "warning" }),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[MarkQuote] Clipboard copy failed",
+      expect.objectContaining({ reason: "string failure" }),
+    );
+
+    warnSpy.mockRestore();
+  });
+
   it("handles protected messages", async () => {
     const preview = createPreview();
     const messages = createMessages();

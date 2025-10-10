@@ -11,8 +11,9 @@ The Playwright suite spins up the packaged extension, launches Chromium with a t
 ## Fixtures & Helpers
 
 - `tests/e2e/helpers/extension.ts` handles launching the MV3 extension context and opening extension pages.
-- `tests/e2e/helpers/e2e.ts` sends test-only runtime messages (selection payloads, option seeding, formatted snapshot reads).
-- Global setup rebuilds the extension with `VITE_E2E=true`, expanding host permissions required by the stubs.
+- `tests/e2e/helpers/background-bridge.ts` sends test-only runtime messages (option seeding, diagnostics, formatted snapshot reads).
+- `tests/e2e/helpers/selection.ts` centralises DOM selection helpers so specs exercise the real content script instead of stubbing payloads.
+- Global setup rebuilds the extension with `VITE_E2E=true`, enabling the bridge handlers and diagnostics required by the suite, then patches the bundled manifest with `<all_urls>` host permission so selection injections succeed without a toolbar gesture.
 
 ## Theme Coverage
 

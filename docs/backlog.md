@@ -1,56 +1,21 @@
 # Project Backlog
 
-This file tracks features and tasks that are planned for future development cycles.
+Concise list of outstanding fixes and refactors.
 
-## Epic 3: Quality and Test Automation
+## Backlog Items
 
-### Story: Implement End-to-End (E2E) Test Suite
-
-**Goal:** To ensure long-term stability and prevent regressions by creating a comprehensive automated E2E test suite.
-
-**Tasks:**
-
-- Set up and configure the Playwright test runner.
-- Write E2E tests for the core user journeys:
-  - Copying a selection and verifying the clipboard content.
-  - Verifying the functionality of the options page, including saving and applying title transformation rules.
-  - Testing the popup page UI and interactions.
-- Integrate the E2E test suite into a CI/CD pipeline to run automatically.
-
-## Epic 4: Host Access UX
-
-### Story: Streamline Hotkey Permissions
-
-**Goal:** Let users copy without opening the popup by guiding them to grant per-site access for the keyboard shortcut.
-
-**Notes:** Interim behavior opens the popup whenever the hotkey fires so the action gains `activeTab` permissions. Restore the streamlined flow once optional host access is available.
-
-**Tasks:**
-
-- Surface a CTA in the popup error panel to request host access for the current site.
-- Update the background command to skip opening the popup when the site is already authorized.
-- Add automated coverage for the permission request + fallback behavior.
-
-## Epic 5: Accessibility Polish
-
-### Story: Keyboard Reordering for Rules Tables
-
-**Goal:** Provide a keyboard-accessible alternative to drag-and-drop when reordering title and URL rules on the options page.
-
-**Tasks:**
-
-- Introduce focusable move controls (e.g., up/down buttons or keyboard shortcuts) for each rule row.
-- Announce position changes via ARIA live regions to keep screen reader users informed.
-- Update documentation and tests to cover the non-pointer interaction path.
-
-## Epic 6: Configuration Hygiene
-
-### Story: Centralize Shared Runtime Constants
-
-**Goal:** Reduce duplication and misalignment by moving clipboard limits, loader timeouts, and UI status values into a single configuration module.
-
-**Tasks:**
-
-- Audit the extension for duplicated configuration literals (e.g., loader timeouts, clipboard caps, status labels).
-- Create a shared runtime constants module that can be imported by background, popup, and options surfaces without circular dependencies.
-- Update existing modules to consume the shared constants and adjust tests/documentation accordingly.
+- Streamline hotkey permissions so the shortcut works without forcing the popup
+  (guide users through granting host/site access).
+- Provide keyboard-based reordering for rules tables in the options UI (accessible
+  alternative to drag-and-drop).
+- Centralize shared runtime constants (clipboard caps, loader timeouts, status
+  labels) to eliminate duplication.
+- Expand Playwright coverage to include chained copy scenarios and repeated
+  triggers (multi-step end-to-end flows).
+- Enrich error diagnostics and expose a “Copy error details” action in the popup.
+- Align background initialization helpers with their responsibilities
+  (rename `ensureOptionsInitialized`, restructure `triggerCopy` handler).
+- Document the E2E smoke subset (`--grep "[smoke]"`) and the
+  `VITE_E2E=true pnpm build` prerequisite.
+- Replace eval-based test timers (`lolex`/`nise`) with safer alternatives.
+- Add Playwright coverage for the error-log lifecycle (seed, badge, popup clear).

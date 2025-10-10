@@ -6,13 +6,14 @@ import {
   DEFAULT_TEMPLATE,
   type OptionsPayload,
 } from "../../src/options-schema.js";
-import { readLastFormatted, sendSelectionMessage, setOptionsPayload } from "./helpers/e2e.js";
+import { readLastFormatted, setOptionsPayload } from "./helpers/background-bridge.js";
 import {
   getExtensionId,
   launchExtensionContext,
   openExtensionPage,
   openPopupPage,
 } from "./helpers/extension.js";
+import { selectElementText } from "./helpers/selection.js";
 
 let activeCleanup: (() => Promise<void>) | undefined;
 
@@ -24,7 +25,7 @@ test.afterEach(async () => {
   }
 });
 
-test("options UI edits update popup preview", async () => {
+test("[smoke] options UI edits update popup preview", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
@@ -76,21 +77,31 @@ test("options UI edits update popup preview", async () => {
   await optionsPage.locator("#save-options").click();
   await expect(optionsPage.locator("#status")).toHaveText("Options saved successfully.");
 
-  const popupPage = await openPopupPage(context, extensionId);
-
-  await sendSelectionMessage(popupPage, {
-    markdown: "Body text",
-    title: "Sample Title",
-    url: "https://example.com/path",
+  await context.route("https://example.com/path", async (route) => {
+    const html = `<!DOCTYPE html>
+      <html lang="en">
+        <head><meta charset="utf-8" /><title>Sample Title</title></head>
+        <body><p id="quote">Body text</p></body>
+      </html>`;
+    await route.fulfill({ contentType: "text/html", body: html });
   });
+
+  const articlePage = await context.newPage();
+  await articlePage.goto("https://example.com/path", { waitUntil: "domcontentloaded" });
+  await selectElementText(articlePage, "#quote", { expectedText: "Body text" });
+  await articlePage.bringToFront();
+
+  const popupPage = await openPopupPage(context, extensionId);
 
   const expectedPreview = `> Body text\n> Source: [Edited:Sample Title](https://example.com/path?edited=true)`;
 
-  await expect(await readLastFormatted(popupPage)).toEqual({
-    formatted: expectedPreview,
-    error: undefined,
-  });
+  await expect
+    .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+      message: "Waiting for options-transformed preview.",
+    })
+    .toBe(expectedPreview);
 
+  await articlePage.close();
   await popupPage.close();
   await optionsPage.close();
 });
@@ -130,35 +141,56 @@ test("chained URL rules respect break versus continue", async () => {
   await setOptionsPayload(controlPage, options);
   await controlPage.close();
 
-  const popupPage = await openPopupPage(context, extensionId);
+  await context.route("https://www.amazon.com/**", async (route) => {
+    const html = `<!DOCTYPE html>
+      <html lang="en">
+        <head><meta charset="utf-8" /><title>Amazon Title</title></head>
+        <body><p id="quote">Sample</p></body>
+      </html>`;
+    await route.fulfill({ contentType: "text/html", body: html });
+  });
+
+  await context.route("https://example.com/**", async (route) => {
+    const html = `<!DOCTYPE html>
+      <html lang="en">
+        <head><meta charset="utf-8" /><title>Example Title</title></head>
+        <body><p id="quote">Sample</p></body>
+      </html>`;
+    await route.fulfill({ contentType: "text/html", body: html });
+  });
 
   const amazonUrl =
     "https://www.amazon.com/Whenever-Need-Somebody-Astley-1987-08-02/dp/B01KBIJ53I/ref=tracking?utm_source=chatgpt.com&tag=123";
 
-  await sendSelectionMessage(popupPage, {
-    markdown: "Sample",
-    title: "Amazon Title",
-    url: amazonUrl,
-  });
-  await popupPage.waitForTimeout(500);
+  const articlePage = await context.newPage();
+  await articlePage.goto(amazonUrl, { waitUntil: "domcontentloaded" });
+  await selectElementText(articlePage, "#quote", { expectedText: "Sample" });
+  await articlePage.bringToFront();
+
+  let popupPage = await openPopupPage(context, extensionId);
   const expectedAmazon = "Sample\nhttps://www.amazon.com/dp/B01KBIJ53I";
   await expect
-    .poll(async () => (await readLastFormatted(popupPage)).formatted)
+    .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+      message: "Waiting for Amazon URL transformation.",
+    })
     .toBe(expectedAmazon);
+  await popupPage.close();
 
   const exampleUrl = "https://example.com/article?utm_source=chatgpt.com&utm_medium=email";
 
-  await sendSelectionMessage(popupPage, {
-    markdown: "Sample",
-    title: "Example Title",
-    url: exampleUrl,
-  });
-  await popupPage.waitForTimeout(500);
+  await articlePage.goto(exampleUrl, { waitUntil: "domcontentloaded" });
+  await selectElementText(articlePage, "#quote", { expectedText: "Sample" });
+  await articlePage.bringToFront();
+
+  popupPage = await openPopupPage(context, extensionId);
   const expectedExample =
     "Sample\nhttps://example.com/article?utm_medium=email&should-not-appear=true";
   await expect
-    .poll(async () => (await readLastFormatted(popupPage)).formatted)
+    .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+      message: "Waiting for example.com URL transformation.",
+    })
     .toBe(expectedExample);
 
+  await articlePage.close();
   await popupPage.close();
 });

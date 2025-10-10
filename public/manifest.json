@@ -8,7 +8,8 @@
     "activeTab",
     "scripting",
     "storage",
-    "windows"
+    "windows",
+    "clipboardWrite"
   ],
   "background": {
     "service_worker": "background.js",

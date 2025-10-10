@@ -1,4 +1,5 @@
 import { execSync } from "node:child_process";
+import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FullConfig } from "@playwright/test";
@@ -12,4 +13,13 @@ export default async function globalSetup(_config: FullConfig): Promise<void> {
     cwd: repoRoot,
     env: { ...process.env, VITE_E2E: "true" },
   });
+
+  const manifestPath = path.join(repoRoot, "dist", "manifest.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf-8")) as {
+    host_permissions?: string[];
+  };
+  const hostPermissions = new Set(manifest.host_permissions ?? []);
+  hostPermissions.add("<all_urls>");
+  manifest.host_permissions = Array.from(hostPermissions);
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf-8");
 }

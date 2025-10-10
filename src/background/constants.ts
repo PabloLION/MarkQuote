@@ -1,10 +1,17 @@
 export const DEFAULT_TITLE = "Page Title";
 export const DEFAULT_URL = "https://example.com";
-export const E2E_SELECTION_MESSAGE = "e2e:selection";
 export const E2E_LAST_FORMATTED_MESSAGE = "e2e:get-last-formatted";
 export const E2E_SET_OPTIONS_MESSAGE = "e2e:set-options";
+export const E2E_TRIGGER_COMMAND_MESSAGE = "e2e:trigger-command";
+export const E2E_CONTEXT_COPY_MESSAGE = "e2e:context-copy";
+export const E2E_GET_ERROR_LOG_MESSAGE = "e2e:get-error-log";
+export const E2E_CLEAR_ERROR_LOG_MESSAGE = "e2e:clear-error-log";
+export const E2E_GET_HOTKEY_DIAGNOSTICS_MESSAGE = "e2e:get-hotkey-diagnostics";
+export const E2E_SET_HOTKEY_PINNED_STATE_MESSAGE = "e2e:set-hotkey-pinned";
+export const E2E_SEED_ERROR_MESSAGE = "e2e:seed-error";
+export const E2E_RESET_STORAGE_MESSAGE = "e2e:reset-storage";
+export const E2E_GET_ACTIVE_TAB_MESSAGE = "e2e:get-active-tab";
+export const E2E_FIND_TAB_MESSAGE = "e2e:find-tab";
 export const ERROR_STORAGE_KEY = "markquote-error-log";
 export const ACTIVE_TAB_PERMISSION_MESSAGE =
   'Chrome only grants keyboard shortcuts access after you allow the site in the extension\'s "Site access" settings.';
-
-export const isE2ETest = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";

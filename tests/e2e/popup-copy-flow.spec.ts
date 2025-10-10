@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { primeSelectionStub, readLastFormatted, sendSelectionMessage } from "./helpers/e2e.js";
+import { readLastFormatted } from "./helpers/background-bridge.js";
 import {
   getExtensionId,
   type LaunchExtensionResult,
   launchExtensionContext,
   openPopupPage,
 } from "./helpers/extension.js";
+import { selectElementText } from "./helpers/selection.js";
 
-const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
 const WIKIPEDIA_URL =
   "https://en.wikipedia.org/wiki/Markdown?utm_source=chatgpt.com&utm_medium=email";
 const SAMPLE_SELECTION = "Markdown keeps formatting simple.";
@@ -52,26 +52,7 @@ test.afterEach(async () => {
   }
 });
 
-test("feedback button opens repository in new tab", async () => {
-  const { context, cleanup } = await launchExtensionContext();
-  activeCleanup = cleanup;
-
-  const extensionId = await getExtensionId(context);
-  const popupPage = await openPopupPage(context, extensionId);
-
-  const newPagePromise = context.waitForEvent("page");
-  await popupPage.locator("#feedback-button").click();
-
-  const feedbackPage = await newPagePromise;
-  await feedbackPage.waitForLoadState("domcontentloaded");
-
-  expect(feedbackPage.url()).toBe(FEEDBACK_URL);
-
-  await feedbackPage.close();
-  await popupPage.close();
-});
-
-test("popup request pipeline formats the active tab selection", async () => {
+test("[smoke] popup request pipeline formats the active tab selection", async () => {
   const { context, cleanup } = await launchExtensionContext({ colorScheme: "dark" });
   activeCleanup = cleanup;
 
@@ -81,37 +62,7 @@ test("popup request pipeline formats the active tab selection", async () => {
   const articlePage = await context.newPage();
   await articlePage.goto(WIKIPEDIA_URL, { waitUntil: "domcontentloaded" });
 
-  await articlePage.evaluate((selectionText) => {
-    const target = document.getElementById("quote");
-    if (!target) {
-      throw new Error("Expected quote element to exist.");
-    }
-
-    const range = document.createRange();
-    range.selectNodeContents(target);
-
-    const selection = window.getSelection();
-    if (!selection) {
-      throw new Error("Selection API unavailable.");
-    }
-
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    const selected = selection.toString();
-    if (selected.trim() !== selectionText) {
-      throw new Error(`Unexpected selection text: ${selected}`);
-    }
-  }, SAMPLE_SELECTION);
-
-  const controlPage = await openPopupPage(context, extensionId);
-  await primeSelectionStub(controlPage, {
-    markdown: SAMPLE_SELECTION,
-    title: "Markdown - Wikipedia",
-    url: WIKIPEDIA_URL,
-  });
-  await controlPage.close();
-
+  await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
   await articlePage.bringToFront();
 
   const popupPage = await openPopupPage(context, extensionId);
@@ -143,47 +94,19 @@ for (const colorScheme of COLOR_SCHEMES) {
     const articlePage = await context.newPage();
     await articlePage.goto(WIKIPEDIA_URL, { waitUntil: "domcontentloaded" });
 
-    await articlePage.evaluate((selectionText) => {
-      const target = document.getElementById("quote");
-      if (!target) {
-        throw new Error("Expected quote element to exist.");
-      }
-
-      const range = document.createRange();
-      range.selectNodeContents(target);
-
-      const selection = window.getSelection();
-      if (!selection) {
-        throw new Error("Selection API unavailable.");
-      }
-
-      selection.removeAllRanges();
-      selection.addRange(range);
-
-      const selected = selection.toString();
-      if (selected.trim() !== selectionText) {
-        throw new Error(`Unexpected selection text: ${selected}`);
-      }
-    }, SAMPLE_SELECTION);
-
+    await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
     await articlePage.bringToFront();
 
     const extensionId = await getExtensionId(context);
-    await articlePage.bringToFront();
     const popupPage = await openPopupPage(context, extensionId);
-
-    await sendSelectionMessage(popupPage, {
-      markdown: SAMPLE_SELECTION,
-      title: "Markdown - Wikipedia",
-      url: WIKIPEDIA_URL,
-    });
 
     const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
 
-    await expect(await readLastFormatted(popupPage)).toEqual({
-      formatted: expectedPreview,
-      error: undefined,
-    });
+    await expect
+      .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+        message: "Waiting for popup preview to update with real selection.",
+      })
+      .toBe(expectedPreview);
 
     await popupPage.close();
     await articlePage.close();

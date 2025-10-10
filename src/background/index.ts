@@ -12,16 +12,22 @@ import {
   type OptionsPayload,
   validateOptionsPayload,
 } from "../options-schema.js";
-import { DEFAULT_TITLE, DEFAULT_URL, isE2ETest } from "./constants.js";
+import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import {
   markPopupClosed,
   markPopupReady,
+  resetE2ePreviewState,
   runCopyPipeline,
   setLastPreviewError,
   setPopupDocumentId,
 } from "./copy-pipeline.js";
-import { consumeSelectionStub, handleE2eMessage } from "./e2e.js";
+import {
+  consumeForcedHotkeyPinnedState,
+  handleE2eMessage,
+  resetHotkeyDiagnostics,
+  updateHotkeyDiagnostics,
+} from "./e2e.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import {
   clearStoredErrors,
@@ -147,6 +153,47 @@ function clearPendingSource(tabId: number): void {
   }
 }
 
+async function resetExtensionState(): Promise<void> {
+  pendingCopySources.clear();
+  hotkeyFallbackTab = undefined;
+  cancelHotkeyFallback();
+  setPopupDocumentId(undefined);
+  markPopupClosed();
+  setLastPreviewError(undefined);
+  resetE2ePreviewState();
+  resetHotkeyDiagnostics();
+  consumeForcedHotkeyPinnedState();
+
+  updateHotkeyDiagnostics({
+    eventTabId: null,
+    resolvedTabId: null,
+    injectionAttempted: false,
+    injectionSucceeded: null,
+    injectionError: null,
+  });
+
+  const tasks: Promise<unknown>[] = [];
+  const sessionStorage = getSessionStorage();
+  if (sessionStorage) {
+    tasks.push(sessionStorage.clear());
+  }
+
+  const syncStorage = chrome.storage?.sync;
+  if (syncStorage) {
+    tasks.push(syncStorage.clear());
+  }
+
+  tasks.push(clearStoredErrors());
+
+  try {
+    await Promise.all(tasks);
+  } catch (error) {
+    console.warn("[MarkQuote] Failed to reset storage during E2E reset", error);
+  }
+
+  await ensureOptionsInitialized();
+}
+
 /**
  * Helper that normalises chrome runtime errors into a human-readable string. Chrome occasionally
  * returns undefined messages, so we supply a fallback.
@@ -207,13 +254,13 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
     return;
   }
 
+  const tabId = tab.id;
+
   try {
     await pendingSourcesRestored;
   } catch (error) {
     console.debug("[MarkQuote] Pending copy sources failed to restore before triggerCopy", error);
   }
-
-  const tabId = tab.id;
   const targetUrl = getTabUrl(tab);
   if (isUrlProtected(targetUrl)) {
     notifyCopyProtected(tab, source, targetUrl);
@@ -222,29 +269,66 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
 
   setPendingSource(tabId, source);
 
+  let injectionResults:
+    | Array<chrome.scripting.InjectionResult<{ success?: boolean; details?: unknown }>>
+    | undefined;
+  if (source === "hotkey") {
+    updateHotkeyDiagnostics({
+      stubSelectionUsed: false,
+      injectionAttempted: true,
+      injectionSucceeded: null,
+      injectionError: null,
+    });
+  }
   try {
-    await chrome.scripting.executeScript({
+    injectionResults = await chrome.scripting.executeScript({
       target: { tabId },
       files: ["selection.js"],
     });
+    if (import.meta.env.DEV) {
+      const [result] = injectionResults ?? [];
+      console.debug("[MarkQuote] Selection script injected", {
+        tabId,
+        source,
+        hasResult: Boolean(result?.result),
+      });
+    }
+    if (source === "hotkey") {
+      updateHotkeyDiagnostics({
+        injectionSucceeded: true,
+        injectionError: null,
+      });
+    }
   } catch (_error) {
     const lastErrorMessage = getRuntimeLastErrorMessage();
     if (lastErrorMessage.includes("must request permission")) {
       notifyCopyProtected(tab, source, targetUrl);
       clearPendingSource(tabId);
+      if (source === "hotkey") {
+        updateHotkeyDiagnostics({
+          injectionSucceeded: false,
+          injectionError: lastErrorMessage,
+        });
+      }
       return;
     }
 
     void recordError(ERROR_CONTEXT.InjectSelectionScript, lastErrorMessage, {
       tabUrl: tab.url,
+      tabId,
       source,
     });
 
     clearPendingSource(tabId);
 
-    if (isE2ETest) {
-      setLastPreviewError(lastErrorMessage);
+    if (source === "hotkey") {
+      updateHotkeyDiagnostics({
+        injectionSucceeded: false,
+        injectionError: lastErrorMessage,
+      });
     }
+
+    setLastPreviewError(lastErrorMessage);
   }
 }
 
@@ -269,58 +353,122 @@ chrome.commands.onCommand.addListener((command, tab) => {
  * Handles the keyboard shortcut flow. Chrome requires the action to be pinned before the popup can
  * open, so we detect that case and fall back to direct copying.
  */
-async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<void> {
+async function handleHotkeyCommand(
+  tab: chrome.tabs.Tab | undefined,
+  overridePinned?: boolean,
+): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
+  resetHotkeyDiagnostics();
+  updateHotkeyDiagnostics({
+    eventTabId: hasValidTabId(tab) ? tab.id : null,
+  });
+  const resolvedTab = await resolveHotkeyTab(tab);
+  updateHotkeyDiagnostics({
+    resolvedTabId: hasValidTabId(resolvedTab) ? resolvedTab.id : null,
+  });
 
   let isPinned = true;
-  try {
-    const settings = await chrome.action.getUserSettings();
-    isPinned = Boolean(settings?.isOnToolbar);
-    console.info("[MarkQuote] Hotkey: action settings", settings);
-  } catch (error) {
-    console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
-    await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
-    if (tab) {
-      await triggerCopy(tab, source);
+  const forcedPinned = consumeForcedHotkeyPinnedState();
+  if (overridePinned !== undefined) {
+    isPinned = overridePinned;
+  } else if (forcedPinned !== undefined) {
+    isPinned = forcedPinned;
+  } else {
+    try {
+      const settings = await chrome.action.getUserSettings();
+      isPinned = Boolean(settings?.isOnToolbar);
+      console.info("[MarkQuote] Hotkey: action settings", settings);
+    } catch (error) {
+      console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
+      await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
+      const fallbackTab = resolvedTab ?? tab;
+      if (fallbackTab) {
+        updateHotkeyDiagnostics({
+          injectionAttempted: false,
+          injectionSucceeded: null,
+          injectionError: null,
+        });
+        await triggerCopy(fallbackTab, source);
+      } else {
+        console.warn("[MarkQuote] Hotkey: unable to resolve tab after settings failure.");
+      }
+      return;
     }
-    return;
   }
-
   if (!isPinned) {
     await recordError(
       ERROR_CONTEXT.HotkeyOpenPopup,
-      "MarkQuote needs to be pinned to the toolbar so the shortcut can open the popup.",
-      { source },
+      "Shortcut ran while the toolbar icon was hidden. Pin MarkQuote to finish copying automatically.",
+      {
+        source,
+        tabUrl: resolvedTab?.url,
+        tabId: resolvedTab?.id ?? null,
+        tabProvidedInEvent: Boolean(tab && hasValidTabId(tab)),
+        resolvedTab: Boolean(resolvedTab && hasValidTabId(resolvedTab)),
+        fallbackTriggered: Boolean(resolvedTab),
+      },
     );
-    if (tab) {
-      await triggerCopy(tab, source);
+    if (resolvedTab) {
+      updateHotkeyDiagnostics({
+        injectionAttempted: false,
+        injectionSucceeded: null,
+        injectionError: null,
+      });
+      await triggerCopy(resolvedTab, source);
+    } else {
+      console.warn("[MarkQuote] Hotkey: unable to resolve active tab for fallback copy.");
     }
     return;
   }
 
-  if (tab?.windowId !== undefined) {
-    await chrome.windows.update(tab.windowId, { focused: true }).catch((error) => {
+  if (resolvedTab?.windowId !== undefined) {
+    await chrome.windows.update(resolvedTab.windowId, { focused: true }).catch((error) => {
       console.warn("[MarkQuote] Failed to focus window before opening popup", error);
     });
   }
 
-  if (hasValidTabId(tab)) {
-    scheduleHotkeyFallback(tab);
+  if (resolvedTab && hasValidTabId(resolvedTab)) {
+    scheduleHotkeyFallback(resolvedTab);
   }
 
   chrome.action
-    .openPopup({ windowId: tab?.windowId })
+    .openPopup({ windowId: resolvedTab?.windowId })
     .then(() => {
       console.info("[MarkQuote] Hotkey: openPopup resolved");
     })
     .catch((error) => {
       cancelHotkeyFallback();
-      void recordError(ERROR_CONTEXT.OpenPopupForHotkey, error, { source });
-      if (tab) {
-        triggerCopy(tab, source);
+      void recordError(ERROR_CONTEXT.OpenPopupForHotkey, error, {
+        source,
+        tabUrl: resolvedTab?.url,
+        tabId: resolvedTab?.id ?? null,
+        tabProvidedInEvent: Boolean(tab && hasValidTabId(tab)),
+        resolvedTab: Boolean(resolvedTab && hasValidTabId(resolvedTab)),
+      });
+      if (resolvedTab) {
+        triggerCopy(resolvedTab, source);
       }
     });
+}
+
+async function resolveHotkeyTab(
+  tab: chrome.tabs.Tab | undefined,
+): Promise<chrome.tabs.Tab | undefined> {
+  if (tab && hasValidTabId(tab)) {
+    return tab;
+  }
+
+  try {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab && hasValidTabId(activeTab)) {
+      return activeTab;
+    }
+  } catch (error) {
+    console.warn("[MarkQuote] Hotkey: failed to resolve active tab for shortcut", error);
+  }
+
+  return tab;
 }
 
 /**
@@ -386,21 +534,6 @@ async function ensureOptionsInitialized(): Promise<void> {
       "rules",
     ]);
 
-    if (snapshot.options && !validateOptionsPayload(snapshot.options)) {
-      console.warn("Invalid options payload detected; resetting to defaults.");
-      await recordError(
-        ERROR_CONTEXT.InvalidOptionsPayload,
-        "Stored options payload failed validation.",
-      );
-      await storageArea.set({
-        options: DEFAULT_OPTIONS,
-        format: DEFAULT_OPTIONS.format,
-        titleRules: DEFAULT_OPTIONS.titleRules,
-        urlRules: DEFAULT_OPTIONS.urlRules,
-      });
-      return;
-    }
-
     const hasExistingData = Object.values(snapshot).some((value) => {
       if (Array.isArray(value)) {
         return value.length > 0;
@@ -421,9 +554,21 @@ async function ensureOptionsInitialized(): Promise<void> {
       return;
     }
 
+    const normalized = normalizeStoredOptions(snapshot);
+
+    if (!validateOptionsPayload(snapshot.options)) {
+      console.info("[MarkQuote] Normalizing legacy options payload before continuing.");
+      await storageArea.set({
+        options: normalized,
+        format: normalized.format,
+        titleRules: normalized.titleRules,
+        urlRules: normalized.urlRules,
+      });
+      return;
+    }
+
     const existingOptions = snapshot.options as { version?: number } | undefined;
     if (existingOptions?.version !== CURRENT_OPTIONS_VERSION) {
-      const normalized = normalizeStoredOptions(snapshot);
       await storageArea.set({
         options: normalized,
         format: normalized.format,
@@ -463,31 +608,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request?.type === "request-selection-copy") {
-    if (isE2ETest) {
-      const stub = consumeSelectionStub();
-      if (stub) {
-        void runCopyPipeline(stub.markdown, stub.title, stub.url, "e2e").catch((error) => {
-          void recordError(ERROR_CONTEXT.E2EStubSelection, error);
-        });
-        sendResponse?.({ ok: true });
-        return false;
-      }
-    }
-
     return handleSelectionCopyRequest(sendResponse);
   }
 
-  if (isE2ETest) {
-    const handled = handleE2eMessage({
-      request,
-      sender,
-      sendResponse,
-      persistOptions,
-      recordError,
-    });
-    if (handled) {
-      return true;
-    }
+  const handled = handleE2eMessage({
+    request,
+    sender,
+    sendResponse,
+    persistOptions,
+    recordError,
+    triggerCopy: async (tab, e2eSource) => {
+      await triggerCopy(tab, e2eSource);
+    },
+    triggerCommand: async (tab, forcePinned) => {
+      await handleHotkeyCommand(tab, forcePinned);
+    },
+    getErrorLog: getStoredErrors,
+    clearErrorLog: clearStoredErrors,
+    resetStorage: resetExtensionState,
+  });
+  if (handled) {
+    return true;
   }
 
   if (request?.markdown) {

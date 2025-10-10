@@ -6,7 +6,6 @@ export const ERROR_CONTEXT = {
   InitializeOptions: "initialize-options",
   RequestSelectionCopy: "request-selection-copy",
   QueryTabsForCopy: "query-tabs-for-copy",
-  E2EStubSelection: "e2e-stub-selection",
   RestorePendingSources: "restore-pending-copy-sources",
   PersistPendingSources: "persist-pending-copy-sources",
   ContextMenusRemoveAll: "context-menus-remove-all",

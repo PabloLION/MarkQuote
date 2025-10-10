@@ -78,6 +78,29 @@ describe("entries/loader-helpers", () => {
     }
   });
 
+  it("detects Vitest via environment flag", () => {
+    const originalEnv = process.env.VITEST;
+    const workerKey = "__vitest_worker__";
+    const globalWorker = (globalThis as Record<string, unknown>)[workerKey];
+    process.env.VITEST = "1";
+    delete (globalThis as Record<string, unknown>)[workerKey];
+
+    try {
+      expect(isRunningUnderVitest({} as ImportMeta)).toBe(true);
+    } finally {
+      if (originalEnv !== undefined) {
+        process.env.VITEST = originalEnv;
+      } else {
+        delete process.env.VITEST;
+      }
+      if (globalWorker !== undefined) {
+        (globalThis as Record<string, unknown>)[workerKey] = globalWorker;
+      } else {
+        delete (globalThis as Record<string, unknown>)[workerKey];
+      }
+    }
+  });
+
   it("detects Vitest worker flag on global", () => {
     const workerKey = "__vitest_worker__";
     const original = (globalThis as Record<string, unknown>)[workerKey];
