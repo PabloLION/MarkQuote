@@ -39,6 +39,36 @@ export async function readLastFormatted(
   });
 }
 
+export async function resetPreviewState(page: Page): Promise<void> {
+  const result = await page.evaluate(() => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:reset-preview-state" }, (response) => {
+        resolve(response ?? { ok: false, error: "No response received" });
+      });
+    });
+  });
+
+  if (!result?.ok) {
+    throw new Error(`Failed to reset preview state: ${result?.error ?? "unknown error"}`);
+  }
+}
+
+export async function resetHotkeyDiagnostics(page: Page): Promise<void> {
+  const result = await page.evaluate(() => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:reset-hotkey-diagnostics" }, (response) => {
+        resolve(response ?? { ok: false, error: "No response received" });
+      });
+    });
+  });
+
+  if (!result?.ok) {
+    throw new Error(
+      `Failed to reset hotkey diagnostics: ${result?.error ?? "unknown error resetting diagnostics"}`,
+    );
+  }
+}
+
 export async function triggerHotkeyCommand(
   page: Page,
   options: { tabId?: number; forcePinned?: boolean } = {},
