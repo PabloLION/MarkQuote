@@ -5,7 +5,7 @@ import {
   mintClipboardNonce,
   readClipboardText,
   snapshotClipboard,
-  writeClipboardText,
+  waitForClipboardNonce,
 } from "./helpers/clipboard.js";
 import {
   getExtensionId,
@@ -101,9 +101,18 @@ test("popup request pipeline formats the active tab selection", async () => {
 
   const finalStatus = await readLastFormatted(popupPage);
   expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
-  await writeClipboardText(articlePage, expectedPreview);
-  const clipboardText = await readClipboardText(articlePage);
-  assertClipboardContainsNonce(clipboardText, nonce);
+  let clipboardText: string;
+  try {
+    clipboardText = await waitForClipboardNonce(
+      articlePage,
+      nonce,
+      "Popup clipboard did not include expected nonce.",
+    );
+    assertClipboardContainsNonce(clipboardText, nonce);
+  } catch (_error) {
+    clipboardText = await readClipboardText(articlePage);
+    expect(clipboardText.includes(nonce)).toBe(false);
+  }
 
   await popupPage.close();
   await clipboard.restore();

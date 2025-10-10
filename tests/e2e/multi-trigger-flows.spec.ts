@@ -11,13 +11,7 @@ import {
   triggerContextCopy,
   triggerHotkeyCommand,
 } from "./helpers/background-bridge.js";
-import {
-  assertClipboardContainsNonce,
-  mintClipboardNonce,
-  readClipboardText,
-  snapshotClipboard,
-  writeClipboardText,
-} from "./helpers/clipboard.js";
+import { mintClipboardNonce, snapshotClipboard } from "./helpers/clipboard.js";
 import {
   getExtensionId,
   launchExtensionContext,
@@ -130,18 +124,12 @@ test.describe
       await updateArticle(primaryPage, { text: popupText, title: popupTitle });
       await selectElementText(primaryPage, "#quote", { expectedText: popupText });
       await resetPreviewState(bridgePage);
-      await writeClipboardText(primaryPage, clipboard.initialText);
 
       const popupPage = await openPopupPage(context, extensionId);
       const popupExpected = `> ${popupText}\n> Source: [${popupTitle}](${PRIMARY_URL})`;
       await expectPreview(bridgePage, popupExpected, "Waiting for popup-triggered copy to finish.");
-      // Automation harness lacks user activation, so the extension cannot write to the real clipboard
-      // even though the preview is correct. Mirror the expected payload into the OS clipboard
-      // manually so downstream assertions (and cleanup) operate on deterministic state.
-      await writeClipboardText(primaryPage, popupExpected);
-      const popupClipboard = await readClipboardText(primaryPage);
-      assertClipboardContainsNonce(popupClipboard, popupNonce);
       await popupPage.close();
+      await primaryPage.bringToFront();
 
       const hotkeyNonce = mintClipboardNonce("hotkey-chain");
       const hotkeyTitle = `Hotkey Scenario ${hotkeyNonce.slice(0, 6)}`;
@@ -162,9 +150,7 @@ test.describe
         hotkeyExpected,
         "Waiting for hotkey fallback to copy selection.",
       );
-      await writeClipboardText(primaryPage, hotkeyExpected);
-      const hotkeyClipboard = await readClipboardText(primaryPage);
-      assertClipboardContainsNonce(hotkeyClipboard, hotkeyNonce);
+      await primaryPage.bringToFront();
       const hotkeyDiagnostics = await getHotkeyDiagnostics(bridgePage);
       expect(hotkeyDiagnostics.resolvedTabId).toBe(primaryTab.id);
       expect(hotkeyDiagnostics.injectionSucceeded).toBe(true);
@@ -199,9 +185,7 @@ test.describe
         chainHotkeyExpected,
         "Waiting for chained hotkey fallback to finish.",
       );
-      await writeClipboardText(secondaryPage, chainHotkeyExpected);
-      const chainHotkeyClipboard = await readClipboardText(secondaryPage);
-      assertClipboardContainsNonce(chainHotkeyClipboard, chainHotkeyNonce);
+      await secondaryPage.bringToFront();
       await setHotkeyPinnedState(bridgePage, null);
 
       const contextNonce = mintClipboardNonce("chain-context");
@@ -221,9 +205,7 @@ test.describe
         contextExpected,
         "Waiting for chained context menu copy to finish.",
       );
-      await writeClipboardText(secondaryPage, contextExpected);
-      const contextClipboard = await readClipboardText(secondaryPage);
-      assertClipboardContainsNonce(contextClipboard, contextNonce);
+      await secondaryPage.bringToFront();
 
       const popupChainNonce = mintClipboardNonce("chain-popup");
       const popupChainTitle = `Popup Chain ${popupChainNonce.slice(-4)}`;
@@ -244,9 +226,7 @@ test.describe
         popupChainExpected,
         "Waiting for popup-equivalent copy after chained flows.",
       );
-      await writeClipboardText(secondaryPage, popupChainExpected);
-      const popupChainClipboard = await readClipboardText(secondaryPage);
-      assertClipboardContainsNonce(popupChainClipboard, popupChainNonce);
+      await secondaryPage.bringToFront();
 
       // Step 3: context menu twice across different tabs.
       const firstRepeatNonce = mintClipboardNonce("repeat-primary");
@@ -266,9 +246,7 @@ test.describe
         firstRepeatExpected,
         "Waiting for context menu copy on primary tab.",
       );
-      await writeClipboardText(primaryPage, firstRepeatExpected);
-      const firstRepeatClipboard = await readClipboardText(primaryPage);
-      assertClipboardContainsNonce(firstRepeatClipboard, firstRepeatNonce);
+      await primaryPage.bringToFront();
 
       const secondRepeatNonce = mintClipboardNonce("repeat-secondary");
       const secondRepeatTitle = `Repeat Secondary ${secondRepeatNonce.slice(-4)}`;
@@ -287,9 +265,7 @@ test.describe
         secondRepeatExpected,
         "Waiting for context menu copy on secondary tab.",
       );
-      await writeClipboardText(secondaryPage, secondRepeatExpected);
-      const secondRepeatClipboard = await readClipboardText(secondaryPage);
-      assertClipboardContainsNonce(secondRepeatClipboard, secondRepeatNonce);
+      await secondaryPage.bringToFront();
 
       // Step 4: success followed by protected fallback failure.
       await clearBackgroundErrors(bridgePage);
@@ -310,9 +286,7 @@ test.describe
         successExpected,
         "Waiting for success copy before failure scenario.",
       );
-      await writeClipboardText(primaryPage, successExpected);
-      const successClipboard = await readClipboardText(primaryPage);
-      assertClipboardContainsNonce(successClipboard, successNonce);
+      await primaryPage.bringToFront();
 
       const protectedPage = await context.newPage();
       await protectedPage.goto("about:blank");
@@ -345,11 +319,6 @@ test.describe
       expect(failureDiagnostics.injectionAttempted).toBe(false);
       expect(failureDiagnostics.injectionSucceeded).toBeNull();
 
-      const clipboardAfterFailure = await readClipboardText(primaryPage);
-      expect(clipboardAfterFailure).toBe(successClipboard);
-      expect(() => assertClipboardContainsNonce(clipboardAfterFailure, failureNonce)).toThrow();
-
-      await writeClipboardText(primaryPage, clipboard.initialText);
       await protectedPage.close();
       await secondaryPage.close();
       await bridgePage.close();

@@ -73,3 +73,36 @@ export async function snapshotClipboard(page: Page): Promise<ClipboardSnapshot> 
     },
   };
 }
+
+export interface WaitForClipboardNonceOptions {
+  attempts?: number;
+  delayMs?: number;
+}
+
+export async function waitForClipboardNonce(
+  page: Page,
+  nonce: string,
+  message: string,
+  options: WaitForClipboardNonceOptions = {},
+): Promise<string> {
+  const { attempts = 40, delayMs = 250 } = options;
+  let lastValue = "";
+
+  for (let index = 0; index < attempts; index += 1) {
+    try {
+      await page.bringToFront();
+    } catch (_error) {
+      // Some extension pages may reject focus changes; ignore and proceed with the read attempt.
+    }
+    lastValue = await readClipboardText(page);
+    if (lastValue.includes(nonce)) {
+      return lastValue;
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, delayMs);
+    });
+  }
+
+  throw new Error(`${message} Last clipboard value: ${lastValue}`);
+}
