@@ -1,0 +1,44 @@
+# Plan – Story 3.10 E2E Scenario Matrix Hardening
+
+## Context
+
+Story 3.10 expands Playwright coverage so we exercise multiple copy triggers in
+sequence and verify clipboard results stay fresh across steps. The current suite
+only covers isolated flows, so chained scenarios and repeat runs remain
+untested.
+
+## Tasks
+
+1. **Helper groundwork**
+   - Add a clipboard nonce helper (mint + assert) under `tests/e2e/helpers/`.
+   - Extend the background bridge with utilities to reset/read diagnostics for
+     multi-step assertions.
+   - Provide a shared OS clipboard restore helper so specs clean up after each
+     run.
+2. **Multi-trigger flow coverage**
+   - Create a new spec (e.g., `multi-trigger-flows.spec.ts`) that keeps a single
+     extension context alive and executes:
+     - Toolbar popup → hotkey fallback chain.
+     - Hotkey → context menu → popup chain.
+     - Context menu twice across different tabs.
+     - Success → failure sequences (protected URL / empty selection).
+   - Use nonce helpers to assert clipboard, preview, and diagnostics after each
+     step.
+   - Tag one representative scenario with `[smoke]` for the quick subset run.
+3. **Refine existing specs**
+   - Reuse the new helpers in `popup-copy-flow`, `hotkey-flow`, and others to
+     remove duplicated nonce logic.
+   - Ensure only one `[smoke]` tag remains across the suite.
+4. **Documentation**
+   - Update `tests/e2e/README.md` (and `docs/dev/test-coverage.md` if needed)
+     with instructions for the multi-step flows and clipboard tooling.
+5. **Validation**
+   - Run `pnpm test:e2e` and `pnpm test:e2e -- --grep "[smoke]"`.
+   - Confirm `pnpm test` (unit + e2e) passes locally.
+
+## Risks & Mitigations
+
+- Clipboard timing – rely on diagnostics polling instead of arbitrary sleeps.
+- Runtime growth – keep default run manageable by tagging only one scenario as
+  `[smoke]`.
+- Flake introduction – rerun smoke suite several times before finalizing.
