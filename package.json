@@ -45,6 +45,9 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
       "pnpm biome check --write --log-level error"
+    ],
+    "*.md": [
+      "pnpm exec markdownlint"
     ]
   },
   "directories": {
@@ -64,6 +67,7 @@
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^16.2.3",
+    "markdownlint-cli": "^0.45.0",
     "playwright": "^1.55.0",
     "sinon-chrome": "^3.0.1",
     "svg2png": "^4.1.1",
