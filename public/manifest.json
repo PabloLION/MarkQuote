@@ -11,9 +11,6 @@
     "windows",
     "clipboardWrite"
   ],
-  "optional_permissions": [
-    "clipboardWrite"
-  ],
   "background": {
     "service_worker": "background.js",
     "type": "module"
