@@ -54,6 +54,14 @@ function recordE2ePreviewError(message: string): void {
   lastPreviewError = message;
 }
 
+/**
+ * E2E clipboard telemetry is reported from every context that can perform writes:
+ * - background service worker (direct writes + fallbacks)
+ * - injected page scripts (chrome.scripting execution)
+ * - popup surface (manual copy button)
+ * Each context forwards the formatted Markdown so Playwright can assert results without touching
+ * the host clipboard.
+ */
 export function recordE2eClipboardPayload(text: string): void {
   if (!isE2EEnabled) {
     return;
