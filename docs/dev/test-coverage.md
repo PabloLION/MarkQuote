@@ -58,7 +58,7 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
 - **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `routeTestPage`, and `selectElementText` to generate an authentic DOM selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
 - **Act (Trigger)**: the graph highlights each user action after Arrange.
-  - `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. It relies on the clipboard helpers to mirror previews back into the OS clipboard for deterministic assertions.
+- `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. It polls the background clipboard payload recorded via the e2e bridge to assert the formatted Markdown without depending on host clipboard APIs.
   - `tests/e2e/popup-copy-flow.spec.ts` covers popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
   - `tests/e2e/popup-feedback.spec.ts` exercises the feedback CTA to ensure it opens the repository issue tracker.
   - `tests/e2e/options-rules.spec.ts` edits title and URL rules, then confirms the popup preview mirrors the new formatting.
@@ -66,7 +66,7 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
   - `tests/e2e/hotkey-flow.spec.ts` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The test verifies both the copied preview and the recorded warning.
   - `tests/e2e/context-menu-flow.spec.ts` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
 - **Act limitations**: Chromium ignores both `chrome.action.openPopup()` (toolbar icon click) and the keyboard shortcut when the toolbar icon is pinned, so those flows require manual verification during release QA. The fallback path (icon unpinned) remains covered automatically.
-- **Assert (Validation + cleanup)**: every automated flow asserts the formatted markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the error badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. When Chromium blocks programmatic clipboard writes, the specs mirror the expected payload into the OS clipboard via `tests/e2e/helpers/clipboard.ts` so later assertions and cleanup steps stay deterministic.
+- **Assert (Validation + cleanup)**: every automated flow asserts the formatted markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the error badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification always goes through the `e2e:get-clipboard-payload` hook so Chromium's user-gesture requirement does not affect deterministic assertions.
 
 ### Coverage Map & Known Gaps
 

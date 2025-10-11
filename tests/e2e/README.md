@@ -35,5 +35,5 @@ This directory hosts the end-to-end coverage for MarkQuote. Playwright drives a 
 
 - Use `pnpm dev:playwright` to keep a live dev server + Playwright launcher handy when iterating.
 - Background worker logs appear in the Chrome DevTools “service worker” console; open it via `chrome://extensions` if a spec needs deeper debugging.
-- Clipboard writes require a user gesture in Chromium; specs mirror the formatted preview into the OS clipboard via `tests/e2e/helpers/clipboard.ts` so assertions and cleanup remain deterministic.
+- Clipboard writes require a user gesture in Chromium; specs read the formatted payload through the background e2e bridge (`readClipboardPayload`) so assertions stay deterministic, while the OS clipboard remains untouched unless a manual smoke test is running.
 - Helpers in `tests/e2e/helpers/background-bridge.ts` expose reset hooks (`resetPreviewState`, `resetHotkeyDiagnostics`, etc.) for multi-step flows—call them before issuing another copy request to avoid stale assertions.
