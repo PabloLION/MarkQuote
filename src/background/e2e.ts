@@ -10,16 +10,26 @@ import {
   E2E_CONTEXT_COPY_MESSAGE,
   E2E_FIND_TAB_MESSAGE,
   E2E_GET_ACTIVE_TAB_MESSAGE,
+  E2E_GET_CLIPBOARD_PAYLOAD_MESSAGE,
   E2E_GET_ERROR_LOG_MESSAGE,
   E2E_GET_HOTKEY_DIAGNOSTICS_MESSAGE,
   E2E_LAST_FORMATTED_MESSAGE,
+  E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
+  E2E_RESET_HOTKEY_DIAGNOSTICS_MESSAGE,
+  E2E_RESET_PREVIEW_STATE_MESSAGE,
   E2E_RESET_STORAGE_MESSAGE,
   E2E_SEED_ERROR_MESSAGE,
   E2E_SET_HOTKEY_PINNED_STATE_MESSAGE,
   E2E_SET_OPTIONS_MESSAGE,
   E2E_TRIGGER_COMMAND_MESSAGE,
 } from "./constants.js";
-import { getLastFormattedPreview, getLastPreviewError } from "./copy-pipeline.js";
+import {
+  getLastClipboardPayload,
+  getLastFormattedPreview,
+  getLastPreviewError,
+  recordE2eClipboardPayload,
+  resetE2ePreviewState,
+} from "./copy-pipeline.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import type { CopySource, LoggedError } from "./types.js";
 
@@ -156,6 +166,19 @@ export function handleE2eMessage(context: MessageContext): boolean {
     return true;
   }
 
+  if (message.type === E2E_RESET_PREVIEW_STATE_MESSAGE) {
+    resetE2ePreviewState();
+    sendResponse?.({ ok: true });
+    return true;
+  }
+
+  if (message.type === E2E_RESET_HOTKEY_DIAGNOSTICS_MESSAGE) {
+    resetHotkeyDiagnostics();
+    consumeForcedHotkeyPinnedState();
+    sendResponse?.({ ok: true });
+    return true;
+  }
+
   if (message.type === E2E_TRIGGER_COMMAND_MESSAGE) {
     const { tabId, forcePinned } = request as { tabId?: number; forcePinned?: boolean };
     void (async () => {
@@ -180,6 +203,22 @@ export function handleE2eMessage(context: MessageContext): boolean {
 
   if (message.type === E2E_GET_HOTKEY_DIAGNOSTICS_MESSAGE) {
     sendResponse?.(getHotkeyDiagnostics());
+    return true;
+  }
+
+  if (message.type === E2E_GET_CLIPBOARD_PAYLOAD_MESSAGE) {
+    sendResponse?.({ payload: getLastClipboardPayload() });
+    return true;
+  }
+
+  if (message.type === E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE) {
+    const payload = (request as { text?: string }).text;
+    if (typeof payload === "string") {
+      recordE2eClipboardPayload(payload);
+      sendResponse?.({ ok: true });
+      return true;
+    }
+    sendResponse?.({ ok: false, error: "Missing clipboard payload" });
     return true;
   }
 
