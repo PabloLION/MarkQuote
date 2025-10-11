@@ -1,10 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { readLastFormatted } from "./helpers/background-bridge.js";
+import { readClipboardPayload, readLastFormatted } from "./helpers/background-bridge.js";
 import {
   assertClipboardContainsNonce,
   mintClipboardNonce,
   snapshotClipboard,
-  waitForClipboardNonce,
 } from "./helpers/clipboard.js";
 import {
   getExtensionId,
@@ -100,17 +99,21 @@ test("popup request pipeline formats the active tab selection", async () => {
 
   const finalStatus = await readLastFormatted(popupPage);
   expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
-  try {
-    const clipboardText = await waitForClipboardNonce(
-      articlePage,
-      nonce,
-      "Popup clipboard did not include expected nonce.",
-    );
-    assertClipboardContainsNonce(clipboardText, nonce);
-  } catch (error) {
-    test.fixme(true, `Clipboard write unavailable in automation: ${(error as Error).message}`);
-    return;
-  }
+  let clipboardText = "";
+  await expect
+    .poll(
+      async () => {
+        clipboardText = await readClipboardPayload(popupPage);
+        return clipboardText;
+      },
+      {
+        timeout: 5_000,
+        message: "Waiting for popup clipboard payload to match expected Markdown.",
+      },
+    )
+    .toBe(expectedPreview);
+
+  assertClipboardContainsNonce(clipboardText, nonce);
 
   await popupPage.close();
   await clipboard.restore();

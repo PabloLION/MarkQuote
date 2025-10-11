@@ -3,6 +3,7 @@ import {
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
+  readClipboardPayload,
   readLastFormatted,
   resetHotkeyDiagnostics,
   resetPreviewState,
@@ -14,7 +15,6 @@ import {
   mintClipboardNonce,
   readClipboardText,
   snapshotClipboard,
-  waitForClipboardNonce,
 } from "./helpers/clipboard.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
@@ -103,19 +103,21 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
     })
     .toBe(expectedPreview);
 
-  let clipboardText: string;
-  try {
-    clipboardText = await waitForClipboardNonce(
-      articlePage,
-      nonce,
-      "Hotkey fallback clipboard did not include expected nonce.",
-    );
-    assertClipboardContainsNonce(clipboardText, nonce);
-    expect(clipboardText).toBe(expectedPreview);
-  } catch (error) {
-    test.fixme(true, `Clipboard write unavailable in automation: ${(error as Error).message}`);
-    return;
-  }
+  let clipboardText = "";
+  await expect
+    .poll(
+      async () => {
+        clipboardText = await readClipboardPayload(bridgePage);
+        return clipboardText;
+      },
+      {
+        timeout: 5_000,
+        message: "Waiting for hotkey clipboard payload to match expected Markdown.",
+      },
+    )
+    .toBe(expectedPreview);
+
+  assertClipboardContainsNonce(clipboardText, nonce);
 
   const errors = await getBackgroundErrors(bridgePage);
   const contexts = errors.map((entry) => entry.context);

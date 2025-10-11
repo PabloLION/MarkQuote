@@ -4,6 +4,7 @@ import {
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
+  readClipboardPayload,
   readLastFormatted,
   resetHotkeyDiagnostics,
   resetPreviewState,
@@ -67,6 +68,24 @@ async function expectPreview(
     .toBe(expected);
 }
 
+async function expectClipboardMatch(
+  runtimePage: import("@playwright/test").Page,
+  expected: string,
+  message: string,
+): Promise<string> {
+  let captured = "";
+  await expect
+    .poll(
+      async () => {
+        captured = await readClipboardPayload(runtimePage);
+        return captured;
+      },
+      { timeout: 5_000, message },
+    )
+    .toBe(expected);
+  return captured;
+}
+
 test.describe
   .parallel("multi-trigger flows", () => {
     let activeCleanup: (() => Promise<void>) | undefined;
@@ -111,6 +130,7 @@ test.describe
       await primaryPage.bringToFront();
 
       const clipboard = await snapshotClipboard(primaryPage);
+      let successClipboard = "";
 
       const primaryTab = await findTabByUrl(bridgePage, PRIMARY_URL);
       if (primaryTab.id === null) {
@@ -128,6 +148,11 @@ test.describe
       const popupPage = await openPopupPage(context, extensionId);
       const popupExpected = `> ${popupText}\n> Source: [${popupTitle}](${PRIMARY_URL})`;
       await expectPreview(bridgePage, popupExpected, "Waiting for popup-triggered copy to finish.");
+      await expectClipboardMatch(
+        bridgePage,
+        popupExpected,
+        "Popup clipboard did not match expected Markdown after popup copy.",
+      );
       await popupPage.close();
       await primaryPage.bringToFront();
 
@@ -149,6 +174,11 @@ test.describe
         bridgePage,
         hotkeyExpected,
         "Waiting for hotkey fallback to copy selection.",
+      );
+      await expectClipboardMatch(
+        bridgePage,
+        hotkeyExpected,
+        "Hotkey fallback clipboard did not match expected Markdown.",
       );
       await primaryPage.bringToFront();
       const hotkeyDiagnostics = await getHotkeyDiagnostics(bridgePage);
@@ -185,6 +215,11 @@ test.describe
         chainHotkeyExpected,
         "Waiting for chained hotkey fallback to finish.",
       );
+      await expectClipboardMatch(
+        bridgePage,
+        chainHotkeyExpected,
+        "Chained hotkey clipboard did not match expected Markdown.",
+      );
       await secondaryPage.bringToFront();
       await setHotkeyPinnedState(bridgePage, null);
 
@@ -204,6 +239,11 @@ test.describe
         bridgePage,
         contextExpected,
         "Waiting for chained context menu copy to finish.",
+      );
+      await expectClipboardMatch(
+        bridgePage,
+        contextExpected,
+        "Chained context menu clipboard did not match expected Markdown.",
       );
       await secondaryPage.bringToFront();
 
@@ -226,6 +266,11 @@ test.describe
         popupChainExpected,
         "Waiting for popup-equivalent copy after chained flows.",
       );
+      await expectClipboardMatch(
+        bridgePage,
+        popupChainExpected,
+        "Popup clipboard after chained flows did not match expected Markdown.",
+      );
       await secondaryPage.bringToFront();
 
       // Step 3: context menu twice across different tabs.
@@ -246,6 +291,11 @@ test.describe
         firstRepeatExpected,
         "Waiting for context menu copy on primary tab.",
       );
+      await expectClipboardMatch(
+        bridgePage,
+        firstRepeatExpected,
+        "Primary context menu clipboard did not match expected Markdown.",
+      );
       await primaryPage.bringToFront();
 
       const secondRepeatNonce = mintClipboardNonce("repeat-secondary");
@@ -264,6 +314,11 @@ test.describe
         bridgePage,
         secondRepeatExpected,
         "Waiting for context menu copy on secondary tab.",
+      );
+      await expectClipboardMatch(
+        bridgePage,
+        secondRepeatExpected,
+        "Secondary context menu clipboard did not match expected Markdown.",
       );
       await secondaryPage.bringToFront();
 
@@ -285,6 +340,11 @@ test.describe
         bridgePage,
         successExpected,
         "Waiting for success copy before failure scenario.",
+      );
+      successClipboard = await expectClipboardMatch(
+        bridgePage,
+        successExpected,
+        "Success context clipboard did not match expected Markdown.",
       );
       await primaryPage.bringToFront();
 
@@ -309,9 +369,18 @@ test.describe
       await resetHotkeyDiagnostics(bridgePage);
       await setHotkeyPinnedState(bridgePage, false);
       await triggerHotkeyCommand(bridgePage, { forcePinned: false });
-      await bridgePage.waitForTimeout(300);
-      const errors = await getBackgroundErrors(bridgePage);
-      expect(errors.some((entry) => entry.context === "hotkey-open-popup")).toBe(true);
+      await expect
+        .poll(
+          async () => {
+            const errors = await getBackgroundErrors(bridgePage);
+            return errors.some((entry) => entry.context === "hotkey-open-popup");
+          },
+          {
+            timeout: 5_000,
+            message: "Waiting for hotkey-open-popup error entry.",
+          },
+        )
+        .toBe(true);
 
       const failurePreview = await readLastFormatted(bridgePage);
       expect(["", successExpected]).toContain(failurePreview.formatted);

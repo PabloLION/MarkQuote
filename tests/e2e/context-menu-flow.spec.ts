@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   findTabByUrl,
   getBackgroundErrors,
+  readClipboardPayload,
   readLastFormatted,
   resetPreviewState,
   triggerContextCopy,
@@ -10,7 +11,6 @@ import {
   assertClipboardContainsNonce,
   mintClipboardNonce,
   snapshotClipboard,
-  waitForClipboardNonce,
 } from "./helpers/clipboard.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
@@ -87,17 +87,21 @@ test("context menu copy requests background pipeline", async () => {
     })
     .toBe(expectedPreview);
 
-  try {
-    const clipboardText = await waitForClipboardNonce(
-      articlePage,
-      nonce,
-      "Context menu clipboard did not include expected nonce.",
-    );
-    assertClipboardContainsNonce(clipboardText, nonce);
-  } catch (error) {
-    test.fixme(true, `Clipboard write unavailable in automation: ${(error as Error).message}`);
-    return;
-  }
+  let clipboardText = "";
+  await expect
+    .poll(
+      async () => {
+        clipboardText = await readClipboardPayload(bridgePage);
+        return clipboardText;
+      },
+      {
+        timeout: 5_000,
+        message: "Waiting for background clipboard payload to match context menu copy.",
+      },
+    )
+    .toBe(expectedPreview);
+
+  assertClipboardContainsNonce(clipboardText, nonce);
 
   const errors = await getBackgroundErrors(bridgePage);
   expect(errors.length).toBe(0);
