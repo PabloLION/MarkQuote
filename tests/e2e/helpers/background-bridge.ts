@@ -53,6 +53,18 @@ export async function resetPreviewState(page: Page): Promise<void> {
   }
 }
 
+export async function readClipboardPayload(page: Page): Promise<string> {
+  const response = await page.evaluate(() => {
+    return new Promise<{ payload?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:get-clipboard-payload" }, (payload) => {
+        resolve((payload as { payload?: string }) ?? {});
+      });
+    });
+  });
+
+  return response.payload ?? "";
+}
+
 export async function resetHotkeyDiagnostics(page: Page): Promise<void> {
   const result = await page.evaluate(() => {
     return new Promise<{ ok: boolean; error?: string }>((resolve) => {
