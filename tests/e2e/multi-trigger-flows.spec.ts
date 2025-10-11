@@ -12,6 +12,7 @@ import {
   triggerContextCopy,
   triggerHotkeyCommand,
 } from "./helpers/background-bridge.js";
+import type { ClipboardSnapshot } from "./helpers/clipboard.js";
 import { mintClipboardNonce, snapshotClipboard } from "./helpers/clipboard.js";
 import {
   getExtensionId,
@@ -89,12 +90,28 @@ async function expectClipboardMatch(
 test.describe
   .parallel("multi-trigger flows", () => {
     let activeCleanup: (() => Promise<void>) | undefined;
+    let clipboardSnapshot: ClipboardSnapshot | undefined;
 
     test.afterEach(async () => {
+      let restoreError: unknown;
+      if (clipboardSnapshot) {
+        try {
+          await clipboardSnapshot.restore();
+        } catch (error) {
+          restoreError = error;
+        } finally {
+          clipboardSnapshot = undefined;
+        }
+      }
+
       if (activeCleanup) {
         const cleanup = activeCleanup;
         activeCleanup = undefined;
         await cleanup();
+      }
+
+      if (restoreError) {
+        throw restoreError;
       }
     });
 
@@ -129,8 +146,7 @@ test.describe
       await primaryPage.goto(PRIMARY_URL, { waitUntil: "domcontentloaded" });
       await primaryPage.bringToFront();
 
-      const clipboard = await snapshotClipboard(primaryPage);
-      let successClipboard = "";
+      clipboardSnapshot = await snapshotClipboard(primaryPage);
 
       const primaryTab = await findTabByUrl(bridgePage, PRIMARY_URL);
       if (primaryTab.id === null) {
@@ -341,7 +357,7 @@ test.describe
         successExpected,
         "Waiting for success copy before failure scenario.",
       );
-      successClipboard = await expectClipboardMatch(
+      await expectClipboardMatch(
         bridgePage,
         successExpected,
         "Success context clipboard did not match expected Markdown.",
@@ -391,6 +407,5 @@ test.describe
       await protectedPage.close();
       await secondaryPage.close();
       await bridgePage.close();
-      await clipboard.restore();
     });
   });
