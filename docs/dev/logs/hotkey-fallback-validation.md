@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Hotkey Fallback Validation Tasks
 
 - Capture clipboard state in the Playwright hotkey spec, inject a nonce into the DOM selection via the Playwright helper, confirm the clipboard remains unchanged (proving the fallback cannot write without user activation), and restore the original clipboard afterwards.

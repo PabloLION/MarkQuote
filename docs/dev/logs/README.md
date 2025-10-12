@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Development Logs
 
 This directory contains chronological records of development work, tracking the lifecycle from initial planning through implementation to completion.
@@ -21,6 +23,7 @@ Each development log typically evolves through these phases:
 1. **📋 Planning Phase**
 
    - Break down tasks into atomic commits
+   - Capture a dedicated **Atomic Commit Breakdown** section in the log
    - Define acceptance criteria
    - Identify technical approach
 

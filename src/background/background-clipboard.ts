@@ -1,3 +1,5 @@
+import { E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE } from "./constants.js";
+
 const clipboardLoggerPrefix = "[MarkQuote] Background clipboard";
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
@@ -10,10 +12,26 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
  */
 export async function writeClipboardTextFromBackground(text: string): Promise<boolean> {
   const navigatorClipboard = globalThis.navigator?.clipboard;
+  const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
+
+  const notifyE2eClipboard = async () => {
+    if (!isE2EEnabled) {
+      return;
+    }
+    try {
+      await chrome.runtime.sendMessage({
+        type: E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
+        text,
+      });
+    } catch {
+      // Ignore instrumentation failures.
+    }
+  };
 
   if (navigatorClipboard?.writeText) {
     try {
       await navigatorClipboard.writeText(text);
+      await notifyE2eClipboard();
       return true;
     } catch (error) {
       console.debug(`${clipboardLoggerPrefix} navigator.clipboard.writeText failed`, error);
@@ -29,6 +47,7 @@ export async function writeClipboardTextFromBackground(text: string): Promise<bo
       if (isPromiseLike(result)) {
         await result;
       }
+      await notifyE2eClipboard();
       return true;
     } catch (error) {
       console.debug(`${clipboardLoggerPrefix} chrome.clipboard.writeText failed`, error);

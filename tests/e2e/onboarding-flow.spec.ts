@@ -27,7 +27,7 @@ test.afterEach(async () => {
   }
 });
 
-test("[smoke] first run copy uses default template", async () => {
+test("first run copy uses default template", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 

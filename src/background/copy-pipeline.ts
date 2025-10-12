@@ -30,6 +30,7 @@ const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
 
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
+let lastClipboardPayload = "";
 
 function recordE2ePreview(text: string): void {
   if (!isE2EEnabled) {
@@ -54,6 +55,21 @@ function recordE2ePreviewError(message: string): void {
 }
 
 /**
+ * E2E clipboard telemetry is reported from every context that can perform writes:
+ * - background service worker (direct writes + fallbacks)
+ * - injected page scripts (chrome.scripting execution)
+ * - popup surface (manual copy button)
+ * Each context forwards the formatted Markdown so Playwright can assert results without touching
+ * the host clipboard.
+ */
+export function recordE2eClipboardPayload(text: string): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  lastClipboardPayload = text;
+}
+
+/**
  * Formats the captured markdown for clipboard usage. When the popup initiated the copy we notify it
  * with the formatted preview, falling back to default copy behaviour if the message fails.
  */
@@ -71,6 +87,7 @@ export async function runCopyPipeline(
   }
 
   recordE2ePreview(formatted);
+  recordE2eClipboardPayload(formatted);
 
   return formatted;
 }
@@ -186,6 +203,7 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
 }
 
 async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  recordE2eClipboardPayload(text);
   const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
   if (backgroundCopySucceeded) {
     return;
@@ -247,4 +265,9 @@ export function resetE2ePreviewState(): void {
   }
   lastFormattedPreview = "";
   lastPreviewError = undefined;
+  lastClipboardPayload = "";
+}
+
+export function getLastClipboardPayload(): string {
+  return isE2EEnabled ? lastClipboardPayload : "";
 }

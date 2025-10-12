@@ -1,3 +1,5 @@
+import { E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE } from "./constants.js";
+
 /**
  * Clipboard helper passed to `chrome.scripting.executeScript` so we can exercise the behaviour in
  * isolation during unit tests. The function runs within the target page context.
@@ -15,9 +17,21 @@ export async function copySelectionToClipboard(value: string): Promise<boolean> 
     return false;
   }
 
+  const notifyE2eClipboard = async (payload: string) => {
+    try {
+      await chrome.runtime.sendMessage({
+        type: E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
+        text: payload,
+      });
+    } catch {
+      // Ignore instrumentation failures in automated tests.
+    }
+  };
+
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(value);
+      await notifyE2eClipboard(value);
       return true;
     }
   } catch (_error) {
@@ -43,6 +57,10 @@ export async function copySelectionToClipboard(value: string): Promise<boolean> 
     success = execCommand("copy");
   } finally {
     textarea.remove();
+  }
+
+  if (success) {
+    await notifyE2eClipboard(value);
   }
 
   return success;
