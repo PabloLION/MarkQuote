@@ -119,6 +119,13 @@ test.describe
       const { context, cleanup } = await launchExtensionContext();
       activeCleanup = cleanup;
 
+      await context.grantPermissions(["clipboard-write"], {
+        origin: new URL(PRIMARY_URL).origin,
+      });
+      await context.grantPermissions(["clipboard-write"], {
+        origin: new URL(SECONDARY_URL).origin,
+      });
+
       await context.route(PRIMARY_URL, async (route) => {
         await route.fulfill({
           contentType: "text/html",

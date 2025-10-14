@@ -4,7 +4,6 @@
  */
 import { formatForClipboard } from "../clipboard.js";
 import { writeClipboardTextFromBackground } from "./background-clipboard.js";
-import { copySelectionToClipboard } from "./clipboard-injection.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
 import type { CopySource } from "./types.js";
@@ -209,36 +208,9 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
     return;
   }
 
-  if (!Number.isInteger(tabId) || tabId < 0) {
-    await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Invalid tabId for fallback copy", {
-      tabId,
-    });
-    return;
-  }
-
-  try {
-    const [injection] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: copySelectionToClipboard,
-      args: [text],
-    });
-
-    const success = Boolean(injection?.result);
-    if (!success) {
-      await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Failed to copy via fallback", {
-        tabId,
-      });
-    }
-  } catch (error) {
-    try {
-      await recordError(ERROR_CONTEXT.PopupClipboardFallback, error, { tabId });
-    } catch (persistError) {
-      console.error("[MarkQuote] Failed to record popup fallback error", persistError, {
-        tabId,
-        originalError: error,
-      });
-    }
-  }
+  await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Background clipboard write failed", {
+    tabId,
+  });
 }
 
 /** Returns the last formatted preview (test-only helper). */

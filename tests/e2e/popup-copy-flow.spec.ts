@@ -61,6 +61,10 @@ test("popup request pipeline formats the active tab selection", async () => {
   const { context, cleanup } = await launchExtensionContext({ colorScheme: "dark" });
   activeCleanup = cleanup;
 
+  await context.grantPermissions(["clipboard-write"], {
+    origin: new URL(WIKIPEDIA_URL).origin,
+  });
+
   const extensionId = await getExtensionId(context);
   await stubWikipediaPage(context);
   await context.grantPermissions(["clipboard-read", "clipboard-write"], {
@@ -126,6 +130,10 @@ for (const colorScheme of COLOR_SCHEMES) {
   test(`renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
     const { context, cleanup } = await launchExtensionContext({ colorScheme });
     activeCleanup = cleanup;
+
+    await context.grantPermissions(["clipboard-write"], {
+      origin: new URL(WIKIPEDIA_URL).origin,
+    });
 
     await stubWikipediaPage(context);
 

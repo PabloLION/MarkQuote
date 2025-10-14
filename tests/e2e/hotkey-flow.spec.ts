@@ -37,6 +37,10 @@ test("hotkey fallback copies selection when action is unpinned", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
+  await context.grantPermissions(["clipboard-write"], {
+    origin: new URL(SAMPLE_URL).origin,
+  });
+
   await context.route(SAMPLE_URL, async (route) => {
     const html = `<!DOCTYPE html>
       <html lang="en">

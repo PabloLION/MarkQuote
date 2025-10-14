@@ -32,6 +32,10 @@ test("context menu copy requests background pipeline", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
+  await context.grantPermissions(["clipboard-write"], {
+    origin: new URL(TARGET_URL).origin,
+  });
+
   await context.route(TARGET_URL, async (route) => {
     const html = `<!DOCTYPE html>
       <html lang="en">
