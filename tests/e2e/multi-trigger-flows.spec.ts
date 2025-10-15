@@ -115,7 +115,7 @@ test.describe
       }
     });
 
-    test("sequential copy triggers keep clipboard fresh", async () => {
+    test("[MULTI_FLOW] sequential copy triggers keep clipboard fresh", async () => {
       const { context, cleanup } = await launchExtensionContext();
       activeCleanup = cleanup;
 

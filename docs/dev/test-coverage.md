@@ -28,30 +28,57 @@ Instead of an isolated table, the following graph outlines the shared setup and 
 
 ```mermaid
 flowchart LR
-  %% Use IDs so we can link the subgraphs (not their inner nodes)
+  %% Define subgraphs first and tint them
+  style ARR fill:#E8F0FE,stroke:#5273C7,stroke-width:2px,color:#0B1838
   subgraph ARR[Arrange]
     direction TB
-    A["launchExtensionContext()"] --> B["resetExtensionState()<br/>routeTestPage()"] --> C["openExtensionPage()<br/>prepareSelection()/selectElementText()"]
+    A["launchExtensionContext()"]
+    B["resetExtensionState()<br/>routeTestPage()"]
+    C["openExtensionPage()<br/>prepareSelection()/selectElementText()"]
   end
-  ARR ----> ACT
 
+  style ACT fill:#FFF4E5,stroke:#C9803C,stroke-width:2px,color:#43260B
   subgraph ACT[Act]
     direction LR
     D["invokeCopySource()"]
-    D --> D1["Popup bridge<br/>tests/e2e/popup-copy-flow.spec.ts"]
-    D --> D2["Hotkey (toolbar icon pinned)<br/><em>manual validation</em>"]
-    D --> D3["Hotkey fallback (unpinned)<br/>tests/e2e/hotkey-flow.spec.ts"]
-    D --> D4["Context menu bridge<br/>tests/e2e/context-menu-flow.spec.ts"]
-    D --> D5["Onboarding defaults<br/>tests/e2e/onboarding-flow.spec.ts"]
-    D --> D6["Options rule editing<br/>tests/e2e/options-rules.spec.ts"]
+    D1["[POPUP_COPY]<br/>Popup bridge"]
+    D2["Toolbar hotkey (pinned)<br/><em>manual validation</em>"]
+    D3["[HOTKEY_FALLBACK]<br/>Hotkey fallback (unpinned)"]
+    D4["[CONTEXT_COPY]<br/>Context menu bridge"]
+    D5["[ONBOARD]<br/>Onboarding defaults"]
+    D6["[OPTIONS_PREVIEW]<br/>Options UI edits"]
+    D7["[OPTIONS_CHAIN]<br/>URL rule break / continue"]
+    D8["[MULTI_FLOW]<br/>Sequential copy matrix"]
   end
-  ACT ----> ASS
 
+  style ASS fill:#E6F4EA,stroke:#3B8551,stroke-width:2px,color:#13321F
   subgraph ASS[Assert]
     direction TB
-    E["readLastFormatted()<br/>expect preview"] --> F["assert popup message<br/>& badge hidden"] --> G["getBackgroundErrors()<br/>expect scenario outcome"] --> H["afterEach activeCleanup()<br/>dispose context"]
+    E["readLastFormatted()<br/>expect preview"]
+    F["assert popup message<br/>& badge hidden"]
+    G["getBackgroundErrors()<br/>expect scenario outcome"]
+    H["afterEach activeCleanup()<br/>dispose context"]
   end
 
+  %% Connect the high-level phases first so linkStyle indices align, and
+  %% Style the inter-phase connectors with thick, color-matched strokes
+  ARR ----> ACT
+  linkStyle 0 stroke:#FFF4E5,stroke-width:6px,color:#FFF4E5
+
+  ACT ----> ASS
+  linkStyle 1 stroke:#E6F4EA,stroke-width:6px,color:#E6F4EA
+
+  %% Internal sequencing inside each subgraph
+  A --> B --> C
+  D --> D1
+  D --> D2
+  D --> D3
+  D --> D4
+  D --> D5
+  D --> D6
+  D --> D7
+  D --> D8
+  E --> F --> G --> H
 ```
 
 AAA = Arrange → Act → Assert — this is the structure the diagram follows.
@@ -59,29 +86,35 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 - **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `routeTestPage`, and `selectElementText` to generate an authentic DOM selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
 - **Act (Trigger)**: the graph highlights each user action after Arrange.
 - `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. It polls the background clipboard payload recorded via the e2e bridge to assert the formatted Markdown without depending on host clipboard APIs.
-  - `tests/e2e/popup-copy-flow.spec.ts` covers popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
-  - `tests/e2e/popup-feedback.spec.ts` exercises the feedback CTA to ensure it opens the repository issue tracker.
-  - `tests/e2e/options-rules.spec.ts` edits title and URL rules, then confirms the popup preview mirrors the new formatting.
-  - `tests/e2e/onboarding-flow.spec.ts` resets storage to defaults and confirms the popup produces the default template on the first copy.
-  - `tests/e2e/hotkey-flow.spec.ts` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The test verifies both the copied preview and the recorded warning.
-  - `tests/e2e/context-menu-flow.spec.ts` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
+- **Tag legend**: every Playwright test name starts with a short identifier in brackets (e.g. `[CONTEXT_COPY]`). Use these tags with `pnpm exec playwright test --grep "[TAG]"` to run an individual flow.
+  - *Pros*: documentation stays stable even if files move, and running a single flow only requires a grep string.
+  - *Cons*: tags demand consistent naming; if a tag is renamed, every reference must be updated, and locating the underlying file may require a quick search.
+  - `[POPUP_COPY]`, `[POPUP_DARK]`, and `[POPUP_LIGHT]` cover popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
+  - `[FEEDBACK]` exercises the feedback CTA to ensure it opens the repository issue tracker.
+  - `[OPTIONS_PREVIEW]` and `[OPTIONS_CHAIN]` edit title and URL rules, then confirm the popup preview mirrors the new formatting.
+  - `[ONBOARD]` resets storage to defaults and confirms the popup produces the default template on the first copy.
+  - `[HOTKEY_FALLBACK]` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The flow verifies both the copied preview and the recorded warning.
+  - `[CONTEXT_COPY]` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
 - **Act limitations**: Chromium ignores both `chrome.action.openPopup()` (toolbar icon click) and the keyboard shortcut when the toolbar icon is pinned, so those flows require manual verification during release QA. The fallback path (icon unpinned) remains covered automatically.
 - **Assert (Validation + cleanup)**: every automated flow asserts the formatted markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the error badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification always goes through the `e2e:get-clipboard-payload` hook so Chromium's user-gesture requirement does not affect deterministic assertions.
 
 ### Coverage Map & Known Gaps
 
-| Flow / Behaviour                      | Coverage status                         | Notes |
-| ------------------------------------- | --------------------------------------- | ----- |
-| Popup runtime message + preview       | ✅ `tests/e2e/popup-copy-flow.spec.ts`   | Covers runtime message + theme variants |
-| Popup feedback CTA                    | ✅ `tests/e2e/popup-feedback.spec.ts`    | Ensures the repo link opens in new tab |
-| Options rule editing -> popup preview | ✅ `tests/e2e/options-rules.spec.ts`     | Confirms DOM updates + badge hidden |
-| Onboarding first copy                 | ✅ `tests/e2e/onboarding-flow.spec.ts`   | Resets storage, checks default template |
-| Context menu copy                     | ✅ `tests/e2e/context-menu-flow.spec.ts` | Preview generated, no errors logged |
-| Hotkey fallback (toolbar unpinned)    | ✅ `tests/e2e/hotkey-flow.spec.ts`       | Logs warning, still returns preview |
-| Multi-trigger sequencing              | ✅ `tests/e2e/multi-trigger-flows.spec.ts` | Chains popup, hotkey, context menu, and protected-page failure |
-| Hotkey with toolbar icon pinned       | 🔶 Manual release check                  | Chrome blocks scripted shortcut-triggered popup |
-| Toolbar icon click                    | 🔶 Manual release check                  | Same Chrome limitation on `chrome.action.openPopup()` |
-| Error log lifecycle                   | ⏳ Planned (Story 3.9 follow-up)         | Seed, render, dismiss badge via popup |
+| Tag                 | Flow / Behaviour                      | Coverage status                            | Notes                                                          |
+| ------------------- | ------------------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
+| `[POPUP_COPY]`      | Popup runtime message + preview       | ✅ `--grep "[POPUP_COPY]"`                | Covers runtime message, clipboard write, and popup status UI   |
+| `[POPUP_DARK]`      | Popup markdown render (dark theme)    | ✅ `--grep "[POPUP_DARK]"`                | Verifies dark-mode styling stays stable                        |
+| `[POPUP_LIGHT]`     | Popup markdown render (light theme)   | ✅ `--grep "[POPUP_LIGHT]"`               | Mirrors `[POPUP_DARK]` for light theme                         |
+| `[FEEDBACK]`        | Popup feedback CTA                    | ✅ `--grep "[FEEDBACK]"`                  | Ensures the repo link opens in new tab                         |
+| `[OPTIONS_PREVIEW]` | Options rule editing -> popup preview | ✅ `--grep "[OPTIONS_PREVIEW]"`           | Confirms DOM updates + badge hidden                            |
+| `[OPTIONS_CHAIN]`   | URL rule break/continue semantics     | ✅ `--grep "[OPTIONS_CHAIN]"`             | Validates rule sequencing outputs                              |
+| `[ONBOARD]`         | Onboarding first copy                 | ✅ `--grep "[ONBOARD]"`                   | Resets storage, checks default template                        |
+| `[CONTEXT_COPY]`    | Context menu copy                     | ✅ `--grep "[CONTEXT_COPY]"`              | Preview generated, no errors logged                            |
+| `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ✅ `--grep "[HOTKEY_FALLBACK]"`           | Logs warning, still returns preview                            |
+| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ✅ `--grep "[MULTI_FLOW]"`                | Chains popup, hotkey, context menu, and protected-page failure |
+| —                   | Hotkey with toolbar icon pinned       | 🔶 Manual release check                    | Chrome blocks scripted shortcut-triggered popup                |
+| —                   | Toolbar icon click                    | 🔶 Manual release check                    | Same Chrome limitation on `chrome.action.openPopup()`          |
+| —                   | Error log lifecycle                   | ⏳ Planned (Story 3.9 follow-up)           | Seed, render, dismiss badge via popup                          |
 
 ## Upcoming Coverage (Story 3.9)
 
@@ -94,13 +127,3 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 - Protected page copy followed by manual fallback acknowledgement.
 - Error badge state for popup-reported errors (e.g., background errors seeded before open).
 - Toolbar hotkey (pinned) end-to-end confirmation — manual check until Chromium allows scripted `chrome.action.openPopup()`.
-
-### Smoke Subset
-
-Only the multi-trigger matrix carries the `[smoke]` tag. Run the fastest regression loop with:
-
-```bash
-pnpm test:e2e -- --grep "\\[smoke\\]"
-```
-
-This executes the chained popup → hotkey → context menu scenario so regressions surface quickly while keeping runtime low.

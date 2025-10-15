@@ -28,7 +28,7 @@ test.afterEach(async () => {
   }
 });
 
-test("context menu copy requests background pipeline", async () => {
+test("[CONTEXT_COPY] context menu copy requests background pipeline", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 

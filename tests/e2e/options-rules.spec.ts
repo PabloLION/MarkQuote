@@ -25,7 +25,7 @@ test.afterEach(async () => {
   }
 });
 
-test("options UI edits update popup preview", async () => {
+test("[OPTIONS_PREVIEW] options UI edits update popup preview", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 
@@ -106,7 +106,7 @@ test("options UI edits update popup preview", async () => {
   await optionsPage.close();
 });
 
-test("chained URL rules respect break versus continue", async () => {
+test("[OPTIONS_CHAIN] chained URL rules respect break versus continue", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 

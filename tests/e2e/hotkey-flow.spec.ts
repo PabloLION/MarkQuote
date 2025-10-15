@@ -33,7 +33,7 @@ test.afterEach(async () => {
   }
 });
 
-test("hotkey fallback copies selection when action is unpinned", async () => {
+test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
 

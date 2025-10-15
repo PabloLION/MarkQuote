@@ -57,19 +57,16 @@ test.afterEach(async () => {
   }
 });
 
-test("popup request pipeline formats the active tab selection", async () => {
+test("[POPUP_COPY] popup request pipeline formats the active tab selection", async () => {
   const { context, cleanup } = await launchExtensionContext({ colorScheme: "dark" });
   activeCleanup = cleanup;
 
-  await context.grantPermissions(["clipboard-write"], {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], {
     origin: new URL(WIKIPEDIA_URL).origin,
   });
 
   const extensionId = await getExtensionId(context);
   await stubWikipediaPage(context);
-  await context.grantPermissions(["clipboard-read", "clipboard-write"], {
-    origin: new URL(WIKIPEDIA_URL).origin,
-  });
 
   const articlePage = await context.newPage();
   await articlePage.goto(WIKIPEDIA_URL, { waitUntil: "domcontentloaded" });
@@ -127,7 +124,8 @@ test("popup request pipeline formats the active tab selection", async () => {
 const COLOR_SCHEMES: Array<"dark" | "light"> = ["dark", "light"];
 
 for (const colorScheme of COLOR_SCHEMES) {
-  test(`renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
+  const tag = colorScheme === "dark" ? "[POPUP_DARK]" : "[POPUP_LIGHT]";
+  test(`${tag} renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
     const { context, cleanup } = await launchExtensionContext({ colorScheme });
     activeCleanup = cleanup;
 
