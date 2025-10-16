@@ -1,29 +1,9 @@
-import { E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE } from "../../background/constants.js";
-
 export async function copyMarkdownToClipboard(text: string): Promise<boolean> {
   const value = typeof text === "string" ? text : "";
-  const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
-
-  const notifyE2eClipboard = async (payload: string) => {
-    if (!isE2EEnabled) {
-      return;
-    }
-    try {
-      await chrome.runtime.sendMessage({
-        type: E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
-        text: payload,
-        origin: "popup",
-        source: "popup",
-      });
-    } catch {
-      // Ignore instrumentation failures in test environments.
-    }
-  };
 
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(value);
-      await notifyE2eClipboard(value);
       return true;
     }
   } catch (error) {
@@ -51,6 +31,5 @@ export async function copyMarkdownToClipboard(text: string): Promise<boolean> {
     return false;
   }
 
-  await notifyE2eClipboard(value);
   return true;
 }

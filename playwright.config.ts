@@ -13,6 +13,7 @@ export default defineConfig({
     headless: false,
     trace: "retain-on-failure",
   },
+  workers: 1,
   projects: [
     {
       name: "chromium-extension",

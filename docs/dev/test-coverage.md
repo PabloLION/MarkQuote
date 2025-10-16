@@ -85,33 +85,33 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
 - **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `routeTestPage`, and `selectElementText` to generate an authentic DOM selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
 - **Act (Trigger)**: the graph highlights each user action after Arrange.
-- `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. Each phase stamps a telemetry tag (e.g. `[MULTI_FLOW_POPUP_PRIMARY]`) so the spec can wait for the matching clipboard event before asserting the formatted Markdown.
-- **Tag legend**: every Playwright spec name starts with a `[TAG]` prefix (e.g. `[CONTEXT_COPY]`, `[HOTKEY_FALLBACK]`, `[POPUP_COPY]`, `[MULTI_FLOW]`). Run an individual flow with `pnpm exec playwright test --grep "[TAG]"`. The multi-trigger spec also stamps finer telemetry tags (such as `[MULTI_FLOW_CONTEXT_SECONDARY]`) so clipboard events stay attributable while the browser session persists.
+- `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. After each trigger the spec polls the host clipboard (via `clipboardy`) before asserting the formatted Markdown, so a broken write leaves a failing assertion instead of a cached preview.
+- **Tag legend**: every Playwright spec name starts with a `[TAG]` prefix (e.g. `[CONTEXT_COPY]`, `[HOTKEY_FALLBACK]`, `[POPUP_COPY]`, `[MULTI_FLOW]`). Run an individual flow with `pnpm exec playwright test --grep "[TAG]"`. Tags remain stable documentation shortcuts even though clipboard assertions now read the host clipboard directly.
   - *Pros*: documentation stays stable even if files move, and targeting a scenario only requires a grep string.
   - *Cons*: tags demand consistent naming; if a tag is renamed, every reference must be updated, and locating the underlying file may require a quick search.
   - `[POPUP_COPY]`, `[POPUP_DARK]`, and `[POPUP_LIGHT]` cover popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
   - `[FEEDBACK]` exercises the feedback CTA to ensure it opens the repository issue tracker.
   - `[OPTIONS_PREVIEW]` and `[OPTIONS_CHAIN]` edit title and URL rules, then confirm the popup preview mirrors the new formatting.
   - `[ONBOARD]` resets storage to defaults and confirms the popup produces the default template on the first copy.
-  - `[HOTKEY_FALLBACK]` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The flow verifies both the copied preview and the recorded warning.
-  - `[CONTEXT_COPY]` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
+  - `[HOTKEY_FALLBACK]` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The flow is currently marked `test.fail` while we fix the clipboard regression uncovered during manual testing.
+  - `[CONTEXT_COPY]` simulates the context-menu request by calling the background bridge. It is also marked `test.fail` until the clipboard write bug is resolved.
 - **Act limitations**: Chromium ignores both `chrome.action.openPopup()` (toolbar icon click) and the keyboard shortcut when the toolbar icon is pinned, so those flows require manual verification during release QA. The fallback path (icon unpinned) remains covered automatically.
-- **Assert (Validation + cleanup)**: every automated flow asserts the formatted Markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification waits on `waitForClipboardTelemetry()` so Chromium's user-gesture requirement never blocks deterministic assertions.
+- **Assert (Validation + cleanup)**: every automated flow asserts the formatted Markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification now polls the real OS clipboard via `clipboardy`, so a failing write surfaces immediately (and the tests snapshot/restore the clipboard to avoid polluting the developer’s session).
 
 ### Coverage Map & Known Gaps
 
 | Tag                 | Flow / Behaviour                      | Coverage status                            | Notes                                                          |
 | ------------------- | ------------------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
-| `[POPUP_COPY]`      | Popup runtime message + preview       | ✅ `--grep "[POPUP_COPY]"`                | Covers runtime message, clipboard write, and popup status UI   |
+| `[POPUP_COPY]`      | Popup runtime message + preview       | ⚠️ Expected-fail (`--grep "[POPUP_COPY]"`) | Clipboard still missing on some hosts; test snapshots OS clipboard and xfails until fixed |
 | `[POPUP_DARK]`      | Popup markdown render (dark theme)    | ✅ `--grep "[POPUP_DARK]"`                | Verifies dark-mode styling stays stable                        |
 | `[POPUP_LIGHT]`     | Popup markdown render (light theme)   | ✅ `--grep "[POPUP_LIGHT]"`               | Mirrors `[POPUP_DARK]` for light theme                         |
 | `[FEEDBACK]`        | Popup feedback CTA                    | ✅ `--grep "[FEEDBACK]"`                  | Ensures the repo link opens in new tab                         |
 | `[OPTIONS_PREVIEW]` | Options rule editing -> popup preview | ✅ `--grep "[OPTIONS_PREVIEW]"`           | Confirms DOM updates + badge hidden                            |
 | `[OPTIONS_CHAIN]`   | URL rule break/continue semantics     | ✅ `--grep "[OPTIONS_CHAIN]"`             | Validates rule sequencing outputs                              |
 | `[ONBOARD]`         | Onboarding first copy                 | ✅ `--grep "[ONBOARD]"`                   | Resets storage, checks default template                        |
-| `[CONTEXT_COPY]`    | Context menu copy                     | ✅ `--grep "[CONTEXT_COPY]"`              | Preview generated, no errors logged                            |
-| `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ✅ `--grep "[HOTKEY_FALLBACK]"`           | Logs warning, still returns preview                            |
-| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ✅ `--grep "[MULTI_FLOW]"`                | Chains popup, hotkey, context menu, protected-page failure, and asserts telemetry + diagnostics for each branch |
+| `[CONTEXT_COPY]`    | Context menu copy                     | ⚠️ Expected-fail (`--grep "[CONTEXT_COPY]"`) | Clipboard regression documented; test polls OS clipboard and currently xfails |
+| `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ⚠️ Expected-fail (`--grep "[HOTKEY_FALLBACK]"`) | Background fallback still broken when toolbar is hidden; xfail guards CI |
+| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ⚠️ Expected-fail (`--grep "[MULTI_FLOW]"`) | Chains popup, hotkey, context menu, protected-page failure using OS clipboard assertions |
 | —                   | Hotkey with toolbar icon pinned       | 🔶 Manual release check                    | Chrome blocks scripted shortcut-triggered popup                |
 | —                   | Toolbar icon click                    | 🔶 Manual release check                    | Same Chrome limitation on `chrome.action.openPopup()`          |
 | —                   | Error log lifecycle                   | ⏳ Planned (Story 3.9 follow-up)           | Seed, render, dismiss badge via popup                          |

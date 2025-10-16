@@ -30,22 +30,6 @@ const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
 
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
-let lastClipboardPayload = "";
-
-const MAX_CLIPBOARD_TELEMETRY_EVENTS = 32;
-
-export type ClipboardTelemetryOrigin = "background" | "popup" | "injection" | "preview";
-
-export type ClipboardTelemetryEvent = {
-  payload: string;
-  origin: ClipboardTelemetryOrigin;
-  source: CopySource;
-  tag: string | null;
-  timestamp: number;
-};
-
-let clipboardTelemetryQueue: ClipboardTelemetryEvent[] = [];
-let activeClipboardTag: string | null = null;
 
 function recordE2ePreview(text: string): void {
   if (!isE2EEnabled) {
@@ -69,51 +53,6 @@ function recordE2ePreviewError(message: string): void {
   lastPreviewError = message;
 }
 
-function pushClipboardTelemetry(event: ClipboardTelemetryEvent): void {
-  clipboardTelemetryQueue.push(event);
-  if (clipboardTelemetryQueue.length > MAX_CLIPBOARD_TELEMETRY_EVENTS) {
-    clipboardTelemetryQueue.shift();
-  }
-  lastClipboardPayload = event.payload;
-}
-
-export function recordClipboardTelemetry(entry: {
-  payload: string;
-  origin: ClipboardTelemetryOrigin;
-  source?: CopySource;
-}): void {
-  if (!isE2EEnabled) {
-    return;
-  }
-
-  pushClipboardTelemetry({
-    payload: entry.payload,
-    origin: entry.origin,
-    source: entry.source ?? "unknown",
-    tag: activeClipboardTag,
-    timestamp: Date.now(),
-  });
-}
-
-export function setClipboardTelemetryTag(tag: string | null): void {
-  if (!isE2EEnabled) {
-    return;
-  }
-  activeClipboardTag = typeof tag === "string" && tag.trim().length > 0 ? tag : null;
-}
-
-export function getClipboardTelemetry(): ClipboardTelemetryEvent[] {
-  return isE2EEnabled ? [...clipboardTelemetryQueue] : [];
-}
-
-export function clearClipboardTelemetry(): void {
-  if (!isE2EEnabled) {
-    return;
-  }
-  clipboardTelemetryQueue = [];
-  lastClipboardPayload = "";
-}
-
 /**
  * Formats the captured markdown for clipboard usage. When the popup initiated the copy we notify it
  * with the formatted preview, falling back to default copy behaviour if the message fails.
@@ -132,7 +71,6 @@ export async function runCopyPipeline(
   }
 
   recordE2ePreview(formatted);
-  recordClipboardTelemetry({ payload: formatted, origin: "preview", source });
 
   return formatted;
 }
@@ -157,11 +95,7 @@ export function markPopupClosed(): void {
   cancelPopupPreviewRetry();
 
   if (queuedPopupPreview && typeof queuedPopupPreview.tabId === "number") {
-    void fallbackCopyToTab(
-      queuedPopupPreview.tabId,
-      queuedPopupPreview.text,
-      queuedPopupPreview.source,
-    );
+    void fallbackCopyToTab(queuedPopupPreview.tabId, queuedPopupPreview.text);
   }
 
   queuedPopupPreview = undefined;
@@ -244,15 +178,15 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     void recordError(ERROR_CONTEXT.NotifyPopupPreview, normalizedError);
 
     if (typeof payload.tabId === "number") {
-      void fallbackCopyToTab(payload.tabId, payload.text, payload.source);
+      void fallbackCopyToTab(payload.tabId, payload.text);
     }
 
     recordE2ePreviewError(normalizedError);
   }
 }
 
-async function fallbackCopyToTab(tabId: number, text: string, source?: CopySource): Promise<void> {
-  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text, { source });
+async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
+  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
   if (backgroundCopySucceeded) {
     return;
   }
@@ -290,9 +224,4 @@ export function resetE2ePreviewState(): void {
   }
   lastFormattedPreview = "";
   lastPreviewError = undefined;
-  clearClipboardTelemetry();
-}
-
-export function getLastClipboardPayload(): string {
-  return isE2EEnabled ? lastClipboardPayload : "";
 }
