@@ -6,11 +6,13 @@
 import type { OptionsPayload } from "../options-schema.js";
 import { CURRENT_OPTIONS_VERSION } from "../options-schema.js";
 import {
+  E2E_CLEAR_CLIPBOARD_TELEMETRY_MESSAGE,
   E2E_CLEAR_ERROR_LOG_MESSAGE,
   E2E_CONTEXT_COPY_MESSAGE,
   E2E_FIND_TAB_MESSAGE,
   E2E_GET_ACTIVE_TAB_MESSAGE,
   E2E_GET_CLIPBOARD_PAYLOAD_MESSAGE,
+  E2E_GET_CLIPBOARD_TELEMETRY_MESSAGE,
   E2E_GET_ERROR_LOG_MESSAGE,
   E2E_GET_HOTKEY_DIAGNOSTICS_MESSAGE,
   E2E_LAST_FORMATTED_MESSAGE,
@@ -19,16 +21,21 @@ import {
   E2E_RESET_PREVIEW_STATE_MESSAGE,
   E2E_RESET_STORAGE_MESSAGE,
   E2E_SEED_ERROR_MESSAGE,
+  E2E_SET_CLIPBOARD_TAG_MESSAGE,
   E2E_SET_HOTKEY_PINNED_STATE_MESSAGE,
   E2E_SET_OPTIONS_MESSAGE,
   E2E_TRIGGER_COMMAND_MESSAGE,
 } from "./constants.js";
 import {
+  type ClipboardTelemetryOrigin,
+  clearClipboardTelemetry,
+  getClipboardTelemetry,
   getLastClipboardPayload,
   getLastFormattedPreview,
   getLastPreviewError,
-  recordE2eClipboardPayload,
+  recordClipboardTelemetry,
   resetE2ePreviewState,
+  setClipboardTelemetryTag,
 } from "./copy-pipeline.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import type { CopySource, LoggedError } from "./types.js";
@@ -73,6 +80,23 @@ let hotkeyDiagnostics: HotkeyDiagnostics = { ...DEFAULT_HOTKEY_DIAGNOSTICS };
 let forcedHotkeyPinnedState: boolean | undefined;
 
 const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
+
+function isCopySourceValue(candidate: unknown): candidate is CopySource {
+  return (
+    candidate === "popup" ||
+    candidate === "hotkey" ||
+    candidate === "context-menu" ||
+    candidate === "e2e" ||
+    candidate === "unknown"
+  );
+}
+
+function normalizeClipboardOrigin(candidate: unknown): ClipboardTelemetryOrigin {
+  if (candidate === "background" || candidate === "popup" || candidate === "injection") {
+    return candidate;
+  }
+  return "injection";
+}
 
 async function resolveTab(tabId: unknown): Promise<chrome.tabs.Tab | undefined> {
   if (typeof tabId !== "number") {
@@ -212,13 +236,39 @@ export function handleE2eMessage(context: MessageContext): boolean {
   }
 
   if (message.type === E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE) {
-    const payload = (request as { text?: string }).text;
-    if (typeof payload === "string") {
-      recordE2eClipboardPayload(payload);
+    const payload = request as {
+      text?: string;
+      origin?: ClipboardTelemetryOrigin;
+      source?: CopySource;
+    };
+    if (typeof payload.text === "string") {
+      recordClipboardTelemetry({
+        payload: payload.text,
+        origin: normalizeClipboardOrigin(payload.origin),
+        source: isCopySourceValue(payload.source) ? payload.source : undefined,
+      });
       sendResponse?.({ ok: true });
       return true;
     }
     sendResponse?.({ ok: false, error: "Missing clipboard payload" });
+    return true;
+  }
+
+  if (message.type === E2E_SET_CLIPBOARD_TAG_MESSAGE) {
+    const { tag } = request as { tag?: unknown };
+    setClipboardTelemetryTag(typeof tag === "string" ? tag : null);
+    sendResponse?.({ ok: true });
+    return true;
+  }
+
+  if (message.type === E2E_GET_CLIPBOARD_TELEMETRY_MESSAGE) {
+    sendResponse?.({ events: getClipboardTelemetry() });
+    return true;
+  }
+
+  if (message.type === E2E_CLEAR_CLIPBOARD_TELEMETRY_MESSAGE) {
+    clearClipboardTelemetry();
+    sendResponse?.({ ok: true });
     return true;
   }
 

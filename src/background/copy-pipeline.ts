@@ -15,6 +15,7 @@ type RuntimeMessageOptionsWithDocument = chrome.runtime.MessageOptions & {
 type PopupPreviewPayload = {
   text: string;
   tabId?: number;
+  source?: CopySource;
 };
 
 const POPUP_PREVIEW_RETRY_DELAY_MS = 100; // Short retry window helps bridge popup startup races without noticeable delay.
@@ -30,6 +31,21 @@ const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
 let lastFormattedPreview = "";
 let lastPreviewError: string | undefined;
 let lastClipboardPayload = "";
+
+const MAX_CLIPBOARD_TELEMETRY_EVENTS = 32;
+
+export type ClipboardTelemetryOrigin = "background" | "popup" | "injection";
+
+export type ClipboardTelemetryEvent = {
+  payload: string;
+  origin: ClipboardTelemetryOrigin;
+  source: CopySource;
+  tag: string | null;
+  timestamp: number;
+};
+
+let clipboardTelemetryQueue: ClipboardTelemetryEvent[] = [];
+let activeClipboardTag: string | null = null;
 
 function recordE2ePreview(text: string): void {
   if (!isE2EEnabled) {
@@ -53,19 +69,49 @@ function recordE2ePreviewError(message: string): void {
   lastPreviewError = message;
 }
 
-/**
- * E2E clipboard telemetry is reported from every context that can perform writes:
- * - background service worker (direct writes + fallbacks)
- * - injected page scripts (chrome.scripting execution)
- * - popup surface (manual copy button)
- * Each context forwards the formatted Markdown so Playwright can assert results without touching
- * the host clipboard.
- */
-export function recordE2eClipboardPayload(text: string): void {
+function pushClipboardTelemetry(event: ClipboardTelemetryEvent): void {
+  clipboardTelemetryQueue.push(event);
+  if (clipboardTelemetryQueue.length > MAX_CLIPBOARD_TELEMETRY_EVENTS) {
+    clipboardTelemetryQueue.shift();
+  }
+  lastClipboardPayload = event.payload;
+}
+
+export function recordClipboardTelemetry(entry: {
+  payload: string;
+  origin: ClipboardTelemetryOrigin;
+  source?: CopySource;
+}): void {
   if (!isE2EEnabled) {
     return;
   }
-  lastClipboardPayload = text;
+
+  pushClipboardTelemetry({
+    payload: entry.payload,
+    origin: entry.origin,
+    source: entry.source ?? "unknown",
+    tag: activeClipboardTag,
+    timestamp: Date.now(),
+  });
+}
+
+export function setClipboardTelemetryTag(tag: string | null): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  activeClipboardTag = typeof tag === "string" && tag.trim().length > 0 ? tag : null;
+}
+
+export function getClipboardTelemetry(): ClipboardTelemetryEvent[] {
+  return isE2EEnabled ? [...clipboardTelemetryQueue] : [];
+}
+
+export function clearClipboardTelemetry(): void {
+  if (!isE2EEnabled) {
+    return;
+  }
+  clipboardTelemetryQueue = [];
+  lastClipboardPayload = "";
 }
 
 /**
@@ -82,11 +128,10 @@ export async function runCopyPipeline(
   const formatted = await formatForClipboard(markdown, title, url);
 
   if (source === "popup") {
-    queuePopupPreview({ text: formatted, tabId });
+    queuePopupPreview({ text: formatted, tabId, source });
   }
 
   recordE2ePreview(formatted);
-  recordE2eClipboardPayload(formatted);
 
   return formatted;
 }
@@ -111,7 +156,11 @@ export function markPopupClosed(): void {
   cancelPopupPreviewRetry();
 
   if (queuedPopupPreview && typeof queuedPopupPreview.tabId === "number") {
-    void fallbackCopyToTab(queuedPopupPreview.tabId, queuedPopupPreview.text);
+    void fallbackCopyToTab(
+      queuedPopupPreview.tabId,
+      queuedPopupPreview.text,
+      queuedPopupPreview.source,
+    );
   }
 
   queuedPopupPreview = undefined;
@@ -194,16 +243,15 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     void recordError(ERROR_CONTEXT.NotifyPopupPreview, normalizedError);
 
     if (typeof payload.tabId === "number") {
-      void fallbackCopyToTab(payload.tabId, payload.text);
+      void fallbackCopyToTab(payload.tabId, payload.text, payload.source);
     }
 
     recordE2ePreviewError(normalizedError);
   }
 }
 
-async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
-  recordE2eClipboardPayload(text);
-  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
+async function fallbackCopyToTab(tabId: number, text: string, source?: CopySource): Promise<void> {
+  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text, { source });
   if (backgroundCopySucceeded) {
     return;
   }
@@ -237,7 +285,7 @@ export function resetE2ePreviewState(): void {
   }
   lastFormattedPreview = "";
   lastPreviewError = undefined;
-  lastClipboardPayload = "";
+  clearClipboardTelemetry();
 }
 
 export function getLastClipboardPayload(): string {

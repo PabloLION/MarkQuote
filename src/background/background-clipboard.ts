@@ -1,4 +1,5 @@
 import { E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE } from "./constants.js";
+import type { CopySource } from "./types.js";
 
 const clipboardLoggerPrefix = "[MarkQuote] Background clipboard";
 
@@ -10,7 +11,10 @@ function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
  * Attempts to write text to the clipboard from the background service worker. Requires the
  * `clipboardWrite` permission so that the write succeeds without a focused extension page.
  */
-export async function writeClipboardTextFromBackground(text: string): Promise<boolean> {
+export async function writeClipboardTextFromBackground(
+  text: string,
+  metadata: { source?: CopySource } = {},
+): Promise<boolean> {
   const navigatorClipboard = globalThis.navigator?.clipboard;
   const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
 
@@ -22,6 +26,8 @@ export async function writeClipboardTextFromBackground(text: string): Promise<bo
       await chrome.runtime.sendMessage({
         type: E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
         text,
+        origin: "background",
+        source: metadata.source,
       });
     } catch {
       // Ignore instrumentation failures.

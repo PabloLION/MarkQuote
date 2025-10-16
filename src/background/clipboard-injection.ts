@@ -22,6 +22,7 @@ export async function copySelectionToClipboard(value: string): Promise<boolean> 
       await chrome.runtime.sendMessage({
         type: E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
         text: payload,
+        origin: "injection",
       });
     } catch {
       // Ignore instrumentation failures in automated tests.

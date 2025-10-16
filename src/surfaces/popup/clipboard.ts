@@ -12,6 +12,8 @@ export async function copyMarkdownToClipboard(text: string): Promise<boolean> {
       await chrome.runtime.sendMessage({
         type: E2E_RECORD_CLIPBOARD_PAYLOAD_MESSAGE,
         text: payload,
+        origin: "popup",
+        source: "popup",
       });
     } catch {
       // Ignore instrumentation failures in test environments.
