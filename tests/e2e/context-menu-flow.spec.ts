@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 import {
+  clearClipboardTelemetry,
   findTabByUrl,
   getBackgroundErrors,
-  readClipboardPayload,
   readLastFormatted,
   resetPreviewState,
+  setClipboardTelemetryTag,
   triggerContextCopy,
+  waitForClipboardTelemetry,
 } from "./helpers/background-bridge.js";
 import {
   assertClipboardContainsNonce,
@@ -77,6 +79,9 @@ test("[CONTEXT_COPY] context menu copy requests background pipeline", async () =
   const tabInfo = await findTabByUrl(bridgePage, `${new URL(TARGET_URL).origin}/*`);
   expect(tabInfo.id).not.toBeNull();
 
+  await clearClipboardTelemetry(bridgePage);
+  await setClipboardTelemetryTag(bridgePage, "[CONTEXT_COPY]");
+
   await resetPreviewState(bridgePage);
   await triggerContextCopy(bridgePage, {
     tabId: tabInfo.id ?? undefined,
@@ -91,25 +96,17 @@ test("[CONTEXT_COPY] context menu copy requests background pipeline", async () =
     })
     .toBe(expectedPreview);
 
-  let clipboardText = "";
-  await expect
-    .poll(
-      async () => {
-        clipboardText = await readClipboardPayload(bridgePage);
-        return clipboardText;
-      },
-      {
-        timeout: 5_000,
-        message: "Waiting for background clipboard payload to match context menu copy.",
-      },
-    )
-    .toBe(expectedPreview);
-
-  assertClipboardContainsNonce(clipboardText, nonce);
+  const telemetryEvent = await waitForClipboardTelemetry(bridgePage, {
+    tag: "[CONTEXT_COPY]",
+  });
+  expect(telemetryEvent.payload).toBe(expectedPreview);
+  expect(telemetryEvent.origin).toBe("injection");
+  assertClipboardContainsNonce(telemetryEvent.payload, nonce);
 
   const errors = await getBackgroundErrors(bridgePage);
   expect(errors.length).toBe(0);
 
+  await clearClipboardTelemetry(bridgePage);
   await bridgePage.close();
   await clipboard.restore();
   await articlePage.close();

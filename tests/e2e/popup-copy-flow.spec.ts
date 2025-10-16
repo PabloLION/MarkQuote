@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { readClipboardPayload, readLastFormatted } from "./helpers/background-bridge.js";
+import {
+  clearClipboardTelemetry,
+  readLastFormatted,
+  setClipboardTelemetryTag,
+  waitForClipboardTelemetry,
+} from "./helpers/background-bridge.js";
 import {
   assertClipboardContainsNonce,
   mintClipboardNonce,
@@ -9,6 +14,7 @@ import {
   getExtensionId,
   type LaunchExtensionResult,
   launchExtensionContext,
+  openExtensionPage,
   openPopupPage,
 } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
@@ -68,6 +74,11 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
   const extensionId = await getExtensionId(context);
   await stubWikipediaPage(context);
 
+  const bridgePage = await openExtensionPage(context, extensionId, "options.html");
+  await clearClipboardTelemetry(bridgePage);
+  await setClipboardTelemetryTag(bridgePage, "[POPUP_COPY]");
+  await bridgePage.close();
+
   const articlePage = await context.newPage();
   await articlePage.goto(WIKIPEDIA_URL, { waitUntil: "domcontentloaded" });
   await articlePage.bringToFront();
@@ -100,21 +111,14 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
 
   const finalStatus = await readLastFormatted(popupPage);
   expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
-  let clipboardText = "";
-  await expect
-    .poll(
-      async () => {
-        clipboardText = await readClipboardPayload(popupPage);
-        return clipboardText;
-      },
-      {
-        timeout: 5_000,
-        message: "Waiting for popup clipboard payload to match expected Markdown.",
-      },
-    )
-    .toBe(expectedPreview);
+  const telemetryEvent = await waitForClipboardTelemetry(popupPage, {
+    tag: "[POPUP_COPY]",
+  });
+  expect(telemetryEvent.payload).toBe(expectedPreview);
+  expect(telemetryEvent.origin).toBe("popup");
+  assertClipboardContainsNonce(telemetryEvent.payload, nonce);
 
-  assertClipboardContainsNonce(clipboardText, nonce);
+  await clearClipboardTelemetry(popupPage);
 
   await popupPage.close();
   await clipboard.restore();

@@ -1,14 +1,16 @@
 import { expect, test } from "@playwright/test";
 import {
+  clearClipboardTelemetry,
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
-  readClipboardPayload,
   readLastFormatted,
   resetHotkeyDiagnostics,
   resetPreviewState,
+  setClipboardTelemetryTag,
   setHotkeyPinnedState,
   triggerHotkeyCommand,
+  waitForClipboardTelemetry,
 } from "./helpers/background-bridge.js";
 import {
   assertClipboardContainsNonce,
@@ -79,6 +81,9 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
 
   const bridgePage = await openExtensionPage(context, extensionId, "options.html");
 
+  await clearClipboardTelemetry(bridgePage);
+  await setClipboardTelemetryTag(bridgePage, "[HOTKEY_FALLBACK]");
+
   await setHotkeyPinnedState(bridgePage, false);
   const articleTab = await findTabByUrl(bridgePage, SAMPLE_URL);
   if (articleTab.id === null) {
@@ -107,21 +112,12 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
     })
     .toBe(expectedPreview);
 
-  let clipboardText = "";
-  await expect
-    .poll(
-      async () => {
-        clipboardText = await readClipboardPayload(bridgePage);
-        return clipboardText;
-      },
-      {
-        timeout: 5_000,
-        message: "Waiting for hotkey clipboard payload to match expected Markdown.",
-      },
-    )
-    .toBe(expectedPreview);
-
-  assertClipboardContainsNonce(clipboardText, nonce);
+  const telemetryEvent = await waitForClipboardTelemetry(bridgePage, {
+    tag: "[HOTKEY_FALLBACK]",
+  });
+  expect(telemetryEvent.payload).toBe(expectedPreview);
+  expect(telemetryEvent.origin).toBe("injection");
+  assertClipboardContainsNonce(telemetryEvent.payload, nonce);
 
   const errors = await getBackgroundErrors(bridgePage);
   const contexts = errors.map((entry) => entry.context);
@@ -137,6 +133,7 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
   expect(diagnostics.injectionSucceeded).toBe(true);
   expect(diagnostics.injectionError).toBeNull();
 
+  await clearClipboardTelemetry(bridgePage);
   await clipboard.restore();
   await bridgePage.close();
   await articlePage.close();

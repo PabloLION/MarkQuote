@@ -1,16 +1,18 @@
 import { expect, test } from "@playwright/test";
 import {
   clearBackgroundErrors,
+  clearClipboardTelemetry,
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
-  readClipboardPayload,
   readLastFormatted,
   resetHotkeyDiagnostics,
   resetPreviewState,
+  setClipboardTelemetryTag,
   setHotkeyPinnedState,
   triggerContextCopy,
   triggerHotkeyCommand,
+  waitForClipboardTelemetry,
 } from "./helpers/background-bridge.js";
 import type { ClipboardSnapshot } from "./helpers/clipboard.js";
 import { mintClipboardNonce, snapshotClipboard } from "./helpers/clipboard.js";
@@ -24,6 +26,17 @@ import { selectElementText } from "./helpers/selection.js";
 
 const PRIMARY_URL = "https://example.com/multi-trigger-primary";
 const SECONDARY_URL = "https://example.com/multi-trigger-secondary";
+
+const MULTI_FLOW_TAGS = {
+  popupPrimary: "[MULTI_FLOW_POPUP_PRIMARY]",
+  hotkeyPrimary: "[MULTI_FLOW_HOTKEY_PRIMARY]",
+  hotkeySecondary: "[MULTI_FLOW_HOTKEY_SECONDARY]",
+  contextSecondary: "[MULTI_FLOW_CONTEXT_SECONDARY]",
+  popupSecondary: "[MULTI_FLOW_POPUP_SECONDARY]",
+  contextPrimaryRepeat: "[MULTI_FLOW_CONTEXT_PRIMARY_REPEAT]",
+  contextSecondaryRepeat: "[MULTI_FLOW_CONTEXT_SECONDARY_REPEAT]",
+  contextSuccess: "[MULTI_FLOW_CONTEXT_SUCCESS]",
+} as const;
 
 function buildFixtureHtml(text: string, title: string): string {
   return `<!DOCTYPE html>
@@ -67,24 +80,6 @@ async function expectPreview(
       message,
     })
     .toBe(expected);
-}
-
-async function expectClipboardMatch(
-  runtimePage: import("@playwright/test").Page,
-  expected: string,
-  message: string,
-): Promise<string> {
-  let captured = "";
-  await expect
-    .poll(
-      async () => {
-        captured = await readClipboardPayload(runtimePage);
-        return captured;
-      },
-      { timeout: 5_000, message },
-    )
-    .toBe(expected);
-  return captured;
 }
 
 test.describe
@@ -148,6 +143,7 @@ test.describe
         origin: new URL(SECONDARY_URL).origin,
       });
       const bridgePage = await openExtensionPage(context, extensionId, "options.html");
+      await clearClipboardTelemetry(bridgePage);
 
       const primaryPage = await context.newPage();
       await primaryPage.goto(PRIMARY_URL, { waitUntil: "domcontentloaded" });
@@ -167,15 +163,17 @@ test.describe
       await updateArticle(primaryPage, { text: popupText, title: popupTitle });
       await selectElementText(primaryPage, "#quote", { expectedText: popupText });
       await resetPreviewState(bridgePage);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.popupPrimary);
 
       const popupPage = await openPopupPage(context, extensionId);
       const popupExpected = `> ${popupText}\n> Source: [${popupTitle}](${PRIMARY_URL})`;
       await expectPreview(bridgePage, popupExpected, "Waiting for popup-triggered copy to finish.");
-      await expectClipboardMatch(
-        bridgePage,
-        popupExpected,
-        "Popup clipboard did not match expected Markdown after popup copy.",
-      );
+      const popupEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.popupPrimary,
+      });
+      expect(popupEvent.payload).toBe(popupExpected);
+      expect(popupEvent.origin).toBe("popup");
       await popupPage.close();
       await primaryPage.bringToFront();
 
@@ -187,6 +185,8 @@ test.describe
       await resetPreviewState(bridgePage);
       await resetHotkeyDiagnostics(bridgePage);
       await setHotkeyPinnedState(bridgePage, false);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.hotkeyPrimary);
       await triggerHotkeyCommand(bridgePage, {
         tabId: primaryTab.id ?? undefined,
         forcePinned: false,
@@ -198,11 +198,11 @@ test.describe
         hotkeyExpected,
         "Waiting for hotkey fallback to copy selection.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        hotkeyExpected,
-        "Hotkey fallback clipboard did not match expected Markdown.",
-      );
+      const hotkeyEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.hotkeyPrimary,
+      });
+      expect(hotkeyEvent.payload).toBe(hotkeyExpected);
+      expect(hotkeyEvent.origin).toBe("injection");
       await primaryPage.bringToFront();
       const hotkeyDiagnostics = await getHotkeyDiagnostics(bridgePage);
       expect(hotkeyDiagnostics.resolvedTabId).toBe(primaryTab.id);
@@ -227,6 +227,8 @@ test.describe
       await resetPreviewState(bridgePage);
       await resetHotkeyDiagnostics(bridgePage);
       await setHotkeyPinnedState(bridgePage, false);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.hotkeySecondary);
       await triggerHotkeyCommand(bridgePage, {
         tabId: secondaryTab.id ?? undefined,
         forcePinned: false,
@@ -238,11 +240,11 @@ test.describe
         chainHotkeyExpected,
         "Waiting for chained hotkey fallback to finish.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        chainHotkeyExpected,
-        "Chained hotkey clipboard did not match expected Markdown.",
-      );
+      const chainedHotkeyEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.hotkeySecondary,
+      });
+      expect(chainedHotkeyEvent.payload).toBe(chainHotkeyExpected);
+      expect(chainedHotkeyEvent.origin).toBe("injection");
       await secondaryPage.bringToFront();
       await setHotkeyPinnedState(bridgePage, null);
 
@@ -252,6 +254,8 @@ test.describe
       await updateArticle(secondaryPage, { text: contextText, title: contextTitle });
       await selectElementText(secondaryPage, "#quote", { expectedText: contextText });
       await resetPreviewState(bridgePage);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.contextSecondary);
       await triggerContextCopy(bridgePage, {
         tabId: secondaryTab.id ?? undefined,
         source: "context-menu",
@@ -263,11 +267,11 @@ test.describe
         contextExpected,
         "Waiting for chained context menu copy to finish.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        contextExpected,
-        "Chained context menu clipboard did not match expected Markdown.",
-      );
+      const chainedContextEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.contextSecondary,
+      });
+      expect(chainedContextEvent.payload).toBe(contextExpected);
+      expect(chainedContextEvent.origin).toBe("injection");
       await secondaryPage.bringToFront();
 
       const popupChainNonce = mintClipboardNonce("chain-popup");
@@ -277,6 +281,8 @@ test.describe
       await selectElementText(secondaryPage, "#quote", { expectedText: popupChainText });
       await secondaryPage.bringToFront();
       await resetPreviewState(bridgePage);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.popupSecondary);
       // Drive the popup pipeline directly via the bridge to avoid Chrome's tab-selection heuristics
       // stealing focus from the secondary article during automation.
       await triggerContextCopy(bridgePage, {
@@ -289,11 +295,10 @@ test.describe
         popupChainExpected,
         "Waiting for popup-equivalent copy after chained flows.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        popupChainExpected,
-        "Popup clipboard after chained flows did not match expected Markdown.",
-      );
+      const popupChainEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.popupSecondary,
+      });
+      expect(popupChainEvent.payload).toBe(popupChainExpected);
       await secondaryPage.bringToFront();
 
       // Step 3: context menu twice across different tabs.
@@ -303,6 +308,8 @@ test.describe
       await updateArticle(primaryPage, { text: firstRepeatText, title: firstRepeatTitle });
       await selectElementText(primaryPage, "#quote", { expectedText: firstRepeatText });
       await resetPreviewState(bridgePage);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.contextPrimaryRepeat);
       await triggerContextCopy(bridgePage, {
         tabId: primaryTab.id ?? undefined,
         source: "context-menu",
@@ -314,11 +321,11 @@ test.describe
         firstRepeatExpected,
         "Waiting for context menu copy on primary tab.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        firstRepeatExpected,
-        "Primary context menu clipboard did not match expected Markdown.",
-      );
+      const primaryRepeatEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.contextPrimaryRepeat,
+      });
+      expect(primaryRepeatEvent.payload).toBe(firstRepeatExpected);
+      expect(primaryRepeatEvent.origin).toBe("injection");
       await primaryPage.bringToFront();
 
       const secondRepeatNonce = mintClipboardNonce("repeat-secondary");
@@ -327,6 +334,8 @@ test.describe
       await updateArticle(secondaryPage, { text: secondRepeatText, title: secondRepeatTitle });
       await selectElementText(secondaryPage, "#quote", { expectedText: secondRepeatText });
       await resetPreviewState(bridgePage);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.contextSecondaryRepeat);
       await triggerContextCopy(bridgePage, {
         tabId: secondaryTab.id ?? undefined,
         source: "context-menu",
@@ -338,11 +347,11 @@ test.describe
         secondRepeatExpected,
         "Waiting for context menu copy on secondary tab.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        secondRepeatExpected,
-        "Secondary context menu clipboard did not match expected Markdown.",
-      );
+      const secondaryRepeatEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.contextSecondaryRepeat,
+      });
+      expect(secondaryRepeatEvent.payload).toBe(secondRepeatExpected);
+      expect(secondaryRepeatEvent.origin).toBe("injection");
       await secondaryPage.bringToFront();
 
       // Step 4: success followed by protected fallback failure.
@@ -353,6 +362,8 @@ test.describe
       await updateArticle(primaryPage, { text: successText, title: successTitle });
       await selectElementText(primaryPage, "#quote", { expectedText: successText });
       await resetPreviewState(bridgePage);
+      await clearClipboardTelemetry(bridgePage);
+      await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.contextSuccess);
       await triggerContextCopy(bridgePage, {
         tabId: primaryTab.id ?? undefined,
         source: "context-menu",
@@ -364,11 +375,11 @@ test.describe
         successExpected,
         "Waiting for success copy before failure scenario.",
       );
-      await expectClipboardMatch(
-        bridgePage,
-        successExpected,
-        "Success context clipboard did not match expected Markdown.",
-      );
+      const successContextEvent = await waitForClipboardTelemetry(bridgePage, {
+        tag: MULTI_FLOW_TAGS.contextSuccess,
+      });
+      expect(successContextEvent.payload).toBe(successExpected);
+      expect(successContextEvent.origin).toBe("injection");
       await primaryPage.bringToFront();
 
       const protectedPage = await context.newPage();

@@ -1,4 +1,9 @@
 import type { Page } from "@playwright/test";
+import type {
+  ClipboardTelemetryEvent as BackgroundClipboardTelemetryEvent,
+  ClipboardTelemetryOrigin,
+} from "../../../src/background/copy-pipeline.js";
+import type { CopySource } from "../../../src/background/types.js";
 import type { OptionsPayload } from "../../../src/options-schema.js";
 
 export interface HotkeyDiagnostics {
@@ -9,6 +14,85 @@ export interface HotkeyDiagnostics {
   injectionSucceeded: boolean | null;
   injectionError: string | null;
   timestamp: number;
+}
+
+export type ClipboardTelemetryEvent = BackgroundClipboardTelemetryEvent & {
+  origin: ClipboardTelemetryOrigin;
+  source: CopySource;
+};
+
+export async function clearClipboardTelemetry(page: Page): Promise<void> {
+  const result = await page.evaluate(() => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:clear-clipboard-telemetry" }, (response) => {
+        resolve(response ?? { ok: false, error: "No response received" });
+      });
+    });
+  });
+
+  if (!result?.ok) {
+    throw new Error(`Failed to clear clipboard telemetry: ${result?.error ?? "unknown error"}`);
+  }
+}
+
+export async function setClipboardTelemetryTag(page: Page, tag: string | null): Promise<void> {
+  const result = await page.evaluate((value) => {
+    return new Promise<{ ok: boolean; error?: string }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:set-clipboard-tag", tag: value }, (response) => {
+        resolve(response ?? { ok: false, error: "No response received" });
+      });
+    });
+  }, tag);
+
+  if (!result?.ok) {
+    throw new Error(
+      `Failed to set clipboard telemetry tag: ${result?.error ?? "unknown error setting tag"}`,
+    );
+  }
+}
+
+export async function readClipboardTelemetry(page: Page): Promise<ClipboardTelemetryEvent[]> {
+  const response = await page.evaluate(() => {
+    return new Promise<{ events?: ClipboardTelemetryEvent[] }>((resolve) => {
+      chrome.runtime.sendMessage({ type: "e2e:get-clipboard-telemetry" }, (payload) => {
+        resolve((payload as { events?: ClipboardTelemetryEvent[] }) ?? {});
+      });
+    });
+  });
+
+  return response.events ?? [];
+}
+
+export async function getLatestClipboardEventForTag(
+  page: Page,
+  tag: string,
+): Promise<ClipboardTelemetryEvent | null> {
+  const events = await readClipboardTelemetry(page);
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const candidate = events[index];
+    if (candidate?.tag === tag) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+export async function waitForClipboardTelemetry(
+  page: Page,
+  options: { tag: string; timeoutMs?: number; pollIntervalMs?: number },
+): Promise<ClipboardTelemetryEvent> {
+  const { tag, timeoutMs = 5_000, pollIntervalMs = 100 } = options;
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() <= deadline) {
+    const event = await getLatestClipboardEventForTag(page, tag);
+    if (event) {
+      return event;
+    }
+    await page.waitForTimeout(pollIntervalMs);
+  }
+
+  throw new Error(`Clipboard telemetry for ${tag} did not arrive within ${timeoutMs}ms.`);
 }
 
 export async function setOptionsPayload(page: Page, options: OptionsPayload): Promise<void> {
