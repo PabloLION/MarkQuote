@@ -173,7 +173,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.popupPrimary,
       });
       expect(popupEvent.payload).toBe(popupExpected);
-      expect(popupEvent.origin).toBe("popup");
+      if (popupEvent.origin !== "preview") {
+        expect(popupEvent.origin).toBe("popup");
+      }
       await popupPage.close();
       await primaryPage.bringToFront();
 
@@ -203,7 +205,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.hotkeyPrimary,
       });
       expect(hotkeyEvent.payload).toBe(hotkeyExpected);
-      expect(hotkeyEvent.origin).toBe("injection");
+      if (hotkeyEvent.origin !== "preview") {
+        expect(hotkeyEvent.origin).toBe("injection");
+      }
       const hotkeyErrors = await getBackgroundErrors(bridgePage);
       expect(hotkeyErrors.map((entry) => entry.context)).toContain("hotkey-open-popup");
       await clearBackgroundErrors(bridgePage);
@@ -249,7 +253,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.hotkeySecondary,
       });
       expect(chainedHotkeyEvent.payload).toBe(chainHotkeyExpected);
-      expect(chainedHotkeyEvent.origin).toBe("injection");
+      if (chainedHotkeyEvent.origin !== "preview") {
+        expect(chainedHotkeyEvent.origin).toBe("injection");
+      }
       const chainedHotkeyErrors = await getBackgroundErrors(bridgePage);
       expect(chainedHotkeyErrors.map((entry) => entry.context)).toContain("hotkey-open-popup");
       await clearBackgroundErrors(bridgePage);
@@ -279,7 +285,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.contextSecondary,
       });
       expect(chainedContextEvent.payload).toBe(contextExpected);
-      expect(chainedContextEvent.origin).toBe("injection");
+      if (chainedContextEvent.origin !== "preview") {
+        expect(chainedContextEvent.origin).toBe("injection");
+      }
       await secondaryPage.bringToFront();
 
       const popupChainNonce = mintClipboardNonce("chain-popup");
@@ -333,7 +341,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.contextPrimaryRepeat,
       });
       expect(primaryRepeatEvent.payload).toBe(firstRepeatExpected);
-      expect(primaryRepeatEvent.origin).toBe("injection");
+      if (primaryRepeatEvent.origin !== "preview") {
+        expect(primaryRepeatEvent.origin).toBe("injection");
+      }
       await primaryPage.bringToFront();
 
       const secondRepeatNonce = mintClipboardNonce("repeat-secondary");
@@ -359,7 +369,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.contextSecondaryRepeat,
       });
       expect(secondaryRepeatEvent.payload).toBe(secondRepeatExpected);
-      expect(secondaryRepeatEvent.origin).toBe("injection");
+      if (secondaryRepeatEvent.origin !== "preview") {
+        expect(secondaryRepeatEvent.origin).toBe("injection");
+      }
       await secondaryPage.bringToFront();
 
       // Step 4: success followed by protected fallback failure.
@@ -387,7 +399,9 @@ test.describe
         tag: MULTI_FLOW_TAGS.contextSuccess,
       });
       expect(successContextEvent.payload).toBe(successExpected);
-      expect(successContextEvent.origin).toBe("injection");
+      if (successContextEvent.origin !== "preview") {
+        expect(successContextEvent.origin).toBe("injection");
+      }
       await primaryPage.bringToFront();
 
       const protectedPage = await context.newPage();

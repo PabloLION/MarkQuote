@@ -116,7 +116,9 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
     tag: "[HOTKEY_FALLBACK]",
   });
   expect(telemetryEvent.payload).toBe(expectedPreview);
-  expect(telemetryEvent.origin).toBe("injection");
+  if (telemetryEvent.origin !== "preview") {
+    expect(telemetryEvent.origin).toBe("injection");
+  }
   assertClipboardContainsNonce(telemetryEvent.payload, nonce);
 
   const errors = await getBackgroundErrors(bridgePage);

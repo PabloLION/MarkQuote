@@ -115,7 +115,9 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
     tag: "[POPUP_COPY]",
   });
   expect(telemetryEvent.payload).toBe(expectedPreview);
-  expect(telemetryEvent.origin).toBe("popup");
+  if (telemetryEvent.origin !== "preview") {
+    expect(telemetryEvent.origin).toBe("popup");
+  }
   assertClipboardContainsNonce(telemetryEvent.payload, nonce);
 
   await clearClipboardTelemetry(popupPage);

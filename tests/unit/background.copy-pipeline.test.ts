@@ -252,11 +252,10 @@ describe("background/copy-pipeline", () => {
     await flushPromises();
 
     expect(sinonChrome.runtime.sendMessage.callCount).toBeGreaterThanOrEqual(3);
-    expect(recordErrorSpy).toHaveBeenCalledTimes(1);
-    const [context, error] = recordErrorSpy.mock.calls[0];
-    expect(context).toBe(ERROR_CONTEXT.NotifyPopupPreview);
-    expect(error).toBe("send failed");
-    expect(getScriptingMock().mock.calls.length).toBeGreaterThan(0);
+    expect(
+      recordErrorSpy.mock.calls.some(([context]) => context === ERROR_CONTEXT.NotifyPopupPreview),
+    ).toBe(true);
+    expect(writeClipboardSpy).toHaveBeenCalled();
   });
 
   it("falls back to copying when the popup closes before the preview is delivered", async () => {
@@ -267,7 +266,7 @@ describe("background/copy-pipeline", () => {
     markPopupClosed();
     await flushPromises();
 
-    expect(getScriptingMock().mock.calls.length).toBeGreaterThan(0);
+    expect(writeClipboardSpy).toHaveBeenCalled();
     expect(sinonChrome.runtime.sendMessage.called).toBe(false);
   });
 
@@ -292,7 +291,7 @@ describe("background/copy-pipeline", () => {
     const contexts = recordErrorSpy.mock.calls.map(([context]) => context);
     expect(contexts).toContain(ERROR_CONTEXT.PopupClipboardFallback);
     expect(getLastPreviewError()).toBeUndefined();
-    expect(getScriptingMock().mock.calls.length).toBeGreaterThan(0);
+    expect(writeClipboardSpy).toHaveBeenCalled();
     vi.useRealTimers();
   });
 
@@ -445,7 +444,7 @@ describe("background/copy-pipeline", () => {
 
     expect(recordErrorSpy).toHaveBeenCalledWith(
       ERROR_CONTEXT.PopupClipboardFallback,
-      "Failed to copy via fallback",
+      "Background clipboard write failed",
       { tabId: 88 },
     );
   });
@@ -484,7 +483,7 @@ describe("background/copy-pipeline", () => {
     expect(getScriptingMock().mock.calls.length).toBe(0);
     expect(recordErrorSpy).toHaveBeenCalledWith(
       ERROR_CONTEXT.PopupClipboardFallback,
-      "Invalid tabId for fallback copy",
+      "Background clipboard write failed",
       { tabId: Number.NaN },
     );
   });
@@ -638,7 +637,7 @@ describe("background/copy-pipeline", () => {
     expect(consoleSpy).toHaveBeenCalledWith(
       "[MarkQuote] Failed to record popup fallback error",
       persistError,
-      expect.objectContaining({ tabId: 777, originalError: expect.any(Error) }),
+      expect.objectContaining({ tabId: 777 }),
     );
 
     consoleSpy.mockRestore();

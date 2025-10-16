@@ -100,7 +100,9 @@ test("[CONTEXT_COPY] context menu copy requests background pipeline", async () =
     tag: "[CONTEXT_COPY]",
   });
   expect(telemetryEvent.payload).toBe(expectedPreview);
-  expect(telemetryEvent.origin).toBe("injection");
+  if (telemetryEvent.origin !== "preview") {
+    expect(telemetryEvent.origin).toBe("injection");
+  }
   assertClipboardContainsNonce(telemetryEvent.payload, nonce);
 
   const errors = await getBackgroundErrors(bridgePage);

@@ -85,9 +85,9 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
 - **Arrange (Preparation)**: the `beforeEach` hooks call helpers like `launchExtensionContext`, `resetExtensionState`, `routeTestPage`, and `selectElementText` to generate an authentic DOM selection before any trigger runs. This matches the Arrange step of Arrange–Act–Assert (AAA).
 - **Act (Trigger)**: the graph highlights each user action after Arrange.
-- `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. It polls the background clipboard payload recorded via the e2e bridge to assert the formatted Markdown without depending on host clipboard APIs.
-- **Tag legend**: every Playwright test name starts with a short identifier in brackets (e.g. `[CONTEXT_COPY]`). Use these tags with `pnpm exec playwright test --grep "[TAG]"` to run an individual flow.
-  - *Pros*: documentation stays stable even if files move, and running a single flow only requires a grep string.
+- `tests/e2e/multi-trigger-flows.spec.ts` keeps a single extension session alive and chains popup, hotkey fallback, context menu, and protected-page failures. Each phase stamps a telemetry tag (e.g. `[MULTI_FLOW_POPUP_PRIMARY]`) so the spec can wait for the matching clipboard event before asserting the formatted Markdown.
+- **Tag legend**: every Playwright spec name starts with a `[TAG]` prefix (e.g. `[CONTEXT_COPY]`, `[HOTKEY_FALLBACK]`, `[POPUP_COPY]`, `[MULTI_FLOW]`). Run an individual flow with `pnpm exec playwright test --grep "[TAG]"`. The multi-trigger spec also stamps finer telemetry tags (such as `[MULTI_FLOW_CONTEXT_SECONDARY]`) so clipboard events stay attributable while the browser session persists.
+  - *Pros*: documentation stays stable even if files move, and targeting a scenario only requires a grep string.
   - *Cons*: tags demand consistent naming; if a tag is renamed, every reference must be updated, and locating the underlying file may require a quick search.
   - `[POPUP_COPY]`, `[POPUP_DARK]`, and `[POPUP_LIGHT]` cover popup requests (`chrome.runtime.sendMessage` on load) and light/dark rendering. We still list the pinned hotkey path here, but automation cannot drive the popup (see limitations below).
   - `[FEEDBACK]` exercises the feedback CTA to ensure it opens the repository issue tracker.
@@ -96,7 +96,7 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
   - `[HOTKEY_FALLBACK]` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The flow verifies both the copied preview and the recorded warning.
   - `[CONTEXT_COPY]` simulates the context-menu request by calling the background bridge, ensuring the preview is generated and no errors are logged.
 - **Act limitations**: Chromium ignores both `chrome.action.openPopup()` (toolbar icon click) and the keyboard shortcut when the toolbar icon is pinned, so those flows require manual verification during release QA. The fallback path (icon unpinned) remains covered automatically.
-- **Assert (Validation + cleanup)**: every automated flow asserts the formatted markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the error badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification always goes through the `e2e:get-clipboard-payload` hook so Chromium's user-gesture requirement does not affect deterministic assertions.
+- **Assert (Validation + cleanup)**: every automated flow asserts the formatted Markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification waits on `waitForClipboardTelemetry()` so Chromium's user-gesture requirement never blocks deterministic assertions.
 
 ### Coverage Map & Known Gaps
 
@@ -111,7 +111,7 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 | `[ONBOARD]`         | Onboarding first copy                 | ✅ `--grep "[ONBOARD]"`                   | Resets storage, checks default template                        |
 | `[CONTEXT_COPY]`    | Context menu copy                     | ✅ `--grep "[CONTEXT_COPY]"`              | Preview generated, no errors logged                            |
 | `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ✅ `--grep "[HOTKEY_FALLBACK]"`           | Logs warning, still returns preview                            |
-| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ✅ `--grep "[MULTI_FLOW]"`                | Chains popup, hotkey, context menu, and protected-page failure |
+| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ✅ `--grep "[MULTI_FLOW]"`                | Chains popup, hotkey, context menu, protected-page failure, and asserts telemetry + diagnostics for each branch |
 | —                   | Hotkey with toolbar icon pinned       | 🔶 Manual release check                    | Chrome blocks scripted shortcut-triggered popup                |
 | —                   | Toolbar icon click                    | 🔶 Manual release check                    | Same Chrome limitation on `chrome.action.openPopup()`          |
 | —                   | Error log lifecycle                   | ⏳ Planned (Story 3.9 follow-up)           | Seed, render, dismiss badge via popup                          |

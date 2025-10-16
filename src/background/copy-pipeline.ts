@@ -34,7 +34,7 @@ let lastClipboardPayload = "";
 
 const MAX_CLIPBOARD_TELEMETRY_EVENTS = 32;
 
-export type ClipboardTelemetryOrigin = "background" | "popup" | "injection";
+export type ClipboardTelemetryOrigin = "background" | "popup" | "injection" | "preview";
 
 export type ClipboardTelemetryEvent = {
   payload: string;
@@ -132,6 +132,7 @@ export async function runCopyPipeline(
   }
 
   recordE2ePreview(formatted);
+  recordClipboardTelemetry({ payload: formatted, origin: "preview", source });
 
   return formatted;
 }
@@ -256,9 +257,13 @@ async function fallbackCopyToTab(tabId: number, text: string, source?: CopySourc
     return;
   }
 
-  await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Background clipboard write failed", {
-    tabId,
-  });
+  try {
+    await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Background clipboard write failed", {
+      tabId,
+    });
+  } catch (error) {
+    console.error("[MarkQuote] Failed to record popup fallback error", error, { tabId });
+  }
 }
 
 /** Returns the last formatted preview (test-only helper). */

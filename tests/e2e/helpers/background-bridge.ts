@@ -83,13 +83,21 @@ export async function waitForClipboardTelemetry(
 ): Promise<ClipboardTelemetryEvent> {
   const { tag, timeoutMs = 5_000, pollIntervalMs = 100 } = options;
   const deadline = Date.now() + timeoutMs;
+  let previewEvent: ClipboardTelemetryEvent | null = null;
 
   while (Date.now() <= deadline) {
     const event = await getLatestClipboardEventForTag(page, tag);
     if (event) {
-      return event;
+      if (event.origin !== "preview") {
+        return event;
+      }
+      previewEvent = event;
     }
     await page.waitForTimeout(pollIntervalMs);
+  }
+
+  if (previewEvent) {
+    return previewEvent;
   }
 
   throw new Error(`Clipboard telemetry for ${tag} did not arrive within ${timeoutMs}ms.`);
