@@ -184,6 +184,7 @@ test.describe
       await selectElementText(primaryPage, "#quote", { expectedText: hotkeyText });
       await resetPreviewState(bridgePage);
       await resetHotkeyDiagnostics(bridgePage);
+      await clearBackgroundErrors(bridgePage);
       await setHotkeyPinnedState(bridgePage, false);
       await clearClipboardTelemetry(bridgePage);
       await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.hotkeyPrimary);
@@ -203,6 +204,9 @@ test.describe
       });
       expect(hotkeyEvent.payload).toBe(hotkeyExpected);
       expect(hotkeyEvent.origin).toBe("injection");
+      const hotkeyErrors = await getBackgroundErrors(bridgePage);
+      expect(hotkeyErrors.map((entry) => entry.context)).toContain("hotkey-open-popup");
+      await clearBackgroundErrors(bridgePage);
       await primaryPage.bringToFront();
       const hotkeyDiagnostics = await getHotkeyDiagnostics(bridgePage);
       expect(hotkeyDiagnostics.resolvedTabId).toBe(primaryTab.id);
@@ -226,6 +230,7 @@ test.describe
       await selectElementText(secondaryPage, "#quote", { expectedText: chainHotkeyText });
       await resetPreviewState(bridgePage);
       await resetHotkeyDiagnostics(bridgePage);
+      await clearBackgroundErrors(bridgePage);
       await setHotkeyPinnedState(bridgePage, false);
       await clearClipboardTelemetry(bridgePage);
       await setClipboardTelemetryTag(bridgePage, MULTI_FLOW_TAGS.hotkeySecondary);
@@ -245,6 +250,9 @@ test.describe
       });
       expect(chainedHotkeyEvent.payload).toBe(chainHotkeyExpected);
       expect(chainedHotkeyEvent.origin).toBe("injection");
+      const chainedHotkeyErrors = await getBackgroundErrors(bridgePage);
+      expect(chainedHotkeyErrors.map((entry) => entry.context)).toContain("hotkey-open-popup");
+      await clearBackgroundErrors(bridgePage);
       await secondaryPage.bringToFront();
       await setHotkeyPinnedState(bridgePage, null);
 
