@@ -74,42 +74,45 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
   await articlePage.bringToFront();
 
   const systemClipboard = await snapshotSystemClipboard();
-  test.fail(true, "Popup copy still fails to update the OS clipboard (investigating).");
-  const nonce = mintClipboardNonce("popup");
-  const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
-  await articlePage.evaluate(
-    ({ text }) => {
-      const quote = document.getElementById("quote");
-      if (!quote) {
-        throw new Error("Unable to locate quote element for popup spec.");
-      }
-      quote.textContent = text;
-    },
-    { text: selectionText },
-  );
-
-  await selectElementText(articlePage, "#quote", { expectedText: selectionText });
-
   const popupPage = await openPopupPage(context, extensionId);
 
-  const expectedPreview = `> ${selectionText}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
+  try {
+    const nonce = mintClipboardNonce("popup");
+    const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
+    await articlePage.evaluate(
+      ({ text }) => {
+        const quote = document.getElementById("quote");
+        if (!quote) {
+          throw new Error("Unable to locate quote element for popup spec.");
+        }
+        quote.textContent = text;
+      },
+      { text: selectionText },
+    );
 
-  await expect
-    .poll(async () => (await readLastFormatted(popupPage)).formatted, {
-      message: "Waiting for background selection pipeline to finish.",
-    })
-    .toBe(expectedPreview);
+    await selectElementText(articlePage, "#quote", { expectedText: selectionText });
+    const expectedPreview = `> ${selectionText}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
 
-  const finalStatus = await readLastFormatted(popupPage);
-  expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
+    await expect
+      .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+        message: "Waiting for background selection pipeline to finish.",
+      })
+      .toBe(expectedPreview);
 
-  await waitForSystemClipboard(expectedPreview, "Popup clipboard did not match expected Markdown.");
-  const clipboardText = await readSystemClipboard();
-  assertClipboardContainsNonce(clipboardText, nonce);
+    const finalStatus = await readLastFormatted(popupPage);
+    expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
 
-  await popupPage.close();
-  await systemClipboard.restore();
-  await articlePage.close();
+    await waitForSystemClipboard(
+      expectedPreview,
+      "Popup clipboard did not match expected Markdown.",
+    );
+    const clipboardText = await readSystemClipboard();
+    assertClipboardContainsNonce(clipboardText, nonce);
+  } finally {
+    await popupPage.close().catch(() => {});
+    await systemClipboard.restore().catch(() => {});
+    await articlePage.close();
+  }
 });
 
 const COLOR_SCHEMES: Array<"dark" | "light"> = ["dark", "light"];

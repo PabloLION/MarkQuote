@@ -93,8 +93,8 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
   - `[FEEDBACK]` exercises the feedback CTA to ensure it opens the repository issue tracker.
   - `[OPTIONS_PREVIEW]` and `[OPTIONS_CHAIN]` edit title and URL rules, then confirm the popup preview mirrors the new formatting.
   - `[ONBOARD]` resets storage to defaults and confirms the popup produces the default template on the first copy.
-  - `[HOTKEY_FALLBACK]` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The flow is currently marked `test.fail` while we fix the clipboard regression uncovered during manual testing.
-  - `[CONTEXT_COPY]` simulates the context-menu request by calling the background bridge. It is also marked `test.fail` until the clipboard write bug is resolved.
+  - `[HOTKEY_FALLBACK]` forces the action to appear unpinned so the background logs `HotkeyOpenPopup` and falls back to direct copy without opening the popup. The flow currently fails because the clipboard regression remains unresolved.
+  - `[CONTEXT_COPY]` simulates the context-menu request by calling the background bridge. It also fails today for the same clipboard reason.
 - **Act limitations**: Chromium ignores both `chrome.action.openPopup()` (toolbar icon click) and the keyboard shortcut when the toolbar icon is pinned, so those flows require manual verification during release QA. The fallback path (icon unpinned) remains covered automatically.
 - **Assert (Validation + cleanup)**: every automated flow asserts the formatted Markdown returned by `e2e:get-last-formatted`, checks that the popup message and preview are visible when expected, ensures the badge stays hidden (unless the scenario intentionally logs), and inspects the background error log. Clipboard verification now polls the real OS clipboard via `clipboardy`, so a failing write surfaces immediately (and the tests snapshot/restore the clipboard to avoid polluting the developer’s session).
 
@@ -102,16 +102,16 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 
 | Tag                 | Flow / Behaviour                      | Coverage status                            | Notes                                                          |
 | ------------------- | ------------------------------------- | ------------------------------------------ | -------------------------------------------------------------- |
-| `[POPUP_COPY]`      | Popup runtime message + preview       | ⚠️ Expected-fail (`--grep "[POPUP_COPY]"`) | Clipboard still missing on some hosts; test snapshots OS clipboard and xfails until fixed |
+| `[POPUP_COPY]`      | Popup runtime message + preview       | ❌ Failing (`--grep "[POPUP_COPY]"`)        | Clipboard regression under investigation (OS clipboard asserts red)                       |
 | `[POPUP_DARK]`      | Popup markdown render (dark theme)    | ✅ `--grep "[POPUP_DARK]"`                | Verifies dark-mode styling stays stable                        |
 | `[POPUP_LIGHT]`     | Popup markdown render (light theme)   | ✅ `--grep "[POPUP_LIGHT]"`               | Mirrors `[POPUP_DARK]` for light theme                         |
 | `[FEEDBACK]`        | Popup feedback CTA                    | ✅ `--grep "[FEEDBACK]"`                  | Ensures the repo link opens in new tab                         |
 | `[OPTIONS_PREVIEW]` | Options rule editing -> popup preview | ✅ `--grep "[OPTIONS_PREVIEW]"`           | Confirms DOM updates + badge hidden                            |
 | `[OPTIONS_CHAIN]`   | URL rule break/continue semantics     | ✅ `--grep "[OPTIONS_CHAIN]"`             | Validates rule sequencing outputs                              |
 | `[ONBOARD]`         | Onboarding first copy                 | ✅ `--grep "[ONBOARD]"`                   | Resets storage, checks default template                        |
-| `[CONTEXT_COPY]`    | Context menu copy                     | ⚠️ Expected-fail (`--grep "[CONTEXT_COPY]"`) | Clipboard regression documented; test polls OS clipboard and currently xfails |
-| `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ⚠️ Expected-fail (`--grep "[HOTKEY_FALLBACK]"`) | Background fallback still broken when toolbar is hidden; xfail guards CI |
-| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ⚠️ Expected-fail (`--grep "[MULTI_FLOW]"`) | Chains popup, hotkey, context menu, protected-page failure using OS clipboard assertions |
+| `[CONTEXT_COPY]`    | Context menu copy                     | ❌ Failing (`--grep "[CONTEXT_COPY]"`)      | Clipboard regression documented; OS clipboard check currently red                        |
+| `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ❌ Failing (`--grep "[HOTKEY_FALLBACK]"`)   | Background fallback broken when action hidden; OS clipboard makes failure visible        |
+| `[MULTI_FLOW]`      | Multi-trigger sequencing              | ❌ Failing (`--grep "[MULTI_FLOW]"`)        | Chains popup, hotkey, context menu, protected-page failure using OS clipboard assertions |
 | —                   | Hotkey with toolbar icon pinned       | 🔶 Manual release check                    | Chrome blocks scripted shortcut-triggered popup                |
 | —                   | Toolbar icon click                    | 🔶 Manual release check                    | Same Chrome limitation on `chrome.action.openPopup()`          |
 | —                   | Error log lifecycle                   | ⏳ Planned (Story 3.9 follow-up)           | Seed, render, dismiss badge via popup                          |

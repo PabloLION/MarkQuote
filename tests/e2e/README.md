@@ -31,9 +31,20 @@ This directory hosts the end-to-end coverage for MarkQuote. Playwright drives a 
 - `pnpm test:e2e -- --grep "selection"` – focus a subset by name.
 - `pnpm exec playwright show-trace test-results/<spec>/trace.zip` – inspect failures (screenshots, console logs, network trace).
 
+### Clipboard prerequisites
+
+The suite reads and writes the host clipboard via [`clipboardy`](https://github.com/sindresorhus/clipboardy), which shells out to the platform tools:
+
+- macOS – `pbcopy` / `pbpaste`
+- Linux – `xclip` or `xsel`
+- Windows – PowerShell’s `Get-Clipboard` / `Set-Clipboard`
+
+Install these utilities locally before running the tests; otherwise they will fail early with a descriptive error.
+
 ### Tips
 
 - Use `pnpm dev:playwright` to keep a live dev server + Playwright launcher handy when iterating.
 - Background worker logs appear in the Chrome DevTools “service worker” console; open it via `chrome://extensions` if a spec needs deeper debugging.
-- Clipboard writes require clipboard permissions; specs snapshot the host clipboard with `clipboardy`, poll it until the expected Markdown appears, and restore the original value after each run. This exposes real regressions (some flows are currently marked `test.fail(...)` while we fix the clipboard bugs).
+- Clipboard writes require clipboard permissions; specs snapshot the host clipboard with `clipboardy`, poll it until the expected Markdown appears, and restore the original value after each run.
 - Helpers in `tests/e2e/helpers/background-bridge.ts` expose reset hooks (`resetPreviewState`, `resetHotkeyDiagnostics`, etc.) for multi-step flows—call them before issuing another copy request to avoid stale assertions.
+- The Playwright project runs in headed Chromium; we treat it as a manual verification suite and do not execute it in CI today.

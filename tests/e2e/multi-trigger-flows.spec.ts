@@ -140,7 +140,6 @@ test.describe
       await primaryPage.bringToFront();
 
       clipboardSnapshot = await snapshotSystemClipboard();
-      test.fail(true, "Multi-trigger scenario currently fails to update the clipboard reliably.");
 
       const primaryTab = await findTabByUrl(bridgePage, PRIMARY_URL);
       if (primaryTab.id === null) {
