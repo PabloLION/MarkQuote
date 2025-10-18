@@ -9,16 +9,17 @@
 
 ## Objectives
 
-1. Restore a reliable clipboard write path for every trigger via the synchronous
-   tab-side helper proven in sanity checks.
+1. Restore a reliable clipboard write path for every trigger via a tab-side
+   helper that calls `navigator.clipboard.writeText` under the original user
+   activation.
 2. Prove the behaviour with unit coverage and Playwright flows (no expected
    failure flags).
 3. Document the recovery so future branches know the validated paths.
 
 ## Acceptance Criteria
 
-- ✅ Background pipeline invokes the tab-side copy helper (execCommand-first)
-  for all non-popup flows, with tab ID guard rails.
+- ✅ Background pipeline hands control to the tab-side copy helper for all
+  non-popup flows, with tab ID guard rails.
 - ✅ Unit tests cover: background write success, fallback injection success,
   fallback failure logging.
 - ✅ Playwright specs `[POPUP_COPY]`, `[CONTEXT_COPY]`, `[HOTKEY_FALLBACK]`,
@@ -48,12 +49,10 @@
 2. **Reinstate tab copy path**
    - For non-popup flows, immediately invoke
      `chrome.scripting.executeScript(copySelectionToClipboard, …)` with a
-     validated tab ID and formatted text, ensuring the synchronous
-     `document.execCommand("copy")` path runs under the originating user
-     activation.
-   - Keep `writeClipboardTextFromBackground` only as a last resort (or drop it
-     entirely if it never succeeds); log when it is attempted so regressions are
-     visible.
+     validated tab ID and formatted text so the helper can call
+     `navigator.clipboard.writeText` within the same activation.
+   - Retire attempts to write from the background; instead, log failures and
+     show the manual-copy prompt when the injected helper reports an error.
    - When scripting injection fails, surface the error via `recordError` and
      ensure diagnostics note whether activation may be missing.
 3. **Testing**
