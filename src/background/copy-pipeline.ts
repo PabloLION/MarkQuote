@@ -4,6 +4,7 @@
  */
 import { formatForClipboard } from "../clipboard.js";
 import { writeClipboardTextFromBackground } from "./background-clipboard.js";
+import { copySelectionToClipboard } from "./clipboard-injection.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
 import type { CopySource } from "./types.js";
@@ -189,6 +190,23 @@ async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
   const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
   if (backgroundCopySucceeded) {
     return;
+  }
+
+  let injectionSucceeded = false;
+  if (Number.isInteger(tabId) && tabId >= 0) {
+    try {
+      const [response] = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: copySelectionToClipboard,
+        args: [text],
+      });
+      injectionSucceeded = Boolean((response as { result?: unknown } | undefined)?.result);
+      if (injectionSucceeded) {
+        return;
+      }
+    } catch (error) {
+      console.warn("[MarkQuote] Tab clipboard injection failed", error);
+    }
   }
 
   try {

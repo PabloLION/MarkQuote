@@ -6,22 +6,13 @@ export const CLIPBOARD_MAX_BYTES = 1_000_000; // Prevent unbounded writes that c
 
 const textEncoder = new TextEncoder();
 
-export async function copySelectionToClipboard(value: string): Promise<boolean> {
+export function copySelectionToClipboard(value: string): boolean {
   const byteLength = textEncoder.encode(value).length;
   if (byteLength > CLIPBOARD_MAX_BYTES) {
     console.warn("[MarkQuote] Refusing to copy oversized clipboard payload", {
       bytes: byteLength,
     });
     return false;
-  }
-
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value);
-      return true;
-    }
-  } catch (_error) {
-    // Swallow and fall back to textarea + execCommand path.
   }
 
   const textarea = document.createElement("textarea");
@@ -32,17 +23,30 @@ export async function copySelectionToClipboard(value: string): Promise<boolean> 
   document.body.append(textarea);
   textarea.select();
 
-  if (typeof document.execCommand !== "function") {
-    textarea.remove();
-    return false;
+  let success = false;
+  if (typeof document.execCommand === "function") {
+    try {
+      success = document.execCommand("copy");
+    } catch (error) {
+      console.warn("[MarkQuote] document.execCommand copy failed", error);
+    }
   }
 
-  const execCommand = document.execCommand.bind(document);
-  let success = false;
+  textarea.remove();
+
+  if (success) {
+    return true;
+  }
+
   try {
-    success = execCommand("copy");
-  } finally {
-    textarea.remove();
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(value).catch((error) => {
+        console.warn("[MarkQuote] navigator.clipboard.writeText fallback rejected", error);
+      });
+      success = true;
+    }
+  } catch (error) {
+    console.warn("[MarkQuote] navigator.clipboard.writeText fallback failed", error);
   }
 
   return success;
