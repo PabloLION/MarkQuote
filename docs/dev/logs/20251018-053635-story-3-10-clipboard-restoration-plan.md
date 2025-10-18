@@ -44,6 +44,9 @@
 1. **Diagnose regression**
    - Use `scripts/sanity/playwright-clipboard-copy.ts` to assert that the page
      level synchronous `execCommand` still succeeds with user activation.
+   - Treat the Playwright sanity script as the control: if it succeeds while the
+     extension fails, the regression lives in our pipeline rather than a Chrome
+     limitation.
    - Trace `runCopyPipeline` → clipboard handoff to confirm where the payload is
      dropped (the background currently stops after formatting).
 2. **Reinstate tab copy path**
