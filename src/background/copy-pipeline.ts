@@ -3,7 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
-import { writeClipboardTextFromBackground } from "./background-clipboard.js";
+import { copyTextWithNavigatorClipboard } from "./clipboard-injection.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
 import type { CopySource } from "./types.js";
@@ -72,6 +72,13 @@ export async function runCopyPipeline(
 
   recordE2ePreview(formatted);
 
+  if (source !== "popup") {
+    const success = await copyTextToTab(tabId, formatted, source);
+    if (!success) {
+      recordE2ePreviewError("Tab clipboard write failed");
+    }
+  }
+
   return formatted;
 }
 
@@ -95,7 +102,11 @@ export function markPopupClosed(): void {
   cancelPopupPreviewRetry();
 
   if (queuedPopupPreview && typeof queuedPopupPreview.tabId === "number") {
-    void fallbackCopyToTab(queuedPopupPreview.tabId, queuedPopupPreview.text);
+    void copyTextToTab(
+      queuedPopupPreview.tabId,
+      queuedPopupPreview.text,
+      queuedPopupPreview.source,
+    );
   }
 
   queuedPopupPreview = undefined;
@@ -141,6 +152,57 @@ function cancelPopupPreviewRetry(): void {
   }
 }
 
+async function copyTextToTab(
+  tabId: number | undefined,
+  text: string,
+  source: CopySource | undefined,
+): Promise<boolean> {
+  if (!Number.isInteger(tabId) || tabId === undefined || tabId < 0) {
+    const safeTabId = typeof tabId === "number" && Number.isInteger(tabId) ? tabId : null;
+    void recordError(ERROR_CONTEXT.TabClipboardWrite, "Invalid tab id for clipboard copy", {
+      tabId: safeTabId,
+      source: source ?? "unknown",
+    });
+    return false;
+  }
+
+  if (!chrome.scripting?.executeScript) {
+    void recordError(ERROR_CONTEXT.TabClipboardWrite, "chrome.scripting unavailable", {
+      tabId,
+      source: source ?? "unknown",
+    });
+    return false;
+  }
+
+  try {
+    const [response] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: copyTextWithNavigatorClipboard,
+      args: [text],
+    });
+
+    const result =
+      (response as { result?: { ok?: boolean; error?: string } } | undefined)?.result ?? null;
+    if (result?.ok) {
+      return true;
+    }
+
+    const errorMessage = result?.error ?? "Tab clipboard helper returned no result";
+    void recordError(ERROR_CONTEXT.TabClipboardWrite, errorMessage, {
+      tabId,
+      source: source ?? "unknown",
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    void recordError(ERROR_CONTEXT.TabClipboardWrite, message, {
+      tabId,
+      source: source ?? "unknown",
+    });
+  }
+
+  return false;
+}
+
 async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number): Promise<void> {
   try {
     const documentId = activePopupDocumentId;
@@ -178,25 +240,10 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     void recordError(ERROR_CONTEXT.NotifyPopupPreview, normalizedError);
 
     if (typeof payload.tabId === "number") {
-      void fallbackCopyToTab(payload.tabId, payload.text);
+      void copyTextToTab(payload.tabId, payload.text, payload.source);
     }
 
     recordE2ePreviewError(normalizedError);
-  }
-}
-
-async function fallbackCopyToTab(tabId: number, text: string): Promise<void> {
-  const backgroundCopySucceeded = await writeClipboardTextFromBackground(text);
-  if (backgroundCopySucceeded) {
-    return;
-  }
-
-  try {
-    await recordError(ERROR_CONTEXT.PopupClipboardFallback, "Background clipboard write failed", {
-      tabId,
-    });
-  } catch (error) {
-    console.error("[MarkQuote] Failed to record popup fallback error", error, { tabId });
   }
 }
 

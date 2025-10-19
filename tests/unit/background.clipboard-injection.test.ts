@@ -1,118 +1,78 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  CLIPBOARD_MAX_BYTES,
-  copySelectionToClipboard,
-} from "../../src/background/clipboard-injection.js";
-
-const encoder = new TextEncoder();
+import { copyTextWithNavigatorClipboard } from "../../src/background/clipboard-injection.js";
 
 describe("background/clipboard-injection", () => {
   const originalNavigator = navigator;
-  const originalExecCommand = document.execCommand;
 
   beforeEach(() => {
-    document.body.innerHTML = "";
-  });
-
-  afterEach(() => {
-    document.body.innerHTML = "";
     Object.defineProperty(globalThis, "navigator", {
       configurable: true,
       value: originalNavigator,
     });
-    document.execCommand = originalExecCommand;
   });
 
-  it("uses execCommand when available", () => {
+  afterEach(() => {
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: originalNavigator,
+    });
+    vi.restoreAllMocks();
+  });
+
+  it("returns ok when navigator.clipboard.writeText resolves", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { clipboard: { writeText } },
+    });
+
+    await expect(copyTextWithNavigatorClipboard("example")).resolves.toEqual({ ok: true });
+    expect(writeText).toHaveBeenCalledWith("example");
+  });
+
+  it("returns error details when navigator.clipboard.writeText rejects", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { clipboard: { writeText } },
+    });
+
+    await expect(copyTextWithNavigatorClipboard("fallback")).resolves.toEqual({
+      ok: false,
+      error: "denied",
+    });
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[MarkQuote] navigator.clipboard.writeText rejected",
+      "denied",
+    );
+  });
+
+  it("returns failure when clipboard API is unavailable", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     Object.defineProperty(globalThis, "navigator", {
       configurable: true,
       value: {},
     });
-    const execSpy = vi.fn().mockReturnValue(true);
-    document.execCommand = execSpy as unknown as typeof document.execCommand;
 
-    const result = copySelectionToClipboard("example");
-
-    expect(execSpy).toHaveBeenCalledWith("copy");
-    expect(result).toBe(true);
+    await expect(copyTextWithNavigatorClipboard("missing")).resolves.toEqual({
+      ok: false,
+      error: "Clipboard API unavailable",
+    });
+    expect(warnSpy).toHaveBeenCalledWith("[MarkQuote] navigator.clipboard.writeText unavailable");
   });
 
-  it("falls back to clipboard.writeText when execCommand fails", () => {
-    const writeSpy = vi.fn().mockResolvedValue(undefined);
+  it("stringifies non-error rejections", async () => {
+    const writeText = vi.fn().mockRejectedValue("failure");
     Object.defineProperty(globalThis, "navigator", {
       configurable: true,
-      value: { clipboard: { writeText: writeSpy } },
-    });
-    const execSpy = vi.fn().mockReturnValue(false);
-    document.execCommand = execSpy as unknown as typeof document.execCommand;
-
-    const result = copySelectionToClipboard("fallback text");
-
-    expect(execSpy).toHaveBeenCalledWith("copy");
-    expect(writeSpy).toHaveBeenCalledWith("fallback text");
-    expect(result).toBe(true);
-  });
-
-  it("returns false when execCommand is unavailable and clipboard API missing", () => {
-    Object.defineProperty(globalThis, "navigator", {
-      configurable: true,
-      value: {},
-    });
-    Object.defineProperty(document, "execCommand", {
-      configurable: true,
-      value: undefined,
+      value: { clipboard: { writeText } },
     });
 
-    const result = copySelectionToClipboard("fallback");
-
-    expect(result).toBe(false);
-    expect(document.body.querySelector("textarea")).toBeNull();
-  });
-
-  it("rejects clipboard writes that exceed the size limit", () => {
-    const writeSpy = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(globalThis, "navigator", {
-      configurable: true,
-      value: { clipboard: { writeText: writeSpy } },
+    await expect(copyTextWithNavigatorClipboard("string")).resolves.toEqual({
+      ok: false,
+      error: "failure",
     });
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    const oversized = "x".repeat(1_000_001);
-    const result = copySelectionToClipboard(oversized);
-
-    expect(result).toBe(false);
-    expect(writeSpy).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[MarkQuote] Refusing to copy oversized clipboard payload",
-      expect.objectContaining({ bytes: oversized.length }),
-    );
-
-    consoleSpy.mockRestore();
-  });
-
-  it("measures byte length when enforcing the clipboard cap", () => {
-    const writeSpy = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(globalThis, "navigator", {
-      configurable: true,
-      value: { clipboard: { writeText: writeSpy } },
-    });
-    const consoleSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    const multibyte = "🙂";
-    const bytesPerChar = encoder.encode(multibyte).length;
-    const repetitions = Math.floor(CLIPBOARD_MAX_BYTES / bytesPerChar) + 1;
-    const payload = multibyte.repeat(repetitions);
-
-    const result = copySelectionToClipboard(payload);
-
-    expect(result).toBe(false);
-    expect(writeSpy).not.toHaveBeenCalled();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[MarkQuote] Refusing to copy oversized clipboard payload",
-      expect.objectContaining({ bytes: encoder.encode(payload).length }),
-    );
-
-    consoleSpy.mockRestore();
   });
 });
