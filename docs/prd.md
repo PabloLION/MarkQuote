@@ -96,6 +96,7 @@ The project should include a testing suite. Unit tests should cover individual J
 
 - **Epic 1: Core Functionality & Foundation**
 - **Epic 2: Enhanced Interaction & Configuration**
+- **Epic 3: Launch Hardening & Quality Gates**
 - **Epic 4: Core Stability & Diagnostics**
 
 ### Risk Mitigation Notes
@@ -128,6 +129,23 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 2.3: Basic Settings Page UI**
 - **Story 2.4: Implement Source Link Customization**
 - **Story 2.5: Add Interactive Examples to Settings**
+
+### Epic 3: Launch Hardening & Quality Gates
+
+**Goal:** Mature MarkQuote from feature-complete to release-ready by polishing UI surfaces, hardening build/publish infrastructure, and expanding automated coverage so regressions are caught before shipping.
+
+**Stories & Branch References:**
+
+- **Story 3.1: Finish Options Page** (`feature/3.1-options-editor`) — finalized the template editor, previews, and restoration flows.
+- **Story 3.2: Improve Popup Page** (`feature/3.2-popup-refresh`) — refreshed popup layout and status indicators.
+- **Story 3.3: Expand E2E Coverage** (`feature/e2e-richer-playwright`) — broadened Playwright specs beyond single-trigger happy paths.
+- **Story 3.4: Optimize Manifest & Publishing** (`chore/manifest-hardening`) — minimized permissions, tuned bundling, and updated store collateral.
+- **Story 3.5: Publish Ready** (`story/3.5-publish-ready`) — consolidated release checklist and Chrome Web Store prep.
+- **Story 3.6: UX Polish** (`story/3.6-ux-polish`) — in-flight refinements for visual consistency and onboarding copy.
+- **Story 3.7: Core Refactor** (`story/3.7-core-refactor`) — reorganized background modules and shared utilities.
+- **Story 3.8: Test Coverage & Quality Gate** (`story/3.8-test-coverage`) — established Vitest + Playwright baselines and CI gating.
+- **Story 3.9: End-to-End Coverage** (`feat/story-3-9-end-to-end-coverage`) — delivered the first multi-surface E2E suite.
+- **Story 3.10: E2E Scenario Matrix Hardening** (`feat/story-3-10-e2e-scenario-matrix`) — stress-tested chained copy flows and failure recovery.
 
 ### Epic 4: Core Stability & Diagnostics
 
