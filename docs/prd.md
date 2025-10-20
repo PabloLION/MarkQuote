@@ -96,7 +96,6 @@ The project should include a testing suite. Unit tests should cover individual J
 
 - **Epic 1: Core Functionality & Foundation**
 - **Epic 2: Enhanced Interaction & Configuration**
-- **Epic 3: Clipboard History & Search (Backlogged)**
 - **Epic 4: Core Stability & Diagnostics**
 
 ### Risk Mitigation Notes
@@ -143,10 +142,16 @@ The project should include a testing suite. Unit tests should cover individual J
 
 ## Backlog
 
-### Epic 3: Clipboard History & Search
+### Clipboard History & Search (Backlog Epic)
 
-**Goal:** Provide users with a searchable log of their recent clippings to easily find and reuse content.
-**Potential Stories:** Implement history storage, create a UI to view the history, add a search function, and create a setting for the log's length.
+**Goal:** Provide a MarkQuote Hub surface with tabs for History and Options so users can browse and reuse recent captures without leaving the extension.
+
+**Key Decisions & Implementation Notes:**
+
+- Persist history entries (selection, markdown output, source URL, timestamp) in IndexedDB via Dexie to keep storage manageable inside the background service worker.
+- Build a MiniSearch index on top of the stored entries to support fuzzy queries, per-field weights, and snippet highlights. Serialize the index alongside the data to speed startup.
+- Expose retention controls (max item count, optional age limits) so power users can trim the archive without manual cleanup.
+- Offer clipboard/error export affordances from the Hub, leaning on the existing diagnostics pipeline once Epic 4 ships.
 
 ### Future Stories
 
