@@ -72,11 +72,9 @@ export async function runCopyPipeline(
 
   recordE2ePreview(formatted);
 
-  if (source !== "popup") {
-    const success = await copyTextToTab(tabId, formatted, source);
-    if (!success) {
-      recordE2ePreviewError("Tab clipboard write failed");
-    }
+  const success = await copyTextToTab(tabId, formatted, source);
+  if (!success) {
+    recordE2ePreviewError("Tab clipboard write failed");
   }
 
   return formatted;

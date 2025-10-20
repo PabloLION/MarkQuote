@@ -93,6 +93,12 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
     await selectElementText(articlePage, "#quote", { expectedText: selectionText });
     const expectedPreview = `> ${selectionText}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
 
+    await popupPage.evaluate(() => {
+      // Re-request the selection after Playwright updates the page content to avoid racing the
+      // popup's initial startup message.
+      return chrome.runtime.sendMessage({ type: "request-selection-copy" });
+    });
+
     await expect
       .poll(async () => (await readLastFormatted(popupPage)).formatted, {
         message: "Waiting for background selection pipeline to finish.",

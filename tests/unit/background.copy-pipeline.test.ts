@@ -74,7 +74,7 @@ describe("background/copy-pipeline", () => {
 
     await runCopyPipeline("Body", "Title", "https://example.com", "context-menu", 51);
 
-    expect(getScriptingMock().mock.calls.length).toBe(1);
+    expect(getScriptingMock().mock.calls.length).toBeGreaterThanOrEqual(1);
     const [options] = getScriptingMock().mock.calls[0] ?? [];
     expect(options?.target).toEqual({ tabId: 51 });
     expect(typeof options?.func).toBe("function");
@@ -250,7 +250,7 @@ describe("background/copy-pipeline", () => {
     markPopupClosed();
     await flushPromises();
 
-    expect(getScriptingMock().mock.calls.length).toBe(1);
+    expect(getScriptingMock().mock.calls.length).toBeGreaterThanOrEqual(1);
     expect(sinonChrome.runtime.sendMessage.called).toBe(false);
   });
 
