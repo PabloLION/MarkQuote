@@ -74,9 +74,11 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
   await articlePage.bringToFront();
 
   const systemClipboard = await snapshotSystemClipboard();
-  const popupPage = await openPopupPage(context, extensionId);
+  let popupPage: import("@playwright/test").Page | undefined;
 
   try {
+    popupPage = await openPopupPage(context, extensionId);
+    const activePopupPage = popupPage;
     const nonce = mintClipboardNonce("popup");
     const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
     await articlePage.evaluate(
@@ -93,19 +95,19 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
     await selectElementText(articlePage, "#quote", { expectedText: selectionText });
     const expectedPreview = `> ${selectionText}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
 
-    await popupPage.evaluate(() => {
+    await activePopupPage.evaluate(() => {
       // Re-request the selection after Playwright updates the page content to avoid racing the
       // popup's initial startup message.
       return chrome.runtime.sendMessage({ type: "request-selection-copy" });
     });
 
     await expect
-      .poll(async () => (await readLastFormatted(popupPage)).formatted, {
+      .poll(async () => (await readLastFormatted(activePopupPage)).formatted, {
         message: "Waiting for background selection pipeline to finish.",
       })
       .toBe(expectedPreview);
 
-    const finalStatus = await readLastFormatted(popupPage);
+    const finalStatus = await readLastFormatted(activePopupPage);
     expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
 
     await waitForSystemClipboard(
@@ -115,7 +117,9 @@ test("[POPUP_COPY] popup request pipeline formats the active tab selection", asy
     const clipboardText = await readSystemClipboard();
     assertClipboardContainsNonce(clipboardText, nonce);
   } finally {
-    await popupPage.close().catch(() => {});
+    if (popupPage) {
+      await popupPage.close().catch(() => {});
+    }
     await systemClipboard.restore().catch(() => {});
     await articlePage.close();
   }

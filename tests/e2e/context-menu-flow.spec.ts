@@ -57,9 +57,11 @@ test("[CONTEXT_COPY] context menu copy requests background pipeline", async () =
     origin: new URL(TARGET_URL).origin,
   });
   const systemClipboard = await snapshotSystemClipboard();
-  const bridgePage = await openExtensionPage(context, extensionId, "options.html");
+  let bridgePage: import("@playwright/test").Page | undefined;
 
   try {
+    bridgePage = await openExtensionPage(context, extensionId, "options.html");
+    const activeBridgePage = bridgePage;
     const nonce = mintClipboardNonce("context-menu");
     const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
     const titleText = `${SAMPLE_TITLE} ${nonce.slice(-4)}`;
@@ -76,18 +78,18 @@ test("[CONTEXT_COPY] context menu copy requests background pipeline", async () =
     );
     await selectElementText(articlePage, "#quote", { expectedText: selectionText });
 
-    const tabInfo = await findTabByUrl(bridgePage, `${new URL(TARGET_URL).origin}/*`);
+    const tabInfo = await findTabByUrl(activeBridgePage, `${new URL(TARGET_URL).origin}/*`);
     expect(tabInfo.id).not.toBeNull();
 
-    await resetPreviewState(bridgePage);
-    await triggerContextCopy(bridgePage, {
+    await resetPreviewState(activeBridgePage);
+    await triggerContextCopy(activeBridgePage, {
       tabId: tabInfo.id ?? undefined,
       source: "context-menu",
     });
 
     const expectedPreview = `> ${selectionText}\n> Source: [${titleText}](${TARGET_URL})`;
     await expect
-      .poll(async () => (await readLastFormatted(bridgePage)).formatted, {
+      .poll(async () => (await readLastFormatted(activeBridgePage)).formatted, {
         timeout: 10_000,
         message: "Waiting for context menu copy to finish.",
       })
@@ -100,11 +102,13 @@ test("[CONTEXT_COPY] context menu copy requests background pipeline", async () =
     const clipboardText = await readSystemClipboard();
     assertClipboardContainsNonce(clipboardText, nonce);
 
-    const errors = await getBackgroundErrors(bridgePage);
+    const errors = await getBackgroundErrors(activeBridgePage);
     expect(errors.length).toBe(0);
   } finally {
     await systemClipboard.restore().catch(() => {});
-    await bridgePage.close().catch(() => {});
+    if (bridgePage) {
+      await bridgePage.close().catch(() => {});
+    }
     await articlePage.close();
   }
 });

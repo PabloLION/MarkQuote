@@ -7,9 +7,11 @@ copy strategies.
 ## Prerequisites
 
 - Playwright dependencies installed (`pnpm exec playwright install`).
-- Host clipboard tooling available. macOS ships `pbcopy` by default. Linux
-  users need `xclip` or `xsel`, and Windows relies on PowerShell cmdlets (all
-  handled by `clipboardy`).
+- Host clipboard tooling available. Linux users should install `xclip` or
+  `xsel` (for Debian/Ubuntu run `sudo apt-get install xclip`). Headless macOS
+  runners need the system pasteboard service enabled so `pbcopy`/`pbpaste`
+  work. The Playwright and `clipboardy` helpers raise a
+  `ClipboardSupportError` when these dependencies are missing.
 
 Run scripts with `pnpm exec tsx <script.ts>`.
 

@@ -57,9 +57,11 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
   await articlePage.goto(SAMPLE_URL, { waitUntil: "domcontentloaded" });
   await articlePage.bringToFront();
   const systemClipboard = await snapshotSystemClipboard();
-  const bridgePage = await openExtensionPage(context, extensionId, "options.html");
+  let bridgePage: import("@playwright/test").Page | undefined;
 
   try {
+    bridgePage = await openExtensionPage(context, extensionId, "options.html");
+    const activeBridgePage = bridgePage;
     const nonce = mintClipboardNonce("hotkey");
     const nonceMarkdown = `${SAMPLE_MARKDOWN} ${nonce}`;
     const nonceTitle = `${SAMPLE_TITLE} ${nonce.slice(0, 6)}`;
@@ -78,8 +80,8 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
     );
     await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
 
-    await setHotkeyPinnedState(bridgePage, false);
-    const articleTab = await findTabByUrl(bridgePage, SAMPLE_URL);
+    await setHotkeyPinnedState(activeBridgePage, false);
+    const articleTab = await findTabByUrl(activeBridgePage, SAMPLE_URL);
     if (articleTab.id === null) {
       throw new Error("Unable to locate article tab for hotkey test.");
     }
@@ -87,20 +89,20 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
     await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
     await articlePage.keyboard.press("Alt+C");
 
-    const hardwareAttempt = await getHotkeyDiagnostics(bridgePage);
+    const hardwareAttempt = await getHotkeyDiagnostics(activeBridgePage);
     expect(hardwareAttempt.eventTabId).toBeNull();
     expect(hardwareAttempt.resolvedTabId).toBeNull();
     expect(hardwareAttempt.timestamp).toBe(0);
 
-    await resetHotkeyDiagnostics(bridgePage);
-    await resetPreviewState(bridgePage);
-    await triggerHotkeyCommand(bridgePage, {
+    await resetHotkeyDiagnostics(activeBridgePage);
+    await resetPreviewState(activeBridgePage);
+    await triggerHotkeyCommand(activeBridgePage, {
       forcePinned: false,
       tabId: articleTab.id,
     });
 
     await expect
-      .poll(async () => (await readLastFormatted(bridgePage)).formatted, {
+      .poll(async () => (await readLastFormatted(activeBridgePage)).formatted, {
         timeout: 10_000,
         message: "Waiting for hotkey fallback to capture selection.",
       })
@@ -113,12 +115,12 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
     const clipboardText = await readSystemClipboard();
     assertClipboardContainsNonce(clipboardText, nonce);
 
-    const errors = await getBackgroundErrors(bridgePage);
+    const errors = await getBackgroundErrors(activeBridgePage);
     const contexts = errors.map((entry) => entry.context);
     expect(contexts).toContain("hotkey-open-popup");
     expect(contexts).not.toContain("popup-clipboard-fallback");
 
-    const diagnostics = await getHotkeyDiagnostics(bridgePage);
+    const diagnostics = await getHotkeyDiagnostics(activeBridgePage);
     expect(diagnostics.eventTabId).toBe(articleTab.id);
     expect(diagnostics.resolvedTabId).toBe(articleTab.id);
     expect(diagnostics.timestamp).toBeGreaterThan(0);
@@ -128,7 +130,9 @@ test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned
     expect(diagnostics.injectionError).toBeNull();
   } finally {
     await systemClipboard.restore().catch(() => {});
-    await bridgePage.close().catch(() => {});
+    if (bridgePage) {
+      await bridgePage.close().catch(() => {});
+    }
     await articlePage.close();
   }
 });
