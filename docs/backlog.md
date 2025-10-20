@@ -19,3 +19,5 @@ Concise list of outstanding fixes and refactors.
   `VITE_E2E=true pnpm build` prerequisite.
 - Replace eval-based test timers (`lolex`/`nise`) with safer alternatives.
 - Add Playwright coverage for the error-log lifecycle (seed, badge, popup clear).
+- Add settings toggle to always surface the copy confirmation popup after copy
+  routines (supports users who want the feedback, even on protected pages).
