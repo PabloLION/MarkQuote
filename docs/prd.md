@@ -130,16 +130,6 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 2.4: Implement Source Link Customization**
 - **Story 2.5: Add Interactive Examples to Settings**
 
-### Epic 3: Clipboard History & Search (Updated)
-
-**Goal:** Give users a centralized MarkQuote Hub that records recent captures, supports fuzzy search, and lets them manage retention without leaving the extension. This epic introduces a unified UI surface with tabs for History and Options, MiniSearch-powered querying, and IndexedDB-backed persistence so data survives browser restarts.
-
-**Stories:**
-
-- **Story 3.13: MarkQuote Hub Surface & Navigation**
-- **Story 3.14: History Persistence and MiniSearch Integration**
-- **Story 3.15 (Candidate): Retention Controls & Export Hooks**
-
 ### Epic 4: Core Stability & Diagnostics
 
 **Goal:** Reinforce reliability signals and developer diagnostics so clipboard flows remain actionable even on protected hosts or failure paths. This epic bundles richer error reporting, popup feedback controls, and background hygiene work that keeps state consistent between the worker and visible UI.
@@ -152,6 +142,11 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 4.4 (Candidate): Error Report Export & GitHub Issue Handoff**
 
 ## Backlog
+
+### Epic 3: Clipboard History & Search
+
+**Goal:** Provide users with a searchable log of their recent clippings to easily find and reuse content.
+**Potential Stories:** Implement history storage, create a UI to view the history, add a search function, and create a setting for the log's length.
 
 ### Future Stories
 
