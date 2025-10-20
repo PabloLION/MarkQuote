@@ -1,4 +1,6 @@
+import type { MockInstance } from "vitest";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as backgroundClipboardModule from "../../src/background/background-clipboard.js";
 import {
   getLastPreviewError,
   markPopupClosed,
@@ -41,6 +43,7 @@ function resetRuntimeLastError(): void {
 
 describe("background/copy-pipeline", () => {
   const originalChrome = globalThis.chrome;
+  let writeClipboardSpy: MockInstance<(text: string) => Promise<boolean>>;
   beforeEach(() => {
     sinonChrome.reset();
     sinonChrome.runtime.sendMessage.resolves();
@@ -58,6 +61,10 @@ describe("background/copy-pipeline", () => {
 
     sinonChrome.runtime.id = "test-extension";
     globalThis.chrome = sinonChrome as unknown as typeof chrome;
+
+    writeClipboardSpy = vi
+      .spyOn(backgroundClipboardModule, "writeClipboardTextFromBackground")
+      .mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -80,6 +87,7 @@ describe("background/copy-pipeline", () => {
     expect(typeof options?.func).toBe("function");
     expect(options?.args?.[0]).toContain("Body");
     expect(recordErrorSpy).not.toHaveBeenCalled();
+    expect(writeClipboardSpy).not.toHaveBeenCalled();
   });
 
   it("queues preview until the popup ready handshake and uses document targeting", async () => {
@@ -592,5 +600,51 @@ describe("background/copy-pipeline", () => {
         clearTimeout(id);
       }
     }
+  });
+  it("requests a background clipboard write when the tab injection fails", async () => {
+    const executeMock = getScriptingMock();
+    executeMock.mockResolvedValue([{ result: { ok: false, error: "no user activation" } }]);
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    writeClipboardSpy.mockResolvedValue(true);
+
+    await runCopyPipeline("Fallback body", "Fallback", "https://example.com", "hotkey", 42);
+
+    expect(writeClipboardSpy).toHaveBeenCalledTimes(1);
+    expect(writeClipboardSpy.mock.calls[0]?.[0]).toContain("Fallback body");
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.TabClipboardWrite,
+      "no user activation",
+      expect.objectContaining({
+        tabId: 42,
+        source: "hotkey",
+      }),
+    );
+  });
+
+  it("records preview error when background clipboard write also fails", async () => {
+    const executeMock = getScriptingMock();
+    executeMock.mockResolvedValue([{ result: { ok: false, error: "tab copy rejected" } }]);
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    writeClipboardSpy.mockRejectedValue(new Error("background denied"));
+
+    await runCopyPipeline("Preview", "Title", "https://example.com", "context-menu", 77);
+
+    expect(writeClipboardSpy).toHaveBeenCalledTimes(1);
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.TabClipboardWrite,
+      "tab copy rejected",
+      expect.objectContaining({
+        tabId: 77,
+        source: "context-menu",
+      }),
+    );
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.TabClipboardWrite,
+      "background denied",
+      expect.objectContaining({
+        tabId: 77,
+        source: "context-menu",
+      }),
+    );
   });
 });

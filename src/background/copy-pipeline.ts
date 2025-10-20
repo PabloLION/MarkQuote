@@ -3,6 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { writeClipboardTextFromBackground } from "./background-clipboard.js";
 import { copyTextWithNavigatorClipboard } from "./clipboard-injection.js";
 import { ERROR_CONTEXT } from "./error-context.js";
 import { recordError } from "./errors.js";
@@ -72,9 +73,23 @@ export async function runCopyPipeline(
 
   recordE2ePreview(formatted);
 
-  const success = await copyTextToTab(tabId, formatted, source);
-  if (!success) {
-    recordE2ePreviewError("Tab clipboard write failed");
+  let copySucceeded = await copyTextToTab(tabId, formatted, source);
+
+  if (!copySucceeded) {
+    try {
+      copySucceeded = await writeClipboardTextFromBackground(formatted);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      void recordError(ERROR_CONTEXT.TabClipboardWrite, message, {
+        tabId: typeof tabId === "number" ? tabId : null,
+        source,
+      });
+      copySucceeded = false;
+    }
+  }
+
+  if (!copySucceeded) {
+    recordE2ePreviewError("Clipboard write failed");
   }
 
   return formatted;
