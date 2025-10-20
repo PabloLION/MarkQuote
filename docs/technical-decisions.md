@@ -27,25 +27,25 @@ case.
 This decision prioritizes simplicity, performance, and minimal dependencies for
 an options page with straightforward requirements.
 
-## Clipboard Fallbacks Removed
+## Clipboard Fallback Policy
 
-**Decision:** MarkQuote only uses `navigator.clipboard.writeText` for copy
-operations. We intentionally do **not** maintain a legacy
-`document.execCommand('copy')` fallback.
+**Decision:** Clipboard writes first attempt `navigator.clipboard.writeText` via
+the tab context. We deliberately avoid the legacy `document.execCommand('copy')`
+path, but retain a service-worker clipboard fallback for hotkey flows where the
+tab context lacks a fresh user gesture.
 
-**Reason:** The fallback never succeeds on the protected pages and insecure
-origins where the Clipboard API is unavailable—the browser blocks DOM access
-entirely, so attempting to write via a hidden `<textarea>` adds complexity
-without ever succeeding. Keeping a dead-path fallback obscures the real failure
-mode, duplicates logic, and introduces extra maintenance surface in the
-background worker for no user benefit.
+**Reason:** The DOM-based fallback (hidden `<textarea>` +
+`document.execCommand('copy')`) still fails on protected origins and insecure
+tabs, yet adds maintenance overhead and muddles telemetry. However, when users
+trigger the keyboard shortcut with the action unpinned, Chrome can reject the
+tab-side API while the background worker still has `clipboardWrite` permission.
+Keeping the background fallback preserves the hotkey workflow without
+reintroducing the brittle DOM hack.
 
-- **Clarity:** When the Clipboard API is blocked, the pipeline now bubbles that
-  failure immediately so review of telemetry stays accurate instead of
-  reporting a misleading "fallback triggered".
-- **Security parity:** We still surface the popup on blocked/protected pages so
-  users can copy manually; removing the DOM fallback does not reduce capability
-  because Chrome disallows those writes regardless of implementation.
-- **Maintenance:** Eliminating the unused branch keeps `clipboard-injection.ts`
-  aligned with Chromium's security model and reduces test permutations that
-  cannot pass in practice.
+- **Clarity:** Tab writes report accurate failures, and the background fallback
+  runs only when the tab copy genuinely fails.
+- **Security parity:** Protected URLs still surface the popup so users can copy
+  manually—no DOM injection occurs on restricted pages.
+- **Maintenance:** The clipboard helper remains aligned with Chromium’s security
+  model while the background worker fallback covers the one workflow Chrome
+  still permits programmatically.
