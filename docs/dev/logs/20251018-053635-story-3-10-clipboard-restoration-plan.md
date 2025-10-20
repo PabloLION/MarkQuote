@@ -37,7 +37,16 @@
 - ✅ Refresh Playwright helpers and specs to assert the OS clipboard, removing
   temporary flags.
 - ✅ Update sanity script usage docs and test coverage references.
-- ⏳ Final verification commit capturing command transcripts and notes.
+- ✅ Final verification commit capturing command transcripts and notes.
+
+## Verification Summary (2025-10-18)
+
+- Commands: `pnpm exec vitest run`, `pnpm test:e2e --project=chromium-extension`,
+  `pnpm build`.
+- Result: All unit suites pass; Playwright specs for `[POPUP_COPY]`, `[CONTEXT_COPY]`,
+  `[HOTKEY_FALLBACK]`, `[MULTI_FLOW]` are green; production build succeeds.
+- Follow-up: None. Manual release QA still covers toolbar-icon click and pinned-hotkey
+  flows per coverage doc.
 
 ## Technical Approach
 
