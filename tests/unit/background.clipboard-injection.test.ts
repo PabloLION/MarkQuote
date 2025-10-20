@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { copyTextWithNavigatorClipboard } from "../../src/background/clipboard-injection.js";
+import {
+  CLIPBOARD_MAX_BYTES,
+  copyTextWithNavigatorClipboard,
+} from "../../src/background/clipboard-injection.js";
 
 describe("background/clipboard-injection", () => {
   const originalNavigator = navigator;
@@ -74,5 +77,28 @@ describe("background/clipboard-injection", () => {
       ok: false,
       error: "failure",
     });
+  });
+
+  it("refuses to write payloads that exceed the byte limit", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const oversized = "a".repeat(CLIPBOARD_MAX_BYTES + 1);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      value: { clipboard: { writeText } },
+    });
+
+    await expect(copyTextWithNavigatorClipboard(oversized)).resolves.toEqual({
+      ok: false,
+      error: "Clipboard payload exceeds size limit",
+    });
+    expect(writeText).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[MarkQuote] Refusing to copy oversized clipboard payload",
+      {
+        bytes: CLIPBOARD_MAX_BYTES + 1,
+        limit: CLIPBOARD_MAX_BYTES,
+      },
+    );
   });
 });
