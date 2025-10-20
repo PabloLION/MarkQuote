@@ -1,9 +1,10 @@
-# Story 3.11 – Error Diagnostics and Reporting
+# Backlog – Error Diagnostics and Reporting
 
 ## Overview
 
-Story 3.11 upgrades our error-reporting pipeline so developers and testers can
-reproduce failures quickly. Today the popup surfaces terse messages, there is no
+This backlog item upgrades our error-reporting pipeline so developers and
+testers can reproduce failures quickly. Today the popup surfaces terse messages,
+there is no
 copyable payload, and background logs omit context such as the source trigger or
 tab URL. Smoke testing during Story 3.9 exposed how hard it is to diagnose
 clipboard regressions without richer diagnostics.

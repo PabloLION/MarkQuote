@@ -1,4 +1,4 @@
-# Story 3.12 – Background Naming & Initialization Alignment
+# Backlog – Background Naming & Initialization Alignment
 
 ## Overview
 
