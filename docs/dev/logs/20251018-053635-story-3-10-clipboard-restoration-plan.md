@@ -31,12 +31,12 @@
 
 ## Atomic Commit Breakdown
 
-- ⏳ Route non-popup flows through the guarded tab injection in
+- ✅ Route non-popup flows through the guarded tab injection in
   `copy-pipeline`, keeping detailed logging.
-- ⏳ Add unit coverage for background clipboard fallbacks.
-- ⏳ Refresh Playwright helpers and specs to assert the OS clipboard, removing
+- ✅ Add unit coverage for background clipboard fallbacks.
+- ✅ Refresh Playwright helpers and specs to assert the OS clipboard, removing
   temporary flags.
-- ⏳ Update sanity script usage docs and test coverage references.
+- ✅ Update sanity script usage docs and test coverage references.
 - ⏳ Final verification commit capturing command transcripts and notes.
 
 ## Technical Approach
