@@ -171,6 +171,12 @@ The project should include a testing suite. Unit tests should cover individual J
 - Expose retention controls (max item count, optional age limits) so power users can trim the archive without manual cleanup.
 - Offer clipboard/error export affordances from the Hub, leaning on the existing diagnostics pipeline once Epic 4 ships.
 
+**Candidate Workstreams:**
+
+- MarkQuote Hub surface & navigation (History/Options tabs, entry display, search results).
+- History persistence and MiniSearch integration for fuzzy search and fast reloads.
+- Retention controls plus export hooks for clipboard/error payloads.
+
 ### Future Stories
 
 - **Story: Post-Copy Feedback Popup:** As a user, I want the confirmation popup to appear after every copy by default, with a settings toggle exposed in the popup so I can disable it if I prefer a quieter workflow.
