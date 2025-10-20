@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # MarkQuote Product Requirements Document (PRD)
 
 ## Goals and Background Context
@@ -96,6 +97,7 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Epic 1: Core Functionality & Foundation**
 - **Epic 2: Enhanced Interaction & Configuration**
 - **Epic 3: Clipboard History & Search (Backlogged)**
+- **Epic 4: Core Stability & Diagnostics**
 
 ### Risk Mitigation Notes
 
@@ -128,6 +130,17 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 2.4: Implement Source Link Customization**
 - **Story 2.5: Add Interactive Examples to Settings**
 
+### Epic 4: Core Stability & Diagnostics
+
+**Goal:** Reinforce reliability signals and developer diagnostics so clipboard flows remain actionable even on protected hosts or failure paths. This epic bundles richer error reporting, popup feedback controls, and background hygiene work that keeps state consistent between the worker and visible UI.
+
+**Stories:**
+
+- **Story 4.1: Error Diagnostics and Reporting**
+- **Story 4.2: Popup Feedback Controls & Telemetry Hooks**
+- **Story 4.3: Background Naming & Initialization Alignment**
+- **Story 4.4 (Candidate): Error Report Export & GitHub Issue Handoff**
+
 ## Backlog
 
 ### Epic 3: Clipboard History & Search
@@ -137,9 +150,8 @@ The project should include a testing suite. Unit tests should cover individual J
 
 ### Future Stories
 
-- **Story: Post-Copy Feedback Popup:** As a user, I want an optional popup to appear after a copy action, confirming the success and showing a preview of the copied content, so I have immediate feedback on the operation.
-- **Story: Per-Site Formatting Rules:** As a user, I want to define different source URL formats for different websites (e.g., by domain), so that I can have tailored outputs for my most-used sources.
-- **Story: Selection-Activated Tooltip:** As a user, I want a small tooltip/button to appear near my selected text, so that I have a very fast, contextual way to trigger the copy action. (Includes a "diminishing" dismiss button).
+- **Story: Post-Copy Feedback Popup:** As a user, I want the confirmation popup to appear after every copy by default, with a settings toggle exposed in the popup so I can disable it if I prefer a quieter workflow.
+- **Story: Per-Site Formatting Rules:** As a user, I want to define different source URL formats for different websites (e.g., by domain), so that I can have tailored outputs for my most-used sources. A phased rollout (starting with domain-level presets) keeps the authoring rules simple while we validate the UX.
 
 ## MVP Validation Strategy
 
@@ -170,3 +182,4 @@ Please review this Product Requirements Document (PRD), specifically the 'User I
 ### Architect Prompt
 
 Please review this Product Requirements Document (PRD), including the requirements, epics, stories, and technical assumptions. Your task is to create a comprehensive software architecture document that outlines the technical design for implementing Epic 1.
+<!-- markdownlint-enable MD013 -->
