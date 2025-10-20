@@ -1,15 +1,22 @@
-import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
   findTabByUrl,
   getBackgroundErrors,
   getHotkeyDiagnostics,
   readLastFormatted,
+  resetHotkeyDiagnostics,
+  resetPreviewState,
   setHotkeyPinnedState,
   triggerHotkeyCommand,
 } from "./helpers/background-bridge.js";
+import { assertClipboardContainsNonce, mintClipboardNonce } from "./helpers/clipboard.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
+import {
+  readSystemClipboard,
+  snapshotSystemClipboard,
+  waitForSystemClipboard,
+} from "./helpers/system-clipboard.js";
 
 const SAMPLE_MARKDOWN = "Body text";
 const SAMPLE_TITLE = "Example Article";
@@ -25,9 +32,13 @@ test.afterEach(async () => {
   }
 });
 
-test("[smoke] hotkey fallback copies selection when action is unpinned", async () => {
+test("[HOTKEY_FALLBACK] hotkey fallback copies selection when action is unpinned", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
+
+  await context.grantPermissions(["clipboard-write"], {
+    origin: new URL(SAMPLE_URL).origin,
+  });
 
   await context.route(SAMPLE_URL, async (route) => {
     const html = `<!DOCTYPE html>
@@ -45,108 +56,83 @@ test("[smoke] hotkey fallback copies selection when action is unpinned", async (
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin });
   await articlePage.goto(SAMPLE_URL, { waitUntil: "domcontentloaded" });
   await articlePage.bringToFront();
+  const systemClipboard = await snapshotSystemClipboard();
+  let bridgePage: import("@playwright/test").Page | undefined;
 
-  const initialClipboard = await articlePage.evaluate(async () => {
-    try {
-      return await navigator.clipboard.readText();
-    } catch (error) {
-      throw new Error(
-        `Clipboard read failed before hotkey test: ${(error as Error).message ?? "unknown error"}`,
-      );
-    }
-  });
+  try {
+    bridgePage = await openExtensionPage(context, extensionId, "options.html");
+    const activeBridgePage = bridgePage;
+    const nonce = mintClipboardNonce("hotkey");
+    const nonceMarkdown = `${SAMPLE_MARKDOWN} ${nonce}`;
+    const nonceTitle = `${SAMPLE_TITLE} ${nonce.slice(0, 6)}`;
+    const expectedPreview = `> ${nonceMarkdown}\n> Source: [${nonceTitle}](${SAMPLE_URL})`;
 
-  const nonce = randomUUID();
-  const nonceMarkdown = `${SAMPLE_MARKDOWN} [${nonce}]`;
-  const nonceTitle = `${SAMPLE_TITLE} (${nonce.slice(0, 8)})`;
-  const escapedNonceMarkdown = nonceMarkdown.replace(/\[/g, "\\[").replace(/\]/g, "\\]");
-  const expectedPreview = `> ${escapedNonceMarkdown}\n> Source: [${nonceTitle}](${SAMPLE_URL})`;
-
-  await articlePage.evaluate(
-    ({ text, title }) => {
-      const quote = document.getElementById("quote");
-      if (!quote) {
-        throw new Error("Unable to locate quote element for hotkey test.");
-      }
-      quote.textContent = text;
-      document.title = title;
-    },
-    { text: nonceMarkdown, title: nonceTitle },
-  );
-  await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
-
-  const bridgePage = await openExtensionPage(context, extensionId, "options.html");
-
-  await setHotkeyPinnedState(bridgePage, false);
-  const articleTab = await findTabByUrl(bridgePage, SAMPLE_URL);
-  if (articleTab.id === null) {
-    throw new Error("Unable to locate article tab for hotkey test.");
-  }
-
-  await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
-  await articlePage.keyboard.press("Alt+C");
-
-  const hardwareAttempt = await getHotkeyDiagnostics(bridgePage);
-  expect(hardwareAttempt.eventTabId).toBeNull();
-  expect(hardwareAttempt.resolvedTabId).toBeNull();
-  expect(hardwareAttempt.timestamp).toBe(0);
-
-  await triggerHotkeyCommand(bridgePage, {
-    forcePinned: false,
-    tabId: articleTab.id,
-  });
-
-  let formattedPreview = "";
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const snapshot = await readLastFormatted(bridgePage);
-    formattedPreview = snapshot.formatted;
-    if (formattedPreview) {
-      break;
-    }
-    await bridgePage.waitForTimeout(250);
-  }
-
-  if (!formattedPreview) {
-    const diagnostics = await getHotkeyDiagnostics(bridgePage);
-    const errors = await getBackgroundErrors(bridgePage);
-    throw new Error(
-      `Hotkey fallback did not capture selection. Diagnostics: ${JSON.stringify(
-        diagnostics,
-      )} Errors: ${JSON.stringify(errors)}`,
+    await articlePage.evaluate(
+      ({ text, title }) => {
+        const quote = document.getElementById("quote");
+        if (!quote) {
+          throw new Error("Unable to locate quote element for hotkey test.");
+        }
+        quote.textContent = text;
+        document.title = title;
+      },
+      { text: nonceMarkdown, title: nonceTitle },
     );
-  }
+    await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
 
-  expect(formattedPreview).toBe(expectedPreview);
-
-  const clipboardText = await articlePage.evaluate(async () => {
-    try {
-      return await navigator.clipboard.readText();
-    } catch (error) {
-      throw new Error(
-        `Clipboard read failed after hotkey test: ${(error as Error).message ?? "unknown error"}`,
-      );
+    await setHotkeyPinnedState(activeBridgePage, false);
+    const articleTab = await findTabByUrl(activeBridgePage, SAMPLE_URL);
+    if (articleTab.id === null) {
+      throw new Error("Unable to locate article tab for hotkey test.");
     }
-  });
 
-  await articlePage.evaluate(async (text) => {
-    await navigator.clipboard.writeText(text);
-  }, initialClipboard);
+    await selectElementText(articlePage, "#quote", { expectedText: nonceMarkdown });
+    await articlePage.keyboard.press("Alt+C");
 
-  const errors = await getBackgroundErrors(bridgePage);
-  const contexts = errors.map((entry) => entry.context);
-  expect(contexts).toContain("hotkey-open-popup");
-  expect(contexts).not.toContain("popup-clipboard-fallback");
-  expect(clipboardText).toBe(initialClipboard);
+    const hardwareAttempt = await getHotkeyDiagnostics(activeBridgePage);
+    expect(hardwareAttempt.eventTabId).toBeNull();
+    expect(hardwareAttempt.resolvedTabId).toBeNull();
+    expect(hardwareAttempt.timestamp).toBe(0);
 
-  const diagnostics = await getHotkeyDiagnostics(bridgePage);
-  expect(diagnostics.eventTabId).toBe(articleTab.id);
-  expect(diagnostics.resolvedTabId).toBe(articleTab.id);
-  expect(diagnostics.timestamp).toBeGreaterThan(0);
-  expect(diagnostics.stubSelectionUsed).toBe(false);
-  expect(diagnostics.injectionAttempted).toBe(true);
-  expect(diagnostics.injectionSucceeded).toBe(true);
-  expect(diagnostics.injectionError).toBeNull();
+    await resetHotkeyDiagnostics(activeBridgePage);
+    await resetPreviewState(activeBridgePage);
+    await triggerHotkeyCommand(activeBridgePage, {
+      forcePinned: false,
+      tabId: articleTab.id,
+    });
 
-  await bridgePage.close();
-  await articlePage.close();
+    await expect
+      .poll(async () => (await readLastFormatted(activeBridgePage)).formatted, {
+        timeout: 10_000,
+        message: "Waiting for hotkey fallback to capture selection.",
+      })
+      .toBe(expectedPreview);
+
+    await waitForSystemClipboard(
+      expectedPreview,
+      "Hotkey fallback clipboard did not match expected Markdown.",
+    );
+    const clipboardText = await readSystemClipboard();
+    assertClipboardContainsNonce(clipboardText, nonce);
+
+    const errors = await getBackgroundErrors(activeBridgePage);
+    const contexts = errors.map((entry) => entry.context);
+    expect(contexts).toContain("hotkey-open-popup");
+    expect(contexts).not.toContain("popup-clipboard-fallback");
+
+    const diagnostics = await getHotkeyDiagnostics(activeBridgePage);
+    expect(diagnostics.eventTabId).toBe(articleTab.id);
+    expect(diagnostics.resolvedTabId).toBe(articleTab.id);
+    expect(diagnostics.timestamp).toBeGreaterThan(0);
+    expect(diagnostics.stubSelectionUsed).toBe(false);
+    expect(diagnostics.injectionAttempted).toBe(true);
+    expect(diagnostics.injectionSucceeded).toBe(true);
+    expect(diagnostics.injectionError).toBeNull();
+  } finally {
+    await systemClipboard.restore().catch(() => {});
+    if (bridgePage) {
+      await bridgePage.close().catch(() => {});
+    }
+    await articlePage.close();
+  }
 });

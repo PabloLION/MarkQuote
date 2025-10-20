@@ -687,9 +687,14 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
   cancelHotkeyFallback();
 
   chrome.tabs
-    .query({ lastFocusedWindow: true })
-    .then((tabs) => {
-      const targetTab = pickBestTab(tabs);
+    .query({ lastFocusedWindow: true, windowType: "normal" })
+    .then(async (tabs) => {
+      let targetTab = pickBestTab(tabs);
+
+      if (!targetTab) {
+        const normalTabs = await chrome.tabs.query({ windowType: "normal" });
+        targetTab = pickBestTab(normalTabs);
+      }
 
       if (!targetTab) {
         void recordError(

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readLastFormatted } from "./helpers/background-bridge.js";
+import { assertClipboardContainsNonce, mintClipboardNonce } from "./helpers/clipboard.js";
 import {
   getExtensionId,
   type LaunchExtensionResult,
@@ -7,6 +8,11 @@ import {
   openPopupPage,
 } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
+import {
+  readSystemClipboard,
+  snapshotSystemClipboard,
+  waitForSystemClipboard,
+} from "./helpers/system-clipboard.js";
 
 const WIKIPEDIA_URL =
   "https://en.wikipedia.org/wiki/Markdown?utm_source=chatgpt.com&utm_medium=email";
@@ -52,42 +58,84 @@ test.afterEach(async () => {
   }
 });
 
-test("[smoke] popup request pipeline formats the active tab selection", async () => {
+test("[POPUP_COPY] popup request pipeline formats the active tab selection", async () => {
   const { context, cleanup } = await launchExtensionContext({ colorScheme: "dark" });
   activeCleanup = cleanup;
+
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+    origin: new URL(WIKIPEDIA_URL).origin,
+  });
 
   const extensionId = await getExtensionId(context);
   await stubWikipediaPage(context);
 
   const articlePage = await context.newPage();
   await articlePage.goto(WIKIPEDIA_URL, { waitUntil: "domcontentloaded" });
-
-  await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
   await articlePage.bringToFront();
 
-  const popupPage = await openPopupPage(context, extensionId);
+  const systemClipboard = await snapshotSystemClipboard();
+  let popupPage: import("@playwright/test").Page | undefined;
 
-  const expectedPreview = `> ${SAMPLE_SELECTION}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
+  try {
+    popupPage = await openPopupPage(context, extensionId);
+    const activePopupPage = popupPage;
+    const nonce = mintClipboardNonce("popup");
+    const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
+    await articlePage.evaluate(
+      ({ text }) => {
+        const quote = document.getElementById("quote");
+        if (!quote) {
+          throw new Error("Unable to locate quote element for popup spec.");
+        }
+        quote.textContent = text;
+      },
+      { text: selectionText },
+    );
 
-  await expect
-    .poll(async () => (await readLastFormatted(popupPage)).formatted, {
-      message: "Waiting for background selection pipeline to finish.",
-    })
-    .toBe(expectedPreview);
+    await selectElementText(articlePage, "#quote", { expectedText: selectionText });
+    const expectedPreview = `> ${selectionText}\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown?utm_medium=email)`;
 
-  const finalStatus = await readLastFormatted(popupPage);
-  expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
+    await activePopupPage.evaluate(() => {
+      // Re-request the selection after Playwright updates the page content to avoid racing the
+      // popup's initial startup message.
+      return chrome.runtime.sendMessage({ type: "request-selection-copy" });
+    });
 
-  await popupPage.close();
-  await articlePage.close();
+    await expect
+      .poll(async () => (await readLastFormatted(activePopupPage)).formatted, {
+        message: "Waiting for background selection pipeline to finish.",
+      })
+      .toBe(expectedPreview);
+
+    const finalStatus = await readLastFormatted(activePopupPage);
+    expect(finalStatus).toEqual({ formatted: expectedPreview, error: undefined });
+
+    await waitForSystemClipboard(
+      expectedPreview,
+      "Popup clipboard did not match expected Markdown.",
+    );
+    const clipboardText = await readSystemClipboard();
+    assertClipboardContainsNonce(clipboardText, nonce);
+  } finally {
+    if (popupPage) {
+      await popupPage.close().catch(() => {});
+    }
+    await systemClipboard.restore().catch(() => {});
+    await articlePage.close();
+  }
 });
 
 const COLOR_SCHEMES: Array<"dark" | "light"> = ["dark", "light"];
 
 for (const colorScheme of COLOR_SCHEMES) {
-  test(`renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
+  const tag = colorScheme === "dark" ? "[POPUP_DARK]" : "[POPUP_LIGHT]";
+  test(`${tag} renders formatted markdown for a Wikipedia selection (${colorScheme})`, async () => {
     const { context, cleanup } = await launchExtensionContext({ colorScheme });
     activeCleanup = cleanup;
+
+    await context.grantPermissions(["clipboard-write"], {
+      origin: new URL(WIKIPEDIA_URL).origin,
+    });
 
     await stubWikipediaPage(context);
 

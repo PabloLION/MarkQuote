@@ -8,6 +8,15 @@ const flushMicrotasks = async () => {
 };
 
 let handleE2eMessage: typeof import("../../src/background/e2e.js").handleE2eMessage;
+let updateHotkeyDiagnostics: typeof import("../../src/background/e2e.js").updateHotkeyDiagnostics;
+let getHotkeyDiagnostics: typeof import("../../src/background/e2e.js").getHotkeyDiagnostics;
+let resetHotkeyDiagnosticsFn: typeof import("../../src/background/e2e.js").resetHotkeyDiagnostics;
+let consumeForcedHotkeyPinnedState: typeof import("../../src/background/e2e.js").consumeForcedHotkeyPinnedState;
+let runCopyPipeline: typeof import("../../src/background/copy-pipeline.js").runCopyPipeline;
+let getLastFormattedPreview: typeof import("../../src/background/copy-pipeline.js").getLastFormattedPreview;
+let getLastPreviewError: typeof import("../../src/background/copy-pipeline.js").getLastPreviewError;
+let setLastPreviewError: typeof import("../../src/background/copy-pipeline.js").setLastPreviewError;
+let resetE2ePreviewState: typeof import("../../src/background/copy-pipeline.js").resetE2ePreviewState;
 const originalE2E = process.env.VITE_E2E;
 
 describe("handleE2eMessage", () => {
@@ -17,7 +26,20 @@ describe("handleE2eMessage", () => {
     globalThis.chrome = chrome;
     process.env.VITE_E2E = "true";
     vi.resetModules();
-    ({ handleE2eMessage } = await import("../../src/background/e2e.js"));
+    ({
+      handleE2eMessage,
+      updateHotkeyDiagnostics,
+      getHotkeyDiagnostics,
+      resetHotkeyDiagnostics: resetHotkeyDiagnosticsFn,
+      consumeForcedHotkeyPinnedState,
+    } = await import("../../src/background/e2e.js"));
+    ({
+      runCopyPipeline,
+      getLastFormattedPreview,
+      getLastPreviewError,
+      setLastPreviewError,
+      resetE2ePreviewState,
+    } = await import("../../src/background/copy-pipeline.js"));
   });
 
   afterEach(() => {
@@ -204,6 +226,93 @@ describe("handleE2eMessage", () => {
 
     expect(resetStorage).toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+  });
+
+  it("resets the preview state via message", async () => {
+    resetE2ePreviewState();
+    await runCopyPipeline("Example markdown", "Example title", "https://example.com", "popup");
+    setLastPreviewError("previous error");
+
+    expect(getLastFormattedPreview()).not.toBe("");
+    expect(getLastPreviewError()).toBe("previous error");
+
+    const sendResponse = vi.fn();
+    const handled = handleE2eMessage({
+      request: { type: "e2e:reset-preview-state" },
+      sender: { tab: undefined } as any,
+      sendResponse,
+      persistOptions: vi.fn(),
+      recordError: vi.fn(),
+      triggerCopy: vi.fn(),
+      triggerCommand: vi.fn(),
+      getErrorLog: vi.fn(),
+      clearErrorLog: vi.fn(),
+      resetStorage: vi.fn(),
+    });
+
+    expect(handled).toBe(true);
+    await flushMicrotasks();
+
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+    expect(getLastFormattedPreview()).toBe("");
+    expect(getLastPreviewError()).toBeUndefined();
+  });
+
+  it("resets hotkey diagnostics via message", async () => {
+    resetHotkeyDiagnosticsFn();
+    updateHotkeyDiagnostics({
+      eventTabId: 77,
+      resolvedTabId: 77,
+      stubSelectionUsed: true,
+      injectionAttempted: true,
+      injectionSucceeded: false,
+      injectionError: "failed",
+    });
+
+    const setPinnedResponse = vi.fn();
+    const setPinnedHandled = handleE2eMessage({
+      request: { type: "e2e:set-hotkey-pinned", pinned: true },
+      sender: { tab: undefined } as any,
+      sendResponse: setPinnedResponse,
+      persistOptions: vi.fn(),
+      recordError: vi.fn(),
+      triggerCopy: vi.fn(),
+      triggerCommand: vi.fn(),
+      getErrorLog: vi.fn(),
+      clearErrorLog: vi.fn(),
+      resetStorage: vi.fn(),
+    });
+
+    expect(setPinnedHandled).toBe(true);
+    await flushMicrotasks();
+    expect(setPinnedResponse).toHaveBeenCalledWith({ ok: true });
+
+    const sendResponse = vi.fn();
+    const handled = handleE2eMessage({
+      request: { type: "e2e:reset-hotkey-diagnostics" },
+      sender: { tab: undefined } as any,
+      sendResponse,
+      persistOptions: vi.fn(),
+      recordError: vi.fn(),
+      triggerCopy: vi.fn(),
+      triggerCommand: vi.fn(),
+      getErrorLog: vi.fn(),
+      clearErrorLog: vi.fn(),
+      resetStorage: vi.fn(),
+    });
+
+    expect(handled).toBe(true);
+    await flushMicrotasks();
+
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true });
+    const diagnostics = getHotkeyDiagnostics();
+    expect(diagnostics.eventTabId).toBeNull();
+    expect(diagnostics.resolvedTabId).toBeNull();
+    expect(diagnostics.stubSelectionUsed).toBe(false);
+    expect(diagnostics.injectionAttempted).toBe(false);
+    expect(diagnostics.injectionSucceeded).toBeNull();
+    expect(diagnostics.injectionError).toBeNull();
+    expect(consumeForcedHotkeyPinnedState()).toBeUndefined();
   });
   it("returns the active tab metadata", async () => {
     chrome.tabs.query.resolves([

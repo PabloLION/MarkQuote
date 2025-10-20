@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 MD036 -->
+
 # Plan: Retire E2E Selection Stub & Verify Real Clipboard Flow
 
 ## Research Tasks (no code commits)

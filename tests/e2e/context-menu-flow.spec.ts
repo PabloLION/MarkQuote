@@ -3,16 +3,21 @@ import {
   findTabByUrl,
   getBackgroundErrors,
   readLastFormatted,
+  resetPreviewState,
   triggerContextCopy,
 } from "./helpers/background-bridge.js";
+import { assertClipboardContainsNonce, mintClipboardNonce } from "./helpers/clipboard.js";
 import { getExtensionId, launchExtensionContext, openExtensionPage } from "./helpers/extension.js";
 import { selectElementText } from "./helpers/selection.js";
+import {
+  readSystemClipboard,
+  snapshotSystemClipboard,
+  waitForSystemClipboard,
+} from "./helpers/system-clipboard.js";
 
 const TARGET_URL = "https://example.com/context-menu";
 const SAMPLE_SELECTION = "Context menu sample";
 const SAMPLE_TITLE = "Context Menu Target";
-const EXPECTED_PREVIEW = `> ${SAMPLE_SELECTION}\n> Source: [${SAMPLE_TITLE}](${TARGET_URL})`;
-
 let activeCleanup: (() => Promise<void>) | undefined;
 
 test.afterEach(async () => {
@@ -23,9 +28,13 @@ test.afterEach(async () => {
   }
 });
 
-test("[smoke] context menu copy requests background pipeline", async () => {
+test("[CONTEXT_COPY] context menu copy requests background pipeline", async () => {
   const { context, cleanup } = await launchExtensionContext();
   activeCleanup = cleanup;
+
+  await context.grantPermissions(["clipboard-write"], {
+    origin: new URL(TARGET_URL).origin,
+  });
 
   await context.route(TARGET_URL, async (route) => {
     const html = `<!DOCTYPE html>
@@ -43,28 +52,63 @@ test("[smoke] context menu copy requests background pipeline", async () => {
   const extensionId = await getExtensionId(context);
   const articlePage = await context.newPage();
   await articlePage.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
-  await selectElementText(articlePage, "#quote", { expectedText: SAMPLE_SELECTION });
   await articlePage.bringToFront();
-
-  const bridgePage = await openExtensionPage(context, extensionId, "options.html");
-  const tabInfo = await findTabByUrl(bridgePage, `${new URL(TARGET_URL).origin}/*`);
-  expect(tabInfo.id).not.toBeNull();
-
-  await triggerContextCopy(bridgePage, {
-    tabId: tabInfo.id ?? undefined,
-    source: "context-menu",
+  await context.grantPermissions(["clipboard-read", "clipboard-write"], {
+    origin: new URL(TARGET_URL).origin,
   });
+  const systemClipboard = await snapshotSystemClipboard();
+  let bridgePage: import("@playwright/test").Page | undefined;
 
-  await expect
-    .poll(async () => (await readLastFormatted(bridgePage)).formatted, {
-      timeout: 10_000,
-      message: "Waiting for context menu copy to finish.",
-    })
-    .toBe(EXPECTED_PREVIEW);
+  try {
+    bridgePage = await openExtensionPage(context, extensionId, "options.html");
+    const activeBridgePage = bridgePage;
+    const nonce = mintClipboardNonce("context-menu");
+    const selectionText = `${SAMPLE_SELECTION} ${nonce}`;
+    const titleText = `${SAMPLE_TITLE} ${nonce.slice(-4)}`;
+    await articlePage.evaluate(
+      ({ selection, title }) => {
+        const quote = document.getElementById("quote");
+        if (!quote) {
+          throw new Error("Quote element missing for context-menu spec.");
+        }
+        quote.textContent = selection;
+        document.title = title;
+      },
+      { selection: selectionText, title: titleText },
+    );
+    await selectElementText(articlePage, "#quote", { expectedText: selectionText });
 
-  const errors = await getBackgroundErrors(bridgePage);
-  expect(errors.length).toBe(0);
+    const tabInfo = await findTabByUrl(activeBridgePage, `${new URL(TARGET_URL).origin}/*`);
+    expect(tabInfo.id).not.toBeNull();
 
-  await bridgePage.close();
-  await articlePage.close();
+    await resetPreviewState(activeBridgePage);
+    await triggerContextCopy(activeBridgePage, {
+      tabId: tabInfo.id ?? undefined,
+      source: "context-menu",
+    });
+
+    const expectedPreview = `> ${selectionText}\n> Source: [${titleText}](${TARGET_URL})`;
+    await expect
+      .poll(async () => (await readLastFormatted(activeBridgePage)).formatted, {
+        timeout: 10_000,
+        message: "Waiting for context menu copy to finish.",
+      })
+      .toBe(expectedPreview);
+
+    await waitForSystemClipboard(
+      expectedPreview,
+      "Context menu clipboard did not match expected Markdown.",
+    );
+    const clipboardText = await readSystemClipboard();
+    assertClipboardContainsNonce(clipboardText, nonce);
+
+    const errors = await getBackgroundErrors(activeBridgePage);
+    expect(errors.length).toBe(0);
+  } finally {
+    await systemClipboard.restore().catch(() => {});
+    if (bridgePage) {
+      await bridgePage.close().catch(() => {});
+    }
+    await articlePage.close();
+  }
 });

@@ -28,6 +28,8 @@ export async function copyMarkdownToClipboard(text: string): Promise<boolean> {
   textarea.remove();
   if (!success) {
     console.warn('document.execCommand("copy") returned false; manual copy prompt may be needed.');
+    return false;
   }
-  return success;
+
+  return true;
 }

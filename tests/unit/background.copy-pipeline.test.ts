@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
-import * as backgroundClipboard from "../../src/background/background-clipboard.js";
+import type { MockInstance } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as backgroundClipboardModule from "../../src/background/background-clipboard.js";
 import {
   getLastPreviewError,
   markPopupClosed,
@@ -42,8 +43,7 @@ function resetRuntimeLastError(): void {
 
 describe("background/copy-pipeline", () => {
   const originalChrome = globalThis.chrome;
-  let writeClipboardSpy: MockInstance<typeof backgroundClipboard.writeClipboardTextFromBackground>;
-
+  let writeClipboardSpy: MockInstance<(text: string) => Promise<boolean>>;
   beforeEach(() => {
     sinonChrome.reset();
     sinonChrome.runtime.sendMessage.resolves();
@@ -57,14 +57,14 @@ describe("background/copy-pipeline", () => {
     } else {
       sinonWithScripting.scripting.executeScript = vi.fn();
     }
-    sinonWithScripting.scripting.executeScript.mockResolvedValue([{ result: true }]);
+    sinonWithScripting.scripting.executeScript.mockResolvedValue([{ result: { ok: true } }]);
 
     sinonChrome.runtime.id = "test-extension";
     globalThis.chrome = sinonChrome as unknown as typeof chrome;
 
     writeClipboardSpy = vi
-      .spyOn(backgroundClipboard, "writeClipboardTextFromBackground")
-      .mockResolvedValue(false);
+      .spyOn(backgroundClipboardModule, "writeClipboardTextFromBackground")
+      .mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -76,26 +76,18 @@ describe("background/copy-pipeline", () => {
     vi.restoreAllMocks();
   });
 
-  it("uses background clipboard write when available", async () => {
+  it("invokes tab injection for non-popup sources", async () => {
     const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
-    writeClipboardSpy.mockResolvedValueOnce(true);
-    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
-    Object.defineProperty(sinonChrome.runtime, "lastError", {
-      configurable: true,
-      get: () => ({ message: "fatal" }),
-    });
 
-    await runCopyPipeline("Body", "Title", "https://example.com", "popup", 51);
-    markPopupReady();
-    await flushPromises();
+    await runCopyPipeline("Body", "Title", "https://example.com", "context-menu", 51);
 
-    expect(writeClipboardSpy).toHaveBeenCalled();
-    expect(getScriptingMock().mock.calls.length).toBe(0);
-    expect(recordErrorSpy).not.toHaveBeenCalledWith(
-      ERROR_CONTEXT.PopupClipboardFallback,
-      expect.anything(),
-      expect.anything(),
-    );
+    expect(getScriptingMock().mock.calls.length).toBeGreaterThanOrEqual(1);
+    const [options] = getScriptingMock().mock.calls[0] ?? [];
+    expect(options?.target).toEqual({ tabId: 51 });
+    expect(typeof options?.func).toBe("function");
+    expect(options?.args?.[0]).toContain("Body");
+    expect(recordErrorSpy).not.toHaveBeenCalled();
+    expect(writeClipboardSpy).not.toHaveBeenCalled();
   });
 
   it("queues preview until the popup ready handshake and uses document targeting", async () => {
@@ -252,10 +244,9 @@ describe("background/copy-pipeline", () => {
     await flushPromises();
 
     expect(sinonChrome.runtime.sendMessage.callCount).toBeGreaterThanOrEqual(3);
-    expect(recordErrorSpy).toHaveBeenCalledTimes(1);
-    const [context, error] = recordErrorSpy.mock.calls[0];
-    expect(context).toBe(ERROR_CONTEXT.NotifyPopupPreview);
-    expect(error).toBe("send failed");
+    expect(
+      recordErrorSpy.mock.calls.some(([context]) => context === ERROR_CONTEXT.NotifyPopupPreview),
+    ).toBe(true);
     expect(getScriptingMock().mock.calls.length).toBeGreaterThan(0);
   });
 
@@ -267,7 +258,7 @@ describe("background/copy-pipeline", () => {
     markPopupClosed();
     await flushPromises();
 
-    expect(getScriptingMock().mock.calls.length).toBeGreaterThan(0);
+    expect(getScriptingMock().mock.calls.length).toBeGreaterThanOrEqual(1);
     expect(sinonChrome.runtime.sendMessage.called).toBe(false);
   });
 
@@ -290,9 +281,9 @@ describe("background/copy-pipeline", () => {
     await flushPromises();
 
     const contexts = recordErrorSpy.mock.calls.map(([context]) => context);
-    expect(contexts).toContain(ERROR_CONTEXT.PopupClipboardFallback);
+    expect(contexts).toContain(ERROR_CONTEXT.TabClipboardWrite);
     expect(getLastPreviewError()).toBeUndefined();
-    expect(getScriptingMock().mock.calls.length).toBeGreaterThan(0);
+    expect(getScriptingMock()).toHaveBeenCalled();
     vi.useRealTimers();
   });
 
@@ -437,17 +428,16 @@ describe("background/copy-pipeline", () => {
       get: () => ({ message: "fatal" }),
     });
     const scriptingMock = getScriptingMock();
-    scriptingMock.mockResolvedValueOnce([{ result: false }]);
+    scriptingMock.mockResolvedValueOnce([{ result: { ok: false, error: "denied" } }]);
 
     await runCopyPipeline("Body", "Title", "https://example.com", "popup", 88);
     markPopupReady();
     await flushPromises();
 
-    expect(recordErrorSpy).toHaveBeenCalledWith(
-      ERROR_CONTEXT.PopupClipboardFallback,
-      "Failed to copy via fallback",
-      { tabId: 88 },
-    );
+    expect(recordErrorSpy).toHaveBeenCalledWith(ERROR_CONTEXT.TabClipboardWrite, "denied", {
+      tabId: 88,
+      source: "popup",
+    });
   });
 
   it("records fallback error when script injection throws", async () => {
@@ -465,7 +455,7 @@ describe("background/copy-pipeline", () => {
 
     const contexts = recordErrorSpy.mock.calls.map(([context]) => context);
     expect(
-      contexts.filter((context) => context === ERROR_CONTEXT.PopupClipboardFallback).length,
+      contexts.filter((context) => context === ERROR_CONTEXT.TabClipboardWrite).length,
     ).toBeGreaterThan(0);
   });
 
@@ -483,9 +473,9 @@ describe("background/copy-pipeline", () => {
 
     expect(getScriptingMock().mock.calls.length).toBe(0);
     expect(recordErrorSpy).toHaveBeenCalledWith(
-      ERROR_CONTEXT.PopupClipboardFallback,
-      "Invalid tabId for fallback copy",
-      { tabId: Number.NaN },
+      ERROR_CONTEXT.TabClipboardWrite,
+      "Invalid tab id for clipboard copy",
+      { tabId: null, source: "popup" },
     );
   });
 
@@ -611,37 +601,50 @@ describe("background/copy-pipeline", () => {
       }
     }
   });
+  it("requests a background clipboard write when the tab injection fails", async () => {
+    const executeMock = getScriptingMock();
+    executeMock.mockResolvedValue([{ result: { ok: false, error: "no user activation" } }]);
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    writeClipboardSpy.mockResolvedValue(true);
 
-  it("logs when fallback error persistence fails", async () => {
-    vi.useFakeTimers();
-    const persistError = new Error("persist failed");
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(errorsModule, "recordError").mockImplementation(async (context, _error, _extra) => {
-      if (context === ERROR_CONTEXT.PopupClipboardFallback) {
-        throw persistError;
-      }
-      return Promise.resolve();
-    });
-    sinonChrome.runtime.sendMessage.rejects(new Error("fatal"));
-    Object.defineProperty(sinonChrome.runtime, "lastError", {
-      configurable: true,
-      get: () => ({ message: "fatal" }),
-    });
-    getScriptingMock().mockRejectedValueOnce(new Error("inject failed"));
+    await runCopyPipeline("Fallback body", "Fallback", "https://example.com", "hotkey", 42);
 
-    await runCopyPipeline("Body", "Title", "https://example.com", "popup", 777);
-    markPopupReady();
-
-    await vi.runOnlyPendingTimersAsync();
-    await flushPromises();
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[MarkQuote] Failed to record popup fallback error",
-      persistError,
-      expect.objectContaining({ tabId: 777, originalError: expect.any(Error) }),
+    expect(writeClipboardSpy).toHaveBeenCalledTimes(1);
+    expect(writeClipboardSpy.mock.calls[0]?.[0]).toContain("Fallback body");
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.TabClipboardWrite,
+      "no user activation",
+      expect.objectContaining({
+        tabId: 42,
+        source: "hotkey",
+      }),
     );
+  });
 
-    consoleSpy.mockRestore();
-    vi.useRealTimers();
+  it("records preview error when background clipboard write also fails", async () => {
+    const executeMock = getScriptingMock();
+    executeMock.mockResolvedValue([{ result: { ok: false, error: "tab copy rejected" } }]);
+    const recordErrorSpy = vi.spyOn(errorsModule, "recordError").mockResolvedValue();
+    writeClipboardSpy.mockRejectedValue(new Error("background denied"));
+
+    await runCopyPipeline("Preview", "Title", "https://example.com", "context-menu", 77);
+
+    expect(writeClipboardSpy).toHaveBeenCalledTimes(1);
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.TabClipboardWrite,
+      "tab copy rejected",
+      expect.objectContaining({
+        tabId: 77,
+        source: "context-menu",
+      }),
+    );
+    expect(recordErrorSpy).toHaveBeenCalledWith(
+      ERROR_CONTEXT.TabClipboardWrite,
+      "background denied",
+      expect.objectContaining({
+        tabId: 77,
+        source: "context-menu",
+      }),
+    );
   });
 });

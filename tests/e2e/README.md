@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD013 -->
+
 # Playwright Suite Overview
 
 This directory hosts the end-to-end coverage for MarkQuote. Playwright drives a real Chromium profile with the packaged extension so we can exercise the popup, background worker, and options UI together.
@@ -14,18 +16,35 @@ This directory hosts the end-to-end coverage for MarkQuote. Playwright drives a 
 
 ## Covered Scenarios
 
-- **Popup smoke:** the “Feedback” button opens the project repository in a new tab.
-- **Selection → preview pipeline:** stubs a Wikipedia article, selects text, fires the background copy request, and asserts the popup preview + clipboard message. Runs in both light and dark color schemes.
+- **Multi-trigger matrix (smoke):** exercises popup → hotkey fallback → context menu chains within a single browser session, verifying preview strings, hotkey diagnostics, and clipboard resets as flows succeed or hit protected pages (`tests/e2e/multi-trigger-flows.spec.ts`).
+- **Popup pipeline:** stubs a Wikipedia article, selects text, fires the background copy request, and asserts the popup preview. Runs in both light and dark color schemes.
+- **Hotkey fallback:** simulates the keyboard shortcut when the toolbar icon is hidden, confirming the background logs the warning and still formats the captured selection.
+- **Context menu bridge:** triggers the background copy handler directly from an options bridge page, ensuring preview + error log behaviour stays healthy.
 - **Options editing via UI:** fills in rule fields, saves through the real form, and verifies the popup preview reflects the updated template and replacement rules in the same session.
-- **Rule break / continue behavior:** seeds deterministic URL rules (UTM stripping + Amazon canonicalization), triggers the popup twice, and confirms the formatted output respects breakpoints versus continued matching.
+- **Rule break / continue behaviour:** seeds deterministic URL rules (UTM stripping + Amazon canonicalisation), triggers the popup twice, and confirms the formatted output respects breakpoints versus continued matching.
+- **Onboarding defaults & feedback CTA:** validates the first-run template plus the Feedback button routing.
 
 ## Running the Suite
 
 - `pnpm test:e2e` – rebuilds the extension and runs every spec.
+- `pnpm test:e2e -- --grep "\[smoke\]"` – run the multi-trigger matrix only.
 - `pnpm test:e2e -- --grep "selection"` – focus a subset by name.
 - `pnpm exec playwright show-trace test-results/<spec>/trace.zip` – inspect failures (screenshots, console logs, network trace).
+
+### Clipboard prerequisites
+
+The suite reads and writes the host clipboard via [`clipboardy`](https://github.com/sindresorhus/clipboardy), which shells out to the platform tools:
+
+- macOS – `pbcopy` / `pbpaste`
+- Linux – `xclip` or `xsel`
+- Windows – PowerShell’s `Get-Clipboard` / `Set-Clipboard`
+
+Install these utilities locally before running the tests; otherwise they will fail early with a descriptive error.
 
 ### Tips
 
 - Use `pnpm dev:playwright` to keep a live dev server + Playwright launcher handy when iterating.
 - Background worker logs appear in the Chrome DevTools “service worker” console; open it via `chrome://extensions` if a spec needs deeper debugging.
+- Clipboard writes require clipboard permissions; specs snapshot the host clipboard with `clipboardy`, poll it until the expected Markdown appears, and restore the original value after each run.
+- Helpers in `tests/e2e/helpers/background-bridge.ts` expose reset hooks (`resetPreviewState`, `resetHotkeyDiagnostics`, etc.) for multi-step flows—call them before issuing another copy request to avoid stale assertions.
+- The Playwright project runs in headed Chromium; we treat it as a manual verification suite and do not execute it in CI today.

@@ -11,7 +11,7 @@ export const ERROR_CONTEXT = {
   ContextMenusRemoveAll: "context-menus-remove-all",
   ContextMenusCreate: "context-menus-create",
   NotifyPopupPreview: "notify-popup-preview",
-  PopupClipboardFallback: "popup-clipboard-fallback",
+  TabClipboardWrite: "tab-clipboard-write",
   PersistOptionsE2E: "persist-options-e2e",
   InvalidOptionsPayload: "invalid-options-payload",
 } as const;

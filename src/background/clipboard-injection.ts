@@ -1,51 +1,47 @@
 /**
- * Clipboard helper passed to `chrome.scripting.executeScript` so we can exercise the behaviour in
- * isolation during unit tests. The function runs within the target page context.
+ * Clipboard helper passed to `chrome.scripting.executeScript`. Runs within the page context under
+ * the original user activation so that `navigator.clipboard.writeText` is permitted.
  */
 export const CLIPBOARD_MAX_BYTES = 1_000_000; // Prevent unbounded writes that could hang target pages.
 
-const textEncoder = new TextEncoder();
-
-export async function copySelectionToClipboard(value: string): Promise<boolean> {
+export async function copyTextWithNavigatorClipboard(value: string): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  const maxBytes = 1_000_000;
+  const textEncoder = new TextEncoder();
   const byteLength = textEncoder.encode(value).length;
-  if (byteLength > CLIPBOARD_MAX_BYTES) {
+  if (byteLength > maxBytes) {
     console.warn("[MarkQuote] Refusing to copy oversized clipboard payload", {
       bytes: byteLength,
+      limit: maxBytes,
     });
-    return false;
+    return {
+      ok: false,
+      error: "Clipboard payload exceeds size limit",
+    };
+  }
+
+  const clipboard = navigator.clipboard;
+  if (!clipboard || typeof clipboard.writeText !== "function") {
+    console.warn("[MarkQuote] navigator.clipboard.writeText unavailable");
+    return {
+      ok: false,
+      error: "Clipboard API unavailable",
+    };
   }
 
   try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value);
-      return true;
-    }
-  } catch (_error) {
-    // Swallow and fall back to textarea + execCommand path.
+    await clipboard.writeText(value);
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn("[MarkQuote] navigator.clipboard.writeText rejected", message);
+    return {
+      ok: false,
+      error: message,
+    };
   }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = value;
-  textarea.setAttribute("readonly", "true");
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.append(textarea);
-  textarea.select();
-
-  if (typeof document.execCommand !== "function") {
-    textarea.remove();
-    return false;
-  }
-
-  const execCommand = document.execCommand.bind(document);
-  let success = false;
-  try {
-    success = execCommand("copy");
-  } finally {
-    textarea.remove();
-  }
-
-  return success;
 }
 
-export type CopySelectionToClipboard = typeof copySelectionToClipboard;
+export type CopyTextWithNavigatorClipboard = typeof copyTextWithNavigatorClipboard;
