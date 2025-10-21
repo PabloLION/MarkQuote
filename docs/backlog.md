@@ -14,11 +14,7 @@ Concise list of outstanding fixes and refactors, grouped by focus area.
 
 ## Diagnostics & Feedback
 
-1. Enrich error diagnostics and expose a “Copy error details” action in the popup.
-2. Add Playwright coverage for the error-log lifecycle (seed, badge, popup clear).
-3. Add a settings toggle that always surfaces the copy confirmation popup after
-   each capture, expose the control within the popup surface, and default it to
-   “on” to guarantee feedback on first run.
+- Tracked under `docs/prd.md` Epic 4: Feedback & Diagnostics Enhancements.
 
 ## Runtime Quality
 

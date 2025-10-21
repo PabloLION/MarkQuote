@@ -97,6 +97,7 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Epic 1: Core Functionality & Foundation**
 - **Epic 2: Enhanced Interaction & Configuration**
 - **Epic 3: Launch Hardening & Quality Gates**
+- **Epic 4: Feedback & Diagnostics Enhancements**
 
 ### Risk Mitigation Notes
 
@@ -145,6 +146,32 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 3.8: Test Coverage & Quality Gate** (`story/3.8-test-coverage`) — established Vitest + Playwright baselines and CI gating.
 - **Story 3.9: End-to-End Coverage** (`feat/story-3-9-end-to-end-coverage`) — delivered the first multi-surface E2E suite.
 - **Story 3.10: E2E Scenario Matrix Hardening** (`feat/story-3-10-e2e-scenario-matrix`) — stress-tested chained copy flows and failure recovery.
+
+### Epic 4: Feedback & Diagnostics Enhancements
+
+**Goal:** Deliver richer post-copy feedback and shareable diagnostics so users
+and maintainers can triage issues quickly without sacrificing UX.
+
+**Key Decisions & Implementation Notes:**
+
+- Embed structured diagnostics (trigger source, tab URL, stack, clipboard
+  status) in background logs and expose a popup "Copy details" CTA. Use
+  URL-safe compression (`jsoncrush`, `lz-string`) when generating GitHub issue
+  links so payloads stay lightweight.
+- Add a persistent "Always show confirmation" toggle that surfaces in the
+  popup, defaults to on, and syncs with settings so users can opt out while
+  retaining protected-page feedback.
+- Extend Playwright/Vitest coverage to capture error-log lifecycle (seed,
+  badge, clear) and ensure diagnostics exports are exercised end-to-end.
+
+**Stories:**
+
+- **Story 4.1: Structured Diagnostics & Copy Handoff** — Implement the
+  enhanced diagnostics pipeline, popup affordance, and JSON export flow.
+- **Story 4.2: Popup Feedback Controls** — Surface the confirmation toggle in
+  both settings and popup surfaces, defaulting to "on" with migration logic.
+- **Story 4.3: Error Lifecycle Coverage** — Add automated coverage for
+  diagnostics retention/clearing and ensure clipboard fallbacks are exercised.
 
 ## Backlog
 
