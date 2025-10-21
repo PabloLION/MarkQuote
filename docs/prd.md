@@ -97,7 +97,6 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Epic 1: Core Functionality & Foundation**
 - **Epic 2: Enhanced Interaction & Configuration**
 - **Epic 3: Launch Hardening & Quality Gates**
-- **Epic 4: Core Stability & Diagnostics**
 
 ### Risk Mitigation Notes
 
@@ -147,17 +146,6 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 3.9: End-to-End Coverage** (`feat/story-3-9-end-to-end-coverage`) — delivered the first multi-surface E2E suite.
 - **Story 3.10: E2E Scenario Matrix Hardening** (`feat/story-3-10-e2e-scenario-matrix`) — stress-tested chained copy flows and failure recovery.
 
-### Epic 4: Core Stability & Diagnostics
-
-**Goal:** Reinforce reliability signals and developer diagnostics so clipboard flows remain actionable even on protected hosts or failure paths. This epic bundles richer error reporting, popup feedback controls, and background hygiene work that keeps state consistent between the worker and visible UI.
-
-**Stories:**
-
-- **Story 4.1: Error Diagnostics and Reporting**
-- **Story 4.2: Popup Feedback Controls & Telemetry Hooks**
-- **Story 4.3: Background Naming & Initialization Alignment**
-- **Story 4.4 (Candidate): Error Report Export & GitHub Issue Handoff**
-
 ## Backlog
 
 ### Clipboard History & Search (Backlog Epic)
@@ -176,6 +164,23 @@ The project should include a testing suite. Unit tests should cover individual J
 - MarkQuote Hub surface & navigation (History/Options tabs, entry display, search results).
 - History persistence and MiniSearch integration for fuzzy search and fast reloads.
 - Retention controls plus export hooks for clipboard/error payloads.
+
+### Core Stability & Diagnostics (Backlog Epic)
+
+**Goal:** Reinforce reliability signals and developer diagnostics so clipboard flows remain actionable even on protected hosts or failure paths.
+
+**Key Decisions & Implementation Notes:**
+
+- Capture structured error metadata (trigger source, tab URL, stack, clipboard status) and expose a "Copy details" affordance in the popup.
+- Default the copy-feedback toggle to "on" and surface it within the popup so users can opt out while still getting immediate confirmation.
+- Align background initialization helpers (`ensureOptionsInitialized`, `triggerCopy`) with focused responsibilities and shared reset utilities.
+- Evaluate JSON compression options (e.g., `jsoncrush`, `lz-string`) for GitHub issue handoff links without bloating the service worker.
+
+**Candidate Workstreams:**
+
+- Error diagnostics overhaul and popup copy affordance, referencing `docs/stories/backlog/error-diagnostics-overhaul.md`.
+- Background initialization alignment and reset hygiene (`docs/stories/backlog/background-initialization-alignment.md`).
+- Popup feedback controls wired to diagnostics export flows.
 
 ### Future Stories
 
