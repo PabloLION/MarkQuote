@@ -209,6 +209,17 @@ captures quickly.
   enable snippet highlighting.
 - Provide retention controls (max items, optional age limits) plus export hooks
   so users can manage storage.
+;- Provide keyboard-based reordering for rule tables as an accessible alternative
+;  to drag-and-drop.
+;- Centralize shared runtime constants (clipboard caps, loader timeouts, status
+;  labels) to eliminate duplication.
+;- Align background initialization helpers with their responsibilities
+;  (rename `ensureOptionsInitialized`, restructure `triggerCopy` handler).
+;- Expand Playwright coverage to include chained copy scenarios and repeated
+;  triggers (multi-step end-to-end flows).
+;- Document the E2E smoke subset (`--grep "[smoke]"`) and the
+;  `VITE_E2E=true pnpm build` prerequisite.
+;- Replace eval-based test timers (`lolex`/`nise`) with safer alternatives.
 - Offer diagnostics-aware export affordances so clipboard history and error
   payloads can be shared safely during support requests.
 - This epic subsumes the prior backlog concept "Clipboard History & Search"
