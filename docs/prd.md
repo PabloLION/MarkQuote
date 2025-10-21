@@ -168,11 +168,18 @@ and maintainers can triage issues quickly without sacrificing UX.
   links so payloads stay lightweight.
 - Extend Playwright/Vitest coverage so the error-log lifecycle (seed, badge,
   popup clear) and feedback toggles are exercised end-to-end.
+- Expand Playwright coverage to include chained copy scenarios and repeated
+  triggers so diagnostics stay resilient across multi-step flows.
 - Fold in the backlog alignment work for background initialization and reset
   hygiene so diagnostics, preview caches, and forced overrides stay consistent
   (`docs/stories/backlog/background-initialization-alignment.md`).
 - Leverage the diagnostics backlog plan as a baseline for structured payloads
   and shareable exports (`docs/stories/backlog/error-diagnostics-overhaul.md`).
+- Document the E2E smoke subset prerequisites (`--grep "[smoke]"`,
+  `VITE_E2E=true pnpm build`) so contributors can validate diagnostics stories
+  consistently.
+- Replace eval-based test timers (`lolex`/`nise`) with safer alternatives to
+  avoid false positives in diagnostics-related tests.
 
 **Stories:**
 

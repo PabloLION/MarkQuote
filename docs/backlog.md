@@ -13,7 +13,7 @@ Concise list of outstanding fixes and refactors, grouped by focus area.
 
 ## Diagnostics & Feedback
 
-- Tracked under `docs/prd.md` Epic 4: Copy Feedback & Diagnostics.
+- Tracked under `docs/prd.md` Epic 4: Copy Feedback & Diagnostics (items migrated).
 
 ## Hub & History
 
