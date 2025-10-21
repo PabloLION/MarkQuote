@@ -9,12 +9,15 @@ Concise list of outstanding fixes and refactors, grouped by focus area.
 
 ## Accessibility
 
-1. Provide keyboard-based reordering for rules tables in the options UI
-   (accessible alternative to drag-and-drop).
+- Tracked under `docs/prd.md` Epic 6: Power User & Accessibility Enhancements.
 
 ## Diagnostics & Feedback
 
-- Tracked under `docs/prd.md` Epic 4: Feedback & Diagnostics Enhancements.
+- Tracked under `docs/prd.md` Epic 4: Copy Feedback & Diagnostics.
+
+## Hub & History
+
+- Tracked under `docs/prd.md` Epic 5: MarkQuote Hub & History.
 
 ## Runtime Quality
 

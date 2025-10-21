@@ -97,6 +97,9 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Epic 1: Core Functionality & Foundation**
 - **Epic 2: Enhanced Interaction & Configuration**
 - **Epic 3: Launch Hardening & Quality Gates**
+- **Epic 4: Copy Feedback & Diagnostics**
+- **Epic 5: MarkQuote Hub & History**
+- **Epic 6: Power User & Accessibility Enhancements**
 - **Epic 4: Feedback & Diagnostics Enhancements**
 
 ### Risk Mitigation Notes
@@ -147,31 +150,82 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Story 3.9: End-to-End Coverage** (`feat/story-3-9-end-to-end-coverage`) — delivered the first multi-surface E2E suite.
 - **Story 3.10: E2E Scenario Matrix Hardening** (`feat/story-3-10-e2e-scenario-matrix`) — stress-tested chained copy flows and failure recovery.
 
-### Epic 4: Feedback & Diagnostics Enhancements
+### Epic 4: Copy Feedback & Diagnostics
 
 **Goal:** Deliver richer post-copy feedback and shareable diagnostics so users
 and maintainers can triage issues quickly without sacrificing UX.
 
 **Key Decisions & Implementation Notes:**
 
+- Add a persistent "Always show confirmation" toggle in the popup and settings
+  surfaces, default it to on, and migrate existing users without losing their
+  preference.
+- Refresh the post-copy feedback experience (messaging, preview, protected-page
+  guidance) so confirmations stay informative without feeling noisy.
 - Embed structured diagnostics (trigger source, tab URL, stack, clipboard
   status) in background logs and expose a popup "Copy details" CTA. Use
   URL-safe compression (`jsoncrush`, `lz-string`) when generating GitHub issue
   links so payloads stay lightweight.
-- Add a persistent "Always show confirmation" toggle that surfaces in the
-  popup, defaults to on, and syncs with settings so users can opt out while
-  retaining protected-page feedback.
-- Extend Playwright/Vitest coverage to capture error-log lifecycle (seed,
-  badge, clear) and ensure diagnostics exports are exercised end-to-end.
+- Extend Playwright/Vitest coverage so the error-log lifecycle (seed, badge,
+  popup clear) and feedback toggles are exercised end-to-end.
 
 **Stories:**
 
-- **Story 4.1: Structured Diagnostics & Copy Handoff** — Implement the
-  enhanced diagnostics pipeline, popup affordance, and JSON export flow.
-- **Story 4.2: Popup Feedback Controls** — Surface the confirmation toggle in
-  both settings and popup surfaces, defaulting to "on" with migration logic.
-- **Story 4.3: Error Lifecycle Coverage** — Add automated coverage for
-  diagnostics retention/clearing and ensure clipboard fallbacks are exercised.
+- **Story 4.1: Always-On Confirmation Toggle** — Surface the toggle in popup
+  and settings, ensure migrations, and update docs/tests.
+- **Story 4.2: Post-Copy Feedback UX Refresh** — Improve messaging, preview,
+  and protected-host handling in the popup confirmation flow.
+- **Story 4.3: Structured Diagnostics & GitHub Handoff** — Implement the
+  enhanced diagnostics pipeline, popup affordance, and URL-safe export.
+
+### Epic 5: MarkQuote Hub & History
+
+**Goal:** Introduce a MarkQuote Hub surface that captures clipboard history,
+supports fuzzy search, and exposes retention controls so users can reuse past
+captures quickly.
+
+**Key Decisions & Implementation Notes:**
+
+- Build a new extension hub with History and Options tabs, accessible from the
+  action popup or dedicated entry point.
+- Persist captured entries (markdown, source URL, timestamp) in IndexedDB using
+  Dexie/`idb` for structured access.
+- Power fuzzy search with MiniSearch, serializing indices to speed startup and
+  enable snippet highlighting.
+- Provide retention controls (max items, optional age limits) plus export hooks
+  so users can manage storage.
+
+**Stories:**
+
+- **Story 5.1: Hub Surface & Navigation** — Create the hub UI with tabs,
+  shared layout tokens, and routing between History/Options.
+- **Story 5.2: History Persistence & Search** — Implement Dexie persistence,
+  MiniSearch indexing, and fuzzy query APIs.
+- **Story 5.3: Retention & Export Controls** — Add retention settings, cleanup
+  jobs, and optional export/sharing affordances.
+
+### Epic 6: Power User & Accessibility Enhancements
+
+**Goal:** Unlock advanced workflows and accessible interactions so power users
+can tailor MarkQuote without sacrificing usability.
+
+**Key Decisions & Implementation Notes:**
+
+- Provide keyboard-only reordering for rule tables as an accessible alternative
+  to drag-and-drop.
+- Design a phased approach for per-site formatting rules, starting with
+  domain-scoped presets and guardrails for token usage.
+- Revisit the selection-activated tooltip concept to assess feasibility and
+  potential performance impact before reintroduction.
+
+**Stories:**
+
+- **Story 6.1: Keyboard Reordering Controls** — Implement keyboard-first
+  reordering for rule tables and update accessibility guidance.
+- **Story 6.2: Per-Site Formatting Rules (Phase 1)** — Introduce domain-level
+  formatting overrides with validation and UX cues.
+- **Story 6.3: Selection Tooltip Exploration** — Prototype the selection
+  affordance, capture performance findings, and decide on rollout.
 
 ## Backlog
 
