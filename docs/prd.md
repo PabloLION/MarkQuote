@@ -227,42 +227,6 @@ can tailor MarkQuote without sacrificing usability.
 - **Story 6.3: Selection Tooltip Exploration** — Prototype the selection
   affordance, capture performance findings, and decide on rollout.
 
-## Backlog
-
-### Clipboard History & Search (Backlog Epic)
-
-**Goal:** Provide a MarkQuote Hub surface with tabs for History and Options so users can browse and reuse recent captures without leaving the extension.
-
-**Key Decisions & Implementation Notes:**
-
-- Persist history entries (selection, markdown output, source URL, timestamp) in IndexedDB via Dexie to keep storage manageable inside the background service worker.
-- Build a MiniSearch index on top of the stored entries to support fuzzy queries, per-field weights, and snippet highlights. Serialize the index alongside the data to speed startup.
-- Expose retention controls (max item count, optional age limits) so power users can trim the archive without manual cleanup.
-- Offer clipboard/error export affordances from the Hub, leaning on the existing diagnostics pipeline once Epic 4 ships.
-
-**Candidate Workstreams:**
-
-- MarkQuote Hub surface & navigation (History/Options tabs, entry display, search results).
-- History persistence and MiniSearch integration for fuzzy search and fast reloads.
-- Retention controls plus export hooks for clipboard/error payloads.
-
-### Core Stability & Diagnostics (Backlog Epic)
-
-**Goal:** Reinforce reliability signals and developer diagnostics so clipboard flows remain actionable even on protected hosts or failure paths.
-
-**Key Decisions & Implementation Notes:**
-
-- Capture structured error metadata (trigger source, tab URL, stack, clipboard status) and expose a "Copy details" affordance in the popup.
-- Default the copy-feedback toggle to "on" and surface it within the popup so users can opt out while still getting immediate confirmation.
-- Align background initialization helpers (`ensureOptionsInitialized`, `triggerCopy`) with focused responsibilities and shared reset utilities.
-- Evaluate JSON compression options (e.g., `jsoncrush`, `lz-string`) for GitHub issue handoff links without bloating the service worker.
-
-**Candidate Workstreams:**
-
-- Error diagnostics overhaul and popup copy affordance, referencing `docs/stories/backlog/error-diagnostics-overhaul.md`.
-- Background initialization alignment and reset hygiene (`docs/stories/backlog/background-initialization-alignment.md`).
-- Popup feedback controls wired to diagnostics export flows.
-
 ### Future Stories
 
 - **Story: Post-Copy Feedback Popup:** As a user, I want the confirmation popup to appear after every copy by default, with a settings toggle exposed in the popup so I can disable it if I prefer a quieter workflow.
