@@ -168,6 +168,11 @@ and maintainers can triage issues quickly without sacrificing UX.
   links so payloads stay lightweight.
 - Extend Playwright/Vitest coverage so the error-log lifecycle (seed, badge,
   popup clear) and feedback toggles are exercised end-to-end.
+- Fold in the backlog alignment work for background initialization and reset
+  hygiene so diagnostics, preview caches, and forced overrides stay consistent
+  (`docs/stories/backlog/background-initialization-alignment.md`).
+- Leverage the diagnostics backlog plan as a baseline for structured payloads
+  and shareable exports (`docs/stories/backlog/error-diagnostics-overhaul.md`).
 
 **Stories:**
 
@@ -177,6 +182,9 @@ and maintainers can triage issues quickly without sacrificing UX.
   and protected-host handling in the popup confirmation flow.
 - **Story 4.3: Structured Diagnostics & GitHub Handoff** — Implement the
   enhanced diagnostics pipeline, popup affordance, and URL-safe export.
+- **Story 4.4: Background Diagnostics Alignment** — Rename and refactor
+  initialization helpers, unify reset flows, and ensure diagnostics caches stay
+  in sync across popup and worker contexts.
 
 ### Epic 5: MarkQuote Hub & History
 
@@ -194,6 +202,10 @@ captures quickly.
   enable snippet highlighting.
 - Provide retention controls (max items, optional age limits) plus export hooks
   so users can manage storage.
+- Offer diagnostics-aware export affordances so clipboard history and error
+  payloads can be shared safely during support requests.
+- This epic subsumes the prior backlog concept "Clipboard History & Search"
+  with its hub/navigation/workstream breakdown.
 
 **Stories:**
 
@@ -226,6 +238,12 @@ can tailor MarkQuote without sacrificing usability.
   formatting overrides with validation and UX cues.
 - **Story 6.3: Selection Tooltip Exploration** — Prototype the selection
   affordance, capture performance findings, and decide on rollout.
+
+## Backlog
+
+The former backlog epics for Clipboard History/Search and Core Stability/
+Diagnostics are now represented as Epics 5 and 4, respectively. Any new
+backlog work will be added directly to the roadmap epics above.
 
 ### Future Stories
 
