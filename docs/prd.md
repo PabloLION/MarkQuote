@@ -173,11 +173,6 @@ and maintainers can triage issues quickly without sacrificing UX.
   (`docs/stories/backlog/background-initialization-alignment.md`).
 - Leverage the diagnostics backlog plan as a baseline for structured payloads
   and shareable exports (`docs/stories/backlog/error-diagnostics-overhaul.md`).
-- Centralize shared runtime constants (clipboard caps, loader timeouts, status
-  labels) so feedback flows reference a single source of truth.
-- Expand Playwright coverage for chained copy scenarios, replace eval-based test
-  timers with safer alternatives, and document the smoke subset prerequisites
-  (`--grep "[smoke]"`, `VITE_E2E=true pnpm build`).
 
 **Stories:**
 
