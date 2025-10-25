@@ -7,11 +7,16 @@ This directory hosts the end-to-end coverage for MarkQuote. Playwright drives a 
 ## Preparation Flow
 
 1. **Global setup** (`tests/e2e/global-setup.ts`)
-   - Runs `pnpm build` with `VITE_E2E=true` to produce a fresh `dist/` bundle before Playwright launches.
+
+   - Runs `pnpm run build:e2e` to produce a fresh instrumented `dist/` bundle before Playwright launches.
+
 2. **Extension launch** (`helpers/extension.ts`)
+
    - Creates a temporary user data directory and starts Chromium with `--disable-extensions-except` / `--load-extension` pointing at `dist/`.
    - Reads the runtime extension ID via `chrome://extensions` so specs can open `options.html` and `popup.html` directly.
+
 3. **Test messaging helpers** (`helpers/e2e.ts`)
+
    - Provide utilities for sending synthetic selection messages, seeding options payloads, and reading the latest formatted preview through the background worker’s e2e hooks.
 
 ## Covered Scenarios
@@ -48,3 +53,5 @@ Install these utilities locally before running the tests; otherwise they will fa
 - Clipboard writes require clipboard permissions; specs snapshot the host clipboard with `clipboardy`, poll it until the expected Markdown appears, and restore the original value after each run.
 - Helpers in `tests/e2e/helpers/background-bridge.ts` expose reset hooks (`resetPreviewState`, `resetHotkeyDiagnostics`, etc.) for multi-step flows—call them before issuing another copy request to avoid stale assertions.
 - The Playwright project runs in headed Chromium; we treat it as a manual verification suite and do not execute it in CI today.
+
+<!-- markdownlint-enable MD013 -->

@@ -7,7 +7,7 @@
 - `pnpm test:unit` — runs Vitest with coverage across `tests/unit/**`.
 - `pnpm exec playwright test --project=chromium-extension` — runs the Playwright suite in headless Chromium with the packaged extension.
 - `pnpm test:e2e` — convenience task that builds the extension and executes every Playwright project defined in `playwright.config.ts`.
-- `VITE_E2E=true pnpm build` — rebuild the extension with E2E hooks enabled (automatically executed by `pnpm test:e2e`, but handy when debugging Playwright flows manually).
+- `pnpm run build:e2e` — rebuild the extension with E2E hooks enabled (automatically executed by `pnpm test:e2e`, but handy when debugging Playwright flows manually).
 
 ## Unit Suites (Vitest)
 
