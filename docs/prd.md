@@ -165,6 +165,9 @@ and maintainers can triage issues quickly without sacrificing UX.
   status) in background logs and expose a popup "Copy details" CTA. Use
   URL-safe compression (`jsoncrush`, `lz-string`) when generating GitHub issue
   links so payloads stay lightweight.
+- Centralize shared runtime constants (clipboard caps, loader timeouts, status
+  labels) so feedback flows consume a single source of truth and avoid
+  regression-prone duplication.
 - Extend Playwright/Vitest coverage so the error-log lifecycle (seed, badge,
   popup clear) and feedback toggles are exercised end-to-end.
 - Expand Playwright coverage to include chained copy scenarios and repeated
@@ -191,6 +194,9 @@ and maintainers can triage issues quickly without sacrificing UX.
 - **Story 4.4: Background Diagnostics Alignment** — Rename and refactor
   initialization helpers, unify reset flows, and ensure diagnostics caches stay
   in sync across popup and worker contexts.
+- **Story 4.5: Runtime Constant Consolidation** — Extract shared clipboard caps,
+  loader timeouts, and status labels into a single module and update consumers
+  across background, popup, and tests.
 
 ### Epic 5: MarkQuote Hub & History
 
