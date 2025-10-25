@@ -100,7 +100,6 @@ The project should include a testing suite. Unit tests should cover individual J
 - **Epic 4: Copy Feedback & Diagnostics**
 - **Epic 5: MarkQuote Hub & History**
 - **Epic 6: Power User & Accessibility Enhancements**
-- **Epic 4: Feedback & Diagnostics Enhancements**
 
 ### Risk Mitigation Notes
 
@@ -209,17 +208,6 @@ captures quickly.
   enable snippet highlighting.
 - Provide retention controls (max items, optional age limits) plus export hooks
   so users can manage storage.
-;- Provide keyboard-based reordering for rule tables as an accessible alternative
-;  to drag-and-drop.
-;- Centralize shared runtime constants (clipboard caps, loader timeouts, status
-;  labels) to eliminate duplication.
-;- Align background initialization helpers with their responsibilities
-;  (rename `ensureOptionsInitialized`, restructure `triggerCopy` handler).
-;- Expand Playwright coverage to include chained copy scenarios and repeated
-;  triggers (multi-step end-to-end flows).
-;- Document the E2E smoke subset (`--grep "[smoke]"`) and the
-;  `VITE_E2E=true pnpm build` prerequisite.
-;- Replace eval-based test timers (`lolex`/`nise`) with safer alternatives.
 - Offer diagnostics-aware export affordances so clipboard history and error
   payloads can be shared safely during support requests.
 - This epic subsumes the prior backlog concept "Clipboard History & Search"
