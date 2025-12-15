@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MarkQuote",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Copy webpage selections as Markdown quotes with reference source link.",
   "permissions": [
     "contextMenus",
