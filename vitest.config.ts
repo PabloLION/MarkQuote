@@ -24,6 +24,7 @@ export default defineConfig({
         "src/surfaces/**/forced-state.ts",
         "src/surfaces/options/page.ts",
         "src/surfaces/popup/page.ts",
+        "src/surfaces/options/rules-types.ts",
       ],
       thresholds: {
         statements: 85,

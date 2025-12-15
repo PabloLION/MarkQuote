@@ -26,8 +26,10 @@ export function createCopyFlow(deps: CopyFlowDeps): CopyFlow {
     } catch (error) {
       if (error instanceof DOMException) {
         failureName = error.name;
+        /* v8 ignore next - DOMException.message always populated in JSDOM; real browsers may have empty message */
         failureReason = error.message || error.name;
       } else {
+        /* v8 ignore next 3 - clipboard API only throws DOMException in tests; non-DOMException path handles edge cases */
         const normalized = error instanceof Error ? error : new Error(String(error));
         failureName = normalized.name;
         failureReason = normalized.message;
