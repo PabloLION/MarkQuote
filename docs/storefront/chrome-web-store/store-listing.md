@@ -15,6 +15,9 @@ MarkQuote (sourced from `public/manifest.json -> name`).
 
 ### Description (16,000 char max)
 
+Note: Chrome Web Store has NO dedicated "What's New" field. Include release notes
+at the end of the description.
+
 ```text
 MarkQuote helps researchers collect quotes without leaving the browser. Highlight any text, open the MarkQuote popup, and the extension converts the selection into Markdown—ready for docs, notes, and code comments.
 
@@ -26,6 +29,11 @@ MarkQuote helps researchers collect quotes without leaving the browser. Highligh
 
 **Privacy**
 MarkQuote only processes the pages you explicitly activate. It stores configuration locally and does not send data to external services.
+
+**What's New in v1.0.3**
+- Fixed: Copying from Google search results no longer includes JavaScript/CSS code
+- Fixed: Keyboard shortcuts now reliably copy to clipboard
+- Improved: More reliable clipboard access across different page contexts
 ```
 
 ### Category
@@ -84,19 +92,3 @@ On (so support contact is visible).
 Update these values if the messaging or assets change so the listing stays consistent with the
 extension. For privacy answers, see `docs/storefront/chrome-web-store/privacy.md`.
 
----
-
-## Version Notes (What's New)
-
-Use these notes in the Chrome Web Store dashboard when publishing a new version.
-
-### v1.0.3 (Current)
-
-```text
-Bug fixes and reliability improvements:
-
-• Fixed: Copying from Google search results no longer includes JavaScript/CSS code
-• Fixed: Keyboard shortcuts now reliably copy to clipboard
-• Improved: More reliable clipboard access across different page contexts
-• Quality: 100% unit test coverage
-```
