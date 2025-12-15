@@ -82,11 +82,12 @@
 
 **Goal:** Deliver richer post-copy feedback and shareable diagnostics so users and maintainers can triage issues quickly without sacrificing UX.
 
-**Status:** Backlog
+**Status:** Backlog (Target: v1.2.0)
 
 ### Key Decisions
 
 - Add persistent "Always show confirmation" toggle (popup and settings)
+- Use `chrome.action.openPopup()` API to show popup after hotkey/context-menu copy (works unpinned, Chrome 127+)
 - Refresh post-copy feedback experience (messaging, preview, protected-page guidance)
 - Embed structured diagnostics in background logs with popup "Copy details" CTA
 - Centralize shared runtime constants (clipboard caps, loader timeouts, status labels)
@@ -96,11 +97,28 @@
 
 | ID | Story | Description |
 |----|-------|-------------|
-| 4.1 | Always-On Confirmation Toggle | Surface toggle in popup and settings, ensure migrations |
+| 4.1 | Always-On Confirmation Toggle | Programmatic popup via `chrome.action.openPopup()` for feedback after non-icon triggers |
 | 4.2 | Post-Copy Feedback UX Refresh | Improve messaging, preview, protected-host handling |
 | 4.3 | Structured Diagnostics & GitHub Handoff | Enhanced diagnostics pipeline, popup affordance, URL-safe export |
 | 4.4 | Background Diagnostics Alignment | Rename/refactor initialization helpers, unify reset flows |
 | 4.5 | Runtime Constant Consolidation | Extract shared constants into single module |
+
+### Story 4.1 Details: Always-On Confirmation Toggle
+
+**Problem:** When users trigger copy via keyboard shortcut (Alt+C/Option+C) or context menu, they get no visual feedback unless the extension icon is pinned and they click it.
+
+**Solution:** Use `chrome.action.openPopup()` API to programmatically open the popup after copy actions, showing the formatted preview and success/error status.
+
+**Technical Notes:**
+- `chrome.action.openPopup()` works for unpinned extensions (Chrome 127+, July 2024)
+- No longer requires user gesture or policy installation
+- Cannot be called from popup windows (causes crash) - only from background script
+- User preference toggle: "Always show confirmation after copy"
+- Stored in `chrome.storage.sync` for cross-device sync
+
+**References:**
+- [chrome.action.openPopup() API](https://developer.chrome.com/docs/extensions/reference/api/action#method-openPopup)
+- [W3C WebExtensions Issue #160](https://github.com/w3c/webextensions/issues/160) - cross-browser alignment
 
 ---
 
