@@ -91,4 +91,3 @@ On (so support contact is visible).
 
 Update these values if the messaging or assets change so the listing stays consistent with the
 extension. For privacy answers, see `docs/storefront/chrome-web-store/privacy.md`.
-
