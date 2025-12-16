@@ -157,4 +157,4 @@ AGENTS.md
 .claude/
 
 # Release builds
-markquote-*.zip
+releases/
