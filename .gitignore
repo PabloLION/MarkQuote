@@ -155,3 +155,6 @@ AGENTS.md
 
 # Claude cache
 .claude/
+
+# Release builds
+markquote-*.zip
