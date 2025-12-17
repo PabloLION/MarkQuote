@@ -151,4 +151,91 @@ describe("popup copy flow", () => {
     expect(handled).toBe(false);
     expect(preview.render).not.toHaveBeenCalled();
   });
+
+  describe("protected page messages", () => {
+    it("shows Chrome internal page message", async () => {
+      const preview = createPreview();
+      const messages = createMessages();
+      const copyFlow = createCopyFlow({ preview, messages });
+
+      await copyFlow.handleMessage({ type: "copy-protected", url: "chrome://settings" });
+
+      expect(messages.set).toHaveBeenCalledWith(
+        expect.stringContaining("browser settings pages"),
+        expect.objectContaining({ variant: "warning" }),
+      );
+    });
+
+    it("shows Edge internal page message", async () => {
+      const preview = createPreview();
+      const messages = createMessages();
+      const copyFlow = createCopyFlow({ preview, messages });
+
+      await copyFlow.handleMessage({ type: "copy-protected", url: "edge://settings" });
+
+      expect(messages.set).toHaveBeenCalledWith(
+        expect.stringContaining("browser settings pages"),
+        expect.objectContaining({ variant: "warning" }),
+      );
+    });
+
+    it("shows Firefox internal page message", async () => {
+      const preview = createPreview();
+      const messages = createMessages();
+      const copyFlow = createCopyFlow({ preview, messages });
+
+      await copyFlow.handleMessage({ type: "copy-protected", url: "about:config" });
+
+      expect(messages.set).toHaveBeenCalledWith(
+        expect.stringContaining("browser settings pages"),
+        expect.objectContaining({ variant: "warning" }),
+      );
+    });
+
+    it("shows extension page message", async () => {
+      const preview = createPreview();
+      const messages = createMessages();
+      const copyFlow = createCopyFlow({ preview, messages });
+
+      await copyFlow.handleMessage({
+        type: "copy-protected",
+        url: "chrome-extension://abc123/popup.html",
+      });
+
+      expect(messages.set).toHaveBeenCalledWith(
+        expect.stringContaining("other extensions"),
+        expect.objectContaining({ variant: "warning" }),
+      );
+    });
+
+    it("shows file protocol message", async () => {
+      const preview = createPreview();
+      const messages = createMessages();
+      const copyFlow = createCopyFlow({ preview, messages });
+
+      await copyFlow.handleMessage({
+        type: "copy-protected",
+        url: "file:///home/user/document.html",
+      });
+
+      expect(messages.set).toHaveBeenCalledWith(
+        expect.stringContaining("Allow access to file URLs"),
+        expect.objectContaining({ variant: "warning" }),
+      );
+    });
+
+    it("shows generic message for unknown protected pages", async () => {
+      const preview = createPreview();
+      const messages = createMessages();
+      const copyFlow = createCopyFlow({ preview, messages });
+
+      // A URL that passes getProtectedPageType but returns null (should not happen, but test the default case)
+      await copyFlow.handleMessage({ type: "copy-protected", url: "https://example.com" });
+
+      expect(messages.set).toHaveBeenCalledWith(
+        expect.stringContaining("protected"),
+        expect.objectContaining({ variant: "warning" }),
+      );
+    });
+  });
 });
