@@ -28,6 +28,7 @@ function createOptionsDomElements() {
     <div id="url-clear-status"></div>
     <button id="save-url-rules"></button>
     <span id="url-unsaved-indicator"></span>
+    <input type="checkbox" id="show-confirmation-popup" />
   `;
 }
 

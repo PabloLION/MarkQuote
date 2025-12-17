@@ -24,6 +24,7 @@ export interface OptionsDom {
   urlClearStatusElement: HTMLElement;
   saveUrlRuleButton: HTMLButtonElement;
   urlUnsavedIndicator: HTMLElement;
+  showConfirmationPopupCheckbox: HTMLInputElement;
 }
 
 export function loadDom(): OptionsDom | null {
@@ -58,6 +59,8 @@ export function loadDom(): OptionsDom | null {
   const saveUrlRuleButton = requireElement<HTMLButtonElement>("save-url-rules");
   const urlUnsavedIndicator = requireElement<HTMLElement>("url-unsaved-indicator");
 
+  const showConfirmationPopupCheckbox = requireElement<HTMLInputElement>("show-confirmation-popup");
+
   const requiredElements = [
     form,
     previewElement,
@@ -82,6 +85,7 @@ export function loadDom(): OptionsDom | null {
     urlClearStatusElement,
     saveUrlRuleButton,
     urlUnsavedIndicator,
+    showConfirmationPopupCheckbox,
   ];
 
   /* v8 ignore next 4 - test DOM always has all elements; guard handles corrupted options.html in production */
@@ -116,6 +120,7 @@ export function loadDom(): OptionsDom | null {
     urlClearStatusElement,
     saveUrlRuleButton,
     urlUnsavedIndicator,
+    showConfirmationPopupCheckbox,
   } satisfies OptionsDom;
 }
 
