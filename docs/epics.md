@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 MD024 MD032 -->
 # MarkQuote Epics & Stories
 
 **Project:** MarkQuote
@@ -12,8 +13,8 @@
 |------|------|---------|--------|
 | 1 | Core Functionality & Foundation | 1.1-1.5 | Done |
 | 2 | Enhanced Interaction & Configuration | 2.1-2.5 | Done |
-| 3 | Launch Hardening & Quality Gates | 3.1-3.10 | In Progress |
-| 4 | Copy Feedback & Diagnostics | 4.1-4.5 | Backlog |
+| 3 | Launch Hardening & Quality Gates | 3.1-3.10 | Done (v1.0.4) |
+| 4 | Copy Feedback & Diagnostics | 4.1-4.5 | In Progress (v1.1.0) |
 | 5 | MarkQuote Hub & History | 5.1-5.3 | Backlog |
 | 6 | Power User & Accessibility | 6.1-6.3 | Backlog |
 
@@ -59,7 +60,7 @@
 
 **Goal:** Mature MarkQuote from feature-complete to release-ready by polishing UI surfaces, hardening build/publish infrastructure, and expanding automated coverage so regressions are caught before shipping.
 
-**Status:** In Progress (Release 1.1.0)
+**Status:** Done (v1.0.4)
 
 ### Stories
 
@@ -82,7 +83,7 @@
 
 **Goal:** Deliver richer post-copy feedback and shareable diagnostics so users and maintainers can triage issues quickly without sacrificing UX.
 
-**Status:** Backlog (Target: v1.2.0)
+**Status:** In Progress (v1.1.0)
 
 ### Key Decisions
 
