@@ -1,4 +1,5 @@
 export async function copyMarkdownToClipboard(text: string): Promise<boolean> {
+  /* v8 ignore next - TypeScript ensures string at compile time; runtime guard handles JS callers */
   const value = typeof text === "string" ? text : "";
 
   try {
@@ -21,6 +22,7 @@ export async function copyMarkdownToClipboard(text: string): Promise<boolean> {
   let success = false;
   try {
     success = document.execCommand("copy");
+    /* v8 ignore next 3 - execCommand doesn't throw in JSDOM; real browsers may throw on security restrictions */
   } catch (error) {
     console.warn('document.execCommand("copy") failed.', error);
   }

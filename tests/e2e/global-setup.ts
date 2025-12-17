@@ -8,10 +8,9 @@ const currentDir = fileURLToPath(new URL(".", import.meta.url));
 const repoRoot = path.resolve(currentDir, "../..");
 
 export default async function globalSetup(_config: FullConfig): Promise<void> {
-  execSync("pnpm build", {
+  execSync("pnpm run build:e2e", {
     stdio: "inherit",
     cwd: repoRoot,
-    env: { ...process.env, VITE_E2E: "true" },
   });
 
   const manifestPath = path.join(repoRoot, "dist", "manifest.json");

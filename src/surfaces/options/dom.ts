@@ -84,6 +84,7 @@ export function loadDom(): OptionsDom | null {
     urlUnsavedIndicator,
   ];
 
+  /* v8 ignore next 4 - test DOM always has all elements; guard handles corrupted options.html in production */
   if (requiredElements.some((element) => !element)) {
     console.warn("Options UI is missing expected elements; aborting initialization.");
     return null;

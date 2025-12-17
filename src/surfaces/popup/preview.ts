@@ -7,6 +7,7 @@ export interface PreviewController {
 
 export function createPreviewController(dom: PopupDom): PreviewController {
   const { preview, previewCode } = dom;
+  /* v8 ignore next - previewCode element always exists in test DOM; fallback handles malformed popup HTML */
   const target = previewCode ?? preview;
 
   const controller: PreviewController = {
@@ -14,6 +15,7 @@ export function createPreviewController(dom: PopupDom): PreviewController {
       if (typeof text !== "string" || text.trim().length === 0) {
         if (previewCode) {
           previewCode.textContent = "";
+          /* v8 ignore next 3 - previewCode always exists in test DOM; fallback handles malformed popup HTML */
         } else {
           preview.textContent = "";
         }

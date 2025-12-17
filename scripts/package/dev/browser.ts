@@ -69,13 +69,14 @@ async function openExtensionPagesAndTrack(params: {
   const pagesToOpen: ExtensionPage[] = [
     { name: "Options", url: `chrome-extension://${extensionId}/options.html` },
     { name: "Popup", url: `chrome-extension://${extensionId}/popup.html` },
+    { name: "Wikipedia (test page)", url: "https://en.wikipedia.org/wiki/Pablo_Picasso" },
   ];
 
   const handlePageClose = async (): Promise<void> => {
     openPagesCount -= 1;
     console.log(`A page was closed. Remaining open pages: ${openPagesCount}`);
     if (openPagesCount <= 0) {
-      console.log("All extension pages closed. Shutting down...");
+      console.log("All pages closed. Shutting down...");
       await browserContext.close();
       setTimeout(() => {
         fs.rmSync(userDataDir, { recursive: true, force: true });
@@ -92,7 +93,7 @@ async function openExtensionPagesAndTrack(params: {
     newPage.on("close", handlePageClose);
   }
 
-  console.log(`Successfully launched ${pagesToOpen.length} extension pages.`);
+  console.log(`Successfully launched ${pagesToOpen.length} pages.`);
 }
 
 async function main(): Promise<void> {

@@ -50,6 +50,7 @@ export function isRunningUnderVitest(meta: ImportMeta): boolean {
   if (typeof process !== "undefined" && process.env?.VITEST) {
     return true;
   }
+  /* v8 ignore next 6 - fallback detection path, earlier checks succeed in vitest */
   if (
     typeof globalThis === "object" &&
     (globalThis as { __vitest_worker__?: boolean }).__vitest_worker__

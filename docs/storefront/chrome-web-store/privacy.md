@@ -23,7 +23,15 @@ Injects a small content script on-demand to pull the selected text and page meta
 
 ### storage
 
-Persists the user’s formatting preferences (template, title/URL rules) locally so their configuration is restored the next time they use MarkQuote.
+Persists the user's formatting preferences (template, title/URL rules) locally so their configuration is restored the next time they use MarkQuote.
+
+### clipboardWrite
+
+Writes the formatted Markdown quote to the system clipboard so users can paste it into their notes, documents, or code editors. This is the core function of MarkQuote.
+
+### windows
+
+Used to identify the active browser window when copying text via keyboard shortcut or context menu, ensuring the copy action targets the correct tab.
 
 ## Remote Code
 

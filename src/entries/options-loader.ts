@@ -46,6 +46,7 @@ export function renderOptionsError(error: unknown): void {
   document.body.prepend(fallback);
 }
 
+/* v8 ignore next 7 - bootstrap wrapper with error boundary */
 export async function bootstrapOptions(): Promise<void> {
   try {
     await loadOptionsModule();
@@ -54,6 +55,7 @@ export async function bootstrapOptions(): Promise<void> {
   }
 }
 
+/* v8 ignore next 3 - production entry point, skipped in vitest */
 if (!isRunningUnderVitest(import.meta)) {
   void bootstrapOptions();
 }

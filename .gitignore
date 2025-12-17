@@ -149,9 +149,12 @@ vite.config.ts.timestamp-*
 .vite/
 
 AGENTS.md
-# BMAD (local only)
+# BMAD (installed method - like node_modules)
+.bmad/
 .bmad-core/
-.bmad-*/
 
 # Claude cache
 .claude/
+
+# Release builds
+releases/

@@ -178,7 +178,7 @@ and maintainers can triage issues quickly without sacrificing UX.
 - Leverage the diagnostics backlog plan as a baseline for structured payloads
   and shareable exports (`docs/stories/backlog/error-diagnostics-overhaul.md`).
 - Document the E2E smoke subset prerequisites (`--grep "[smoke]"`,
-  `VITE_E2E=true pnpm build`) so contributors can validate diagnostics stories
+  `pnpm run build:e2e`) so contributors can validate diagnostics stories
   consistently.
 - Replace eval-based test timers (`lolex`/`nise`) with safer alternatives to
   avoid false positives in diagnostics-related tests.

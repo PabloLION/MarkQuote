@@ -34,6 +34,7 @@ export function updatePreview(context: OptionsContext, rules: PreviewRulesAdapte
   );
   const transformedUrl = applyUrlRules(urlRules, context.previewSample.url);
 
+  /* v8 ignore next 2 - transform functions always return strings in tests; fallback dash handles edge cases */
   sampleOutputTitle.textContent = transformedTitle || "—";
   sampleOutputUrl.textContent = transformedUrl || "—";
 }

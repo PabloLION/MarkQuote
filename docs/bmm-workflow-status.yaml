@@ -1,0 +1,90 @@
+# BMM Workflow Status - MarkQuote
+# Generated: 2025-12-15
+# Track: BMad Method (Brownfield)
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met
+#
+# Completion Status:
+#   - {file-path}: File created/found
+#   - skipped: Optional/conditional workflow that was skipped
+#   - partial: Started but not fully complete
+
+generated: "2025-12-15"
+project: "MarkQuote"
+project_type: "chrome-extension"
+selected_track: "method"
+field_type: "brownfield"
+workflow_path: "method-brownfield.yaml"
+
+workflow_status:
+  # Phase 0: Discovery (Optional)
+  discovery:
+    brainstorm:
+      status: "optional"
+      note: "Not selected during init"
+    research:
+      status: "optional"
+      note: "Not selected during init"
+    product-brief:
+      status: "docs/brief.md"
+      completed: true
+
+  # Phase 1: Planning
+  planning:
+    prd:
+      status: "docs/prd.md"
+      completed: true
+    create-ux-design:
+      status: "docs/ux-design-specification.md"
+      completed: true
+      note: "Full UX spec with design system, surfaces, and accessibility"
+
+  # Phase 2: Solutioning
+  solutioning:
+    create-architecture:
+      status: "docs/ui-architecture.md"
+      completed: true
+    create-epics-and-stories:
+      status: "partial"
+      note: "Stories exist in docs/stories/ but no formal epics structure"
+      existing_stories:
+        - "docs/stories/3.1-finish-options-page.md"
+        - "docs/stories/3.2-improve-popup-page.md"
+        - "docs/stories/3.3-expand-e2e-coverage.md"
+        - "docs/stories/3.4-optimize-manifest-and-publishing.md"
+        - "docs/stories/3.5-publish-ready.md"
+        - "docs/stories/3.6-ux-polish.md"
+        - "docs/stories/3.7-core-refactor.md"
+        - "docs/stories/3.8-test-coverage-and-quality-gate.md"
+        - "docs/stories/3.9-end-to-end-coverage.md"
+        - "docs/stories/3.10-e2e-scenario-matrix.md"
+    test-design:
+      status: "recommended"
+      note: "System-level testability review"
+    validate-architecture:
+      status: "optional"
+    implementation-readiness:
+      status: "docs/implementation-readiness-report-2025-12-15.md"
+      completed: true
+      result: "READY (with recommendations)"
+
+  # Phase 3: Implementation
+  implementation:
+    sprint-planning:
+      status: "docs/sprint-artifacts/sprint-status.yaml"
+      completed: true
+      result: "6 epics, 31 stories tracked"
+
+# Current position in workflow
+current:
+  phase: "implementation"
+  next_workflow: "create-story"
+  next_agent: "sm"
+  next_command: "/bmad:bmm:workflows:create-story"
+  note: "Create detailed story files for Epic 3 stories"

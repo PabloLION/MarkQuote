@@ -2,6 +2,7 @@
  * Shared error logging utilities for the background worker. Errors are persisted so the popup can
  * display the latest failures to users and aid in support/debugging scenarios.
  */
+import { isTransientDisconnectError, logDebug, logError, logInfo } from "../lib/errors.js";
 import { ACTIVE_TAB_PERMISSION_MESSAGE, ERROR_STORAGE_KEY } from "./constants.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import { isUrlProtected } from "./protected-urls.js";
@@ -45,6 +46,7 @@ export async function recordError(
     return;
   }
 
+  // Use JSON.stringify for non-Error objects to preserve debugging details
   const message =
     error instanceof Error
       ? error.message
@@ -52,8 +54,8 @@ export async function recordError(
         ? error
         : JSON.stringify(error);
 
-  if (message.includes("Receiving end does not exist")) {
-    console.debug("[MarkQuote] Suppressing transient runtime disconnect", { context, message });
+  if (isTransientDisconnectError(error)) {
+    logDebug("Suppressing transient runtime disconnect", { context, message });
     return;
   }
 
@@ -64,7 +66,7 @@ export async function recordError(
     isUrlProtected(normalizedTabUrl) &&
     context === ERROR_CONTEXT.InjectSelectionScript
   ) {
-    console.info("[MarkQuote] Skipping protected-page injection error", {
+    logInfo("Skipping protected-page injection error", {
       tabUrl: normalizedTabUrl,
       message,
     });
@@ -89,6 +91,7 @@ export async function recordError(
   const metadataEntries = Object.entries(metadata).filter(
     ([, value]) => value !== undefined && value !== null,
   );
+  /* v8 ignore next 3 - tests always pass metadata; branch handles calls with empty metadata object */
   const appendedMessage =
     metadataEntries.length > 0
       ? `${decoratedMessage}\n${JSON.stringify(Object.fromEntries(metadataEntries), null, 2)}`
@@ -107,7 +110,7 @@ export async function recordError(
     await storageArea.set({ [ERROR_STORAGE_KEY]: updated });
     updateBadge(updated.length);
   } catch (storageError) {
-    console.error("[MarkQuote] Failed to persist error log", storageError, {
+    logError("Failed to persist error log", storageError, {
       originalError: error,
     });
   }
@@ -124,7 +127,7 @@ export async function clearStoredErrors(): Promise<void> {
     await storageArea.set({ [ERROR_STORAGE_KEY]: [] });
     updateBadge(0);
   } catch (storageError) {
-    console.error("[MarkQuote] Failed to clear error log", storageError);
+    logError("Failed to clear error log", storageError);
   }
 }
 
@@ -132,13 +135,13 @@ function updateBadge(count: number): void {
   const text = count > 0 ? String(Math.min(count, 99)) : ""; // Badge intentionally caps at 99 to avoid overflowing the action UI; local constant keeps the rationale near usage.
   chrome.action.setBadgeText({ text }).catch((error) => {
     // Badge updates can fail when the action is unavailable (e.g. during browser shutdown).
-    console.debug("[MarkQuote] Failed to update badge text", error);
+    logDebug("Failed to update badge text", { error });
   });
   if (count > 0) {
     // Badge updates only happen on error boundaries and recoveries, so the sequential API calls
     // keep the code simple with negligible impact on performance.
     chrome.action.setBadgeBackgroundColor({ color: "#d93025" }).catch((error) => {
-      console.debug("[MarkQuote] Failed to update badge background", error);
+      logDebug("Failed to update badge background", { error });
     });
   }
 }

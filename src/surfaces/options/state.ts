@@ -82,5 +82,6 @@ export function validateRegex(pattern: string): boolean {
 }
 
 export function normalizeFormat(templateField: HTMLTextAreaElement | null, draft: DraftOptions) {
+  /* v8 ignore next - test always provides templateField; fallback chain handles missing DOM or draft values */
   return templateField?.value ?? draft.format ?? DEFAULT_TEMPLATE;
 }

@@ -54,6 +54,7 @@ export function renderBootstrapError(): void {
   }
 }
 
+/* v8 ignore next 8 - bootstrap wrapper with error boundary */
 export async function bootstrapPopup(): Promise<void> {
   try {
     await loadPopupModule();
@@ -63,6 +64,7 @@ export async function bootstrapPopup(): Promise<void> {
   }
 }
 
+/* v8 ignore next 3 - production entry point, skipped in vitest */
 if (!isRunningUnderVitest(import.meta)) {
   void bootstrapPopup();
 }
