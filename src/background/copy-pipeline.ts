@@ -67,9 +67,8 @@ export async function runCopyPipeline(
 ): Promise<string> {
   const formatted = await formatForClipboard(markdown, title, url);
 
-  if (source === TRIGGER_SOURCE.POPUP) {
-    queuePopupPreview({ text: formatted, tabId, source });
-  }
+  // Always queue preview so confirmation popup can display it after hotkey/context-menu copies
+  queuePopupPreview({ text: formatted, tabId, source });
 
   recordE2ePreview(formatted);
 

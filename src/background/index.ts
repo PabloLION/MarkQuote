@@ -43,6 +43,11 @@ type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
 const pendingCopySources = new Map<number, CopySource>();
 const hotkeyPopupFallbackTimer = new Timer();
 let hotkeyFallbackTab: chrome.tabs.Tab | undefined;
+/**
+ * Flag to prevent duplicate copy requests when confirmation popup opens.
+ * Set before opening popup, cleared when REQUEST_SELECTION_COPY is received.
+ */
+let confirmationPopupPending = false;
 
 void initializeBadgeFromStorage();
 const pendingSourcesRestored = restorePendingCopySources();
@@ -227,10 +232,15 @@ async function maybeOpenConfirmationPopup(windowId?: number): Promise<void> {
       return;
     }
 
+    // Set flag to prevent popup from triggering duplicate copy request
+    confirmationPopupPending = true;
+
     const popupOptions = windowId !== undefined ? { windowId } : undefined;
     await chrome.action.openPopup(popupOptions);
     logInfo("Confirmation popup opened after copy");
   } catch (error) {
+    // Clear flag if popup failed to open
+    confirmationPopupPending = false;
     // Popup may fail to open in some contexts (e.g., no active window)
     // This is not critical, so we just log it
     console.debug("[MarkQuote] Could not open confirmation popup", error);
@@ -641,6 +651,13 @@ function handleErrorLogRequests(request: unknown, sendResponse: RuntimeSendRespo
  */
 function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean {
   cancelHotkeyFallback();
+
+  // Skip copy if this is a confirmation popup (copy already completed)
+  if (confirmationPopupPending) {
+    confirmationPopupPending = false;
+    sendResponse?.({ ok: true });
+    return true;
+  }
 
   chrome.tabs
     .query({ lastFocusedWindow: true, windowType: "normal" })
