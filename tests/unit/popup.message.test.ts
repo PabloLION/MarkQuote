@@ -11,6 +11,8 @@ function buildDom() {
     messageText,
     preview: document.createElement("div"),
     previewCode: null,
+    previewStats: null,
+    previewToggle: null,
     optionsButton: null,
     hotkeysButton: null,
     feedbackButton: null,

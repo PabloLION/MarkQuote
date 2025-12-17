@@ -14,6 +14,8 @@ afterEach(() => {
 const createPreview = () => ({
   render: vi.fn(),
   clear: vi.fn(),
+  isTruncated: vi.fn().mockReturnValue(false),
+  toggleExpanded: vi.fn(),
 });
 
 const createMessages = () => ({

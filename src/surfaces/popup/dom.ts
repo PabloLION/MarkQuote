@@ -3,6 +3,8 @@ export interface PopupDom {
   messageText: HTMLElement;
   preview: HTMLElement;
   previewCode: HTMLElement | null;
+  previewStats: HTMLElement | null;
+  previewToggle: HTMLElement | null;
   optionsButton: HTMLElement | null;
   hotkeysButton: HTMLElement | null;
   feedbackButton: HTMLElement | null;
@@ -25,6 +27,8 @@ export function loadPopupDom(): PopupDom {
     messageText,
     preview,
     previewCode: preview.querySelector("code"),
+    previewStats: document.getElementById("preview-stats"),
+    previewToggle: document.getElementById("preview-toggle"),
     optionsButton: document.getElementById("options-button"),
     hotkeysButton: document.getElementById("hotkeys-button"),
     feedbackButton: document.getElementById("feedback-button"),
