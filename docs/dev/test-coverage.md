@@ -112,18 +112,20 @@ AAA = Arrange → Act → Assert — this is the structure the diagram follows.
 | `[CONTEXT_COPY]`    | Context menu copy                     | ✅ `--grep "[CONTEXT_COPY]"`               | Exercises tab-side clipboard write and badge/error assertions                            |
 | `[HOTKEY_FALLBACK]` | Hotkey fallback (toolbar unpinned)    | ✅ `--grep "[HOTKEY_FALLBACK]"`            | Verifies fallback telemetry and OS clipboard integration                                 |
 | `[MULTI_FLOW]`      | Multi-trigger sequencing              | ✅ `--grep "[MULTI_FLOW]"`                 | Chains popup, hotkey, context menu, protected-page failure with OS clipboard asserts     |
+| `[ERROR_COPY_DETAILS]` | Copy details button copies markdown | ✅ `--grep "[ERROR_COPY_DETAILS]"`         | Validates core workflow for GitHub issue reporting (Story 4.3) |
+| `[ERROR_MARKDOWN_FORMAT]` | Markdown report format validation | ✅ `--grep "[ERROR_MARKDOWN_FORMAT]"`      | Ensures `## MarkQuote Error Report` structure correct          |
+| `[ERROR_DISMISS_CLEARS]` | Dismiss clears errors and badge    | ✅ `--grep "[ERROR_DISMISS_CLEARS]"`       | Validates dismiss flow clears state                            |
+| `[ERROR_BADGE_SYNC]` | Badge count sync with error log       | ✅ `--grep "[ERROR_BADGE_SYNC]"`           | Ensures badge stays in sync with error count                   |
+| `[PREVIEW_LONG_CONTENT]` | Long content formatting pipeline  | ✅ `--grep "[PREVIEW_LONG_CONTENT]"`       | Verifies >500 char content formats with blockquote (Story 4.2) |
+| `[PREVIEW_SHORT_CONTENT]` | Short content formatting pipeline | ✅ `--grep "[PREVIEW_SHORT_CONTENT]"`      | Verifies short content formats correctly                       |
 | —                   | Hotkey with toolbar icon pinned       | 🔶 Manual release check                    | Chrome blocks scripted shortcut-triggered popup                |
 | —                   | Toolbar icon click                    | 🔶 Manual release check                    | Same Chrome limitation on `chrome.action.openPopup()`          |
-| —                   | Error log lifecycle                   | ⏳ Planned (Story 3.9 follow-up)           | Seed, render, dismiss badge via popup                          |
-
-## Upcoming Coverage (Story 3.9)
-
-- **Error log lifecycle** — seed errors through the bridge, confirm the badge and popup list reflect them, then clear the log and verify badge reset.
+| —                   | Protected page (chrome://)            | 🔶 Backlog                                 | Chrome blocks extension access to chrome:// in E2E             |
+| —                   | Protected page (file://)              | 🔶 Backlog                                 | Chrome blocks extension access to file:// in E2E               |
 
 ### Additional Scenarios to Cover
 
 - Duplicate copy events (e.g., hotkey triggered twice without closing popup).
 - Toolbar action click once Chrome exposes a safe automation API (currently manual).
 - Protected page copy followed by manual fallback acknowledgement.
-- Error badge state for popup-reported errors (e.g., background errors seeded before open).
 - Toolbar hotkey (pinned) end-to-end confirmation — manual check until Chromium allows scripted `chrome.action.openPopup()`.
