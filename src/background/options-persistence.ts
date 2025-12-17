@@ -38,7 +38,7 @@ export async function persistOptions(payload: OptionsPayload): Promise<void> {
  * Ensures sync storage contains a valid options payload. This handles first-run
  * defaults as well as migrations from prior versions.
  */
-export async function ensureOptionsInitialized(): Promise<void> {
+export async function initializeOrMigrateOptions(): Promise<void> {
   const storageArea = chrome.storage?.sync;
   if (!storageArea) {
     logWarn("chrome.storage.sync is unavailable; cannot initialize options.");

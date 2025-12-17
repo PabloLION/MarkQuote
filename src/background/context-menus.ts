@@ -3,8 +3,8 @@ import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import type { CopySource } from "./types.js";
 
 type ContextMenuConfig = {
-  triggerCopy: (tab: chrome.tabs.Tab, source: CopySource) => Promise<void>;
-  ensureOptionsInitialized: () => Promise<void>;
+  handleCopyRequest: (tab: chrome.tabs.Tab, source: CopySource) => Promise<void>;
+  initializeOrMigrateOptions: () => Promise<void>;
   clearStoredErrors: () => Promise<void>;
   recordError: (
     context: ErrorContext,
@@ -40,13 +40,13 @@ export function registerContextMenus(config: ContextMenuConfig): void {
       );
     });
 
-    void config.ensureOptionsInitialized();
+    void config.initializeOrMigrateOptions();
     void config.clearStoredErrors();
   });
 
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === CONTEXT_MENU_IDS.COPY && tab) {
-      void config.triggerCopy(tab, TRIGGER_SOURCE.CONTEXT_MENU);
+      void config.handleCopyRequest(tab, TRIGGER_SOURCE.CONTEXT_MENU);
     } else if (info.menuItemId === CONTEXT_MENU_IDS.OPTIONS) {
       chrome.runtime.openOptionsPage();
     }
