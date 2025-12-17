@@ -1,8 +1,9 @@
+<!-- markdownlint-disable MD013 -->
 # Package Scripts
 
 TypeScript automation invoked through `package.json`.
 
-- `bundle.ts` — runs the release build and produces `.dev/releases/markquote-v<version>.zip` for manual upload.
+- `bundle.ts` — runs the release build and produces `releases/markquote-v<version>.zip` for manual upload to Chrome Web Store.
 - `prepare.ts` — installs git hooks and enforces local repo policies (e.g., `merge.ff=false`).
 - `capture-store-assets.ts` — entry point that orchestrates Chrome Web Store asset generation (`pnpm tools:chrome-assets`).
 - `tools/chrome-assets/options.ts`, `overview.ts`, `promo-small.ts`, `promo-marquee.ts` — CLI entrypoints for
