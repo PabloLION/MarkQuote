@@ -10,6 +10,7 @@ export interface PopupDom {
   problemBadge: HTMLElement | null;
   errorContainer: HTMLElement | null;
   errorList: HTMLElement | null;
+  copyDetailsButton: HTMLElement | null;
   reportErrorsButton: HTMLElement | null;
   dismissErrorsButton: HTMLElement | null;
 }
@@ -31,6 +32,7 @@ export function loadPopupDom(): PopupDom {
     problemBadge: document.getElementById("problem-badge"),
     errorContainer: document.getElementById("error-container"),
     errorList: document.getElementById("error-list"),
+    copyDetailsButton: document.getElementById("copy-details-button"),
     reportErrorsButton: document.getElementById("report-errors-button"),
     dismissErrorsButton: document.getElementById("dismiss-errors-button"),
   } satisfies PopupDom;
