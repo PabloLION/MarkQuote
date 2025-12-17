@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD013 -->
 # MarkQuote Frontend Architecture Document
 
 ## Change Log
@@ -119,12 +120,12 @@ For `shadcn-svelte` components, they will be copied into `src/surfaces/options/c
 
 ### Naming Conventions
 
-*   **Files:** `kebab-case` for filenames (e.g., `my-component.ts`, `service-worker.ts`).
-*   **TypeScript Functions/Variables:** `camelCase` (e.g., `createMyComponent`, `markdownConverter`).
-*   **TypeScript Classes:** `PascalCase` (e.g., `ClipboardManager`).
-*   **Interfaces/Types:** `PascalCase` (e.g., `MyComponentProps`, `MarkdownOptions`).
-*   **CSS Classes:** `kebab-case` (e.g., `my-component`, `options-page`).
-*   **Constants:** `SCREAMING_SNAKE_CASE` (e.g., `DEFAULT_FORMAT_STRING`).
+- **Files:** `kebab-case` for filenames (e.g., `my-component.ts`, `service-worker.ts`).
+- **TypeScript Functions/Variables:** `camelCase` (e.g., `createMyComponent`, `markdownConverter`).
+- **TypeScript Classes:** `PascalCase` (e.g., `ClipboardManager`).
+- **Interfaces/Types:** `PascalCase` (e.g., `MyComponentProps`, `MarkdownOptions`).
+- **CSS Classes:** `kebab-case` (e.g., `my-component`, `options-page`).
+- **Constants:** `SCREAMING_SNAKE_CASE` (e.g., `DEFAULT_FORMAT_STRING`).
 
 ## State Management
 
@@ -236,8 +237,9 @@ As there is no external HTTP client or backend API, this section is not applicab
 Explicit client-side routing is not required for MarkQuote. The extension's user interface is limited to a single HTML page (`options.html`) which serves as the configuration interface.
 
 Access to this "route" is managed by the Chrome browser itself:
-*   Users can typically access the options page by right-clicking the extension's toolbar icon and selecting "Options" or by navigating through Chrome's extension management page.
-*   There are no protected routes, lazy loading, or authentication guards needed, as the options page is a local, single-page interface.
+
+- Users can typically access the options page by right-clicking the extension's toolbar icon and selecting "Options" or by navigating through Chrome's extension management page.
+- There are no protected routes, lazy loading, or authentication guards needed, as the options page is a local, single-page interface.
 
 ## Styling Guidelines
 
@@ -316,23 +318,24 @@ describe('OptionsPage', () => {
 
 ### Testing Best Practices
 
-1.  **Unit Tests**: Test individual functions and components in isolation.
-2.  **Integration Tests**: Test the interaction between different modules (e.g., content script interacting with background script, markdown conversion with clipboard formatting).
-3.  **E2E Tests**: Automated End-to-End tests (e.g., with Playwright) are deferred to a later epic but will be crucial for verifying full user flows.
-4.  **Coverage Goals**: Aim for a high code coverage (e.g., 80%+) for core logic.
-5.  **Test Structure**: Follow the Arrange-Act-Assert (AAA) pattern for clear test cases.
-6.  **Mock External Dependencies**: Mock Chrome APIs and other external dependencies to ensure tests are fast and reliable.
+1. **Unit Tests**: Test individual functions and components in isolation.
+2. **Integration Tests**: Test the interaction between different modules (e.g., content script interacting with background script, markdown conversion with clipboard formatting).
+3. **E2E Tests**: Automated End-to-End tests (e.g., with Playwright) are deferred to a later epic but will be crucial for verifying full user flows.
+4. **Coverage Goals**: Aim for a high code coverage (e.g., 80%+) for core logic.
+5. **Test Structure**: Follow the Arrange-Act-Assert (AAA) pattern for clear test cases.
+6. **Mock External Dependencies**: Mock Chrome APIs and other external dependencies to ensure tests are fast and reliable.
 
 ## Environment Configuration
 
-### Environment Configuration
+### Configuration Overview
 
 For the current scope of the MarkQuote extension, explicit environment variables (e.g., API keys, database URLs) are generally not required at runtime.
 
 Any configuration differences between development and production environments will primarily be managed through:
-*   **`tsconfig.json`**: For TypeScript compiler options.
-*   **`package.json` scripts**: For build commands that might include flags for different modes (e.g., `--watch` for development, `--prod` for production).
-*   **`manifest.json`**: The extension manifest itself can have different versions or configuration options for development vs. production.
+
+- **`tsconfig.json`**: For TypeScript compiler options.
+- **`package.json` scripts**: For build commands that might include flags for different modes (e.g., `--watch` for development, `--prod` for production).
+- **`manifest.json`**: The extension manifest itself can have different versions or configuration options for development vs. production.
 
 Should the project expand to include external services (e.g., analytics, a backend API), then a more formal environment variable management system (e.g., using a `.env` file and a build-time replacement mechanism) would be introduced.
 
@@ -342,28 +345,107 @@ Should the project expand to include external services (e.g., analytics, a backe
 
 These rules are essential for maintaining code quality, preventing common errors, and ensuring consistency across the codebase.
 
-*   **TypeScript Strictness:** Always enable strict mode in `tsconfig.json` and strive to eliminate `any` types. Use specific types and interfaces.
-*   **Immutability:** Favor immutable data structures where possible, especially when dealing with state.
-*   **Error Handling:** Implement robust error handling for all asynchronous operations and potential failure points. Log errors appropriately.
-*   **Side Effects:** Be mindful of side effects in functions. Pure functions are preferred where applicable.
-*   **DOM Manipulation:** For the options page, minimize direct DOM manipulation outside of Svelte components. For content scripts, ensure DOM manipulation is targeted and does not interfere with the host page.
-*   **Chrome API Usage:** Always check `chrome.runtime.lastError` after Chrome API calls that might fail.
-*   **Svelte Reactivity:** Understand and correctly apply Svelte's reactivity rules (`$:`, `export let`, `bind:`) to ensure UI updates as expected.
+- **TypeScript Strictness:** Always enable strict mode in `tsconfig.json` and strive to eliminate `any` types. Use specific types and interfaces.
+- **Immutability:** Favor immutable data structures where possible, especially when dealing with state.
+- **Error Handling:** Implement robust error handling for all asynchronous operations and potential failure points. Log errors appropriately.
+- **Side Effects:** Be mindful of side effects in functions. Pure functions are preferred where applicable.
+- **DOM Manipulation:** For the options page, minimize direct DOM manipulation outside of Svelte components. For content scripts, ensure DOM manipulation is targeted and does not interfere with the host page.
+- **Chrome API Usage:** Always check `chrome.runtime.lastError` after Chrome API calls that might fail.
+- **Svelte Reactivity:** Understand and correctly apply Svelte's reactivity rules (`$:`, `export let`, `bind:`) to ensure UI updates as expected.
 
 ### Quick Reference
 
-*   **Common Commands:**
-    *   `tsc --watch`: Start TypeScript compiler in watch mode for development.
-    *   `tsc`: Compile TypeScript to JavaScript for production build.
-    *   `vitest`: Run unit and integration tests.
-    *   `vitest --watch`: Run tests in watch mode.
-*   **Key Import Patterns:**
-    *   `import { someFunction } from './utils/some-module';` (Relative imports for project files)
-    *   `import { getSettings } from '../core/storage';` (Relative imports for core utilities)
-*   **File Naming Conventions:**
-    *   `kebab-case` for filenames (e.g., `my-component.ts`, `service-worker.ts`).
-*   **Project-Specific Patterns and Utilities:**
-    *   **`chrome.storage`:** Use the `src/core/storage.ts` utilities for all global options persistence.
-    *   **Markdown Conversion:** Utilize the integrated markdown conversion library (Story 1.2) for all HTML-to-markdown needs.
+- **Common Commands:**
+  - `tsc --watch`: Start TypeScript compiler in watch mode for development.
+  - `tsc`: Compile TypeScript to JavaScript for production build.
+  - `vitest`: Run unit and integration tests.
+  - `vitest --watch`: Run tests in watch mode.
+- **Key Import Patterns:**
+  - `import { someFunction } from './utils/some-module';` (Relative imports for project files)
+  - `import { getSettings } from '../core/storage';` (Relative imports for core utilities)
+- **File Naming Conventions:**
+  - `kebab-case` for filenames (e.g., `my-component.ts`, `service-worker.ts`).
+- **Project-Specific Patterns and Utilities:**
+  - **`chrome.storage`:** Use the `src/core/storage.ts` utilities for all global options persistence.
+  - **Markdown Conversion:** Utilize the integrated markdown conversion library (Story 1.2) for all HTML-to-markdown needs.
 
-```
+## Design System
+
+### Design Tokens
+
+All UI surfaces share design tokens defined in `public/styles/shared.css`. These tokens ensure visual consistency across popup and options pages.
+
+#### Colors
+
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--surface-background` | `#ffffff` | `#111827` | Page background |
+| `--surface-foreground` | `#1e1e1e` | `#e5e7eb` | Primary text |
+| `--panel-background` | `#f4f4f5` | `#1f2937` | Card/section backgrounds |
+| `--border-color` | `#d4d4d8` | `#374151` | Borders and dividers |
+| `--accent-color` | `#2563eb` | `#3b82f6` | Primary actions, links |
+| `--accent-foreground` | `#ffffff` | `#0b1120` | Text on accent backgrounds |
+| `--danger-color` | `#dc2626` | `#f87171` | Destructive actions, errors |
+| `--status-success` | `#047857` | `#34d399` | Success states |
+
+#### Typography
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--font-size-xs` | `0.75rem` | Badges, labels |
+| `--font-size-sm` | `0.875rem` | Helper text, table headers |
+| `--font-size-base` | `1rem` | Body text |
+| `--font-size-lg` | `1.125rem` | Large body text |
+| `--font-size-xl` | `1.25rem` | Section headings (h2) |
+| `--font-size-2xl` | `1.5rem` | Medium headings |
+| `--font-size-3xl` | `1.75rem` | Page headings (h1) |
+| `--font-sans` | System font stack | Body text |
+| `--font-mono` | Monospace font stack | Code, previews |
+
+#### Spacing
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--space-1` | `4px` | Tight spacing |
+| `--space-2` | `8px` | Small gaps |
+| `--space-3` | `12px` | Medium gaps |
+| `--space-4` | `16px` | Standard padding |
+| `--space-5` | `20px` | Section padding |
+| `--space-6` | `24px` | Large gaps |
+| `--space-8` | `32px` | Page padding |
+
+#### Radii
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `--radius-sm` | `6px` | Small elements (code) |
+| `--radius-md` | `8px` | Inputs, cards |
+| `--radius-lg` | `12px` | Sections, containers |
+| `--radius-full` | `999px` | Pills, badges, buttons |
+
+### Accessibility
+
+All color combinations meet WCAG 2.1 AA contrast requirements (4.5:1 minimum):
+
+- Text on background: 16.67:1 (light), 14.33:1 (dark)
+- Accent on background: 5.17:1 (light), 4.82:1 (dark)
+- All interactive elements have visible focus states via `focus-visible`
+
+### UI Strings
+
+Key user-facing strings used across the extension:
+
+| Location | String | Purpose |
+|----------|--------|---------|
+| Popup | "Options" | Navigate to options page |
+| Popup | "Hotkey" | Open keyboard shortcuts |
+| Popup | "Feedback" | Report issues |
+| Popup | "Copy inline" | Request inline mode feature |
+| Popup | "We hit a problem while copying." | Error state header |
+| Options | "MarkQuote Options" | Page title |
+| Options | "Title Rules" / "URL Rules" | Section headings |
+| Options | "Add title rule" / "Add URL rule" | Action buttons |
+| Options | "Save changes" | Primary action |
+| Options | "Clear all" / "Confirm clear" | Destructive actions |
+| Options | "Unsaved changes" | Dirty state indicator |
+| Options | "Live preview" | Preview section heading |
