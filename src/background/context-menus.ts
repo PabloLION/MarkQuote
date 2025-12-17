@@ -1,3 +1,4 @@
+import { CONTEXT_MENU_IDS, TRIGGER_SOURCE } from "../lib/constants.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import type { CopySource } from "./types.js";
 
@@ -12,9 +13,6 @@ type ContextMenuConfig = {
   ) => Promise<void>;
 };
 
-const COPY_MENU_ID = "markquote";
-const OPTIONS_MENU_ID = "markquote-options";
-
 export function registerContextMenus(config: ContextMenuConfig): void {
   chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.removeAll(() => {
@@ -25,7 +23,7 @@ export function registerContextMenus(config: ContextMenuConfig): void {
 
       createContextMenu(
         {
-          id: COPY_MENU_ID,
+          id: CONTEXT_MENU_IDS.COPY,
           title: "Copy as Markdown Quote",
           contexts: ["selection"],
         },
@@ -34,7 +32,7 @@ export function registerContextMenus(config: ContextMenuConfig): void {
 
       createContextMenu(
         {
-          id: OPTIONS_MENU_ID,
+          id: CONTEXT_MENU_IDS.OPTIONS,
           title: "Options",
           contexts: ["action"],
         },
@@ -47,9 +45,9 @@ export function registerContextMenus(config: ContextMenuConfig): void {
   });
 
   chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === COPY_MENU_ID && tab) {
-      void config.triggerCopy(tab, "context-menu");
-    } else if (info.menuItemId === OPTIONS_MENU_ID) {
+    if (info.menuItemId === CONTEXT_MENU_IDS.COPY && tab) {
+      void config.triggerCopy(tab, TRIGGER_SOURCE.CONTEXT_MENU);
+    } else if (info.menuItemId === CONTEXT_MENU_IDS.OPTIONS) {
       chrome.runtime.openOptionsPage();
     }
   });

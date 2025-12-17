@@ -5,6 +5,8 @@
  * copy sources). Production logging is intentionally retained so support can diagnose field issues
  * without shipping a separate debugging build.
  */
+
+import { MESSAGE_TYPE, STORAGE_KEYS, TIMEOUTS, TRIGGER_SOURCE } from "../lib/constants.js";
 import { Timer } from "../lib/timer.js";
 import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
@@ -39,8 +41,6 @@ type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
 const pendingCopySources = new Map<number, CopySource>();
 const hotkeyPopupFallbackTimer = new Timer();
 let hotkeyFallbackTab: chrome.tabs.Tab | undefined;
-const PENDING_COPY_SESSION_KEY = "markquote/pending-copy-sources";
-const HOTKEY_POPUP_TIMEOUT_MS = 1000; // 1 second mirrors Chrome's own popup warm-up before falling back.
 
 void initializeBadgeFromStorage();
 const pendingSourcesRestored = restorePendingCopySources();
@@ -59,11 +59,11 @@ function cancelHotkeyFallback(): void {
 
 function isCopySource(candidate: unknown): candidate is CopySource {
   return (
-    candidate === "popup" ||
-    candidate === "hotkey" ||
-    candidate === "context-menu" ||
-    candidate === "e2e" ||
-    candidate === "unknown"
+    candidate === TRIGGER_SOURCE.POPUP ||
+    candidate === TRIGGER_SOURCE.HOTKEY ||
+    candidate === TRIGGER_SOURCE.CONTEXT_MENU ||
+    candidate === TRIGGER_SOURCE.E2E ||
+    candidate === TRIGGER_SOURCE.UNKNOWN
   );
 }
 
@@ -79,8 +79,8 @@ async function restorePendingCopySources(): Promise<void> {
   }
 
   try {
-    const snapshot = await sessionStorage.get(PENDING_COPY_SESSION_KEY);
-    const raw = snapshot?.[PENDING_COPY_SESSION_KEY];
+    const snapshot = await sessionStorage.get(STORAGE_KEYS.PENDING_COPY_SOURCES);
+    const raw = snapshot?.[STORAGE_KEYS.PENDING_COPY_SOURCES];
     if (!raw || typeof raw !== "object") {
       return;
     }
@@ -114,7 +114,7 @@ async function persistPendingCopySources(): Promise<void> {
   });
 
   try {
-    await sessionStorage.set({ [PENDING_COPY_SESSION_KEY]: serialized });
+    await sessionStorage.set({ [STORAGE_KEYS.PENDING_COPY_SOURCES]: serialized });
   } catch (error) {
     void recordError(ERROR_CONTEXT.PersistPendingSources, error);
   }
@@ -226,7 +226,7 @@ function notifyCopyProtected(
 
   void chrome.runtime
     .sendMessage({
-      type: "copy-protected",
+      type: MESSAGE_TYPE.COPY_PROTECTED,
       url: url ?? undefined,
     })
     .catch((error) => {
@@ -479,7 +479,7 @@ function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
     if (targetTab) {
       void triggerCopy(targetTab, "hotkey");
     }
-  }, HOTKEY_POPUP_TIMEOUT_MS);
+  }, TIMEOUTS.HOTKEY_POPUP_MS);
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -487,7 +487,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  if (request?.type === "popup-ready") {
+  if (request?.type === MESSAGE_TYPE.POPUP_READY) {
     setPopupDocumentId(sender.documentId);
     markPopupReady();
     cancelHotkeyFallback();
@@ -495,7 +495,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return false;
   }
 
-  if (request?.type === "popup-closed") {
+  if (request?.type === MESSAGE_TYPE.POPUP_CLOSED) {
     setPopupDocumentId(undefined);
     markPopupClosed();
     if (hotkeyFallbackTab && hasValidTabId(hotkeyFallbackTab)) {
@@ -507,7 +507,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return false;
   }
 
-  if (request?.type === "request-selection-copy") {
+  if (request?.type === MESSAGE_TYPE.REQUEST_SELECTION_COPY) {
     return handleSelectionCopyRequest(sendResponse);
   }
 
@@ -562,14 +562,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function handleErrorLogRequests(request: unknown, sendResponse: RuntimeSendResponse): boolean {
   const typedRequest = request as { type?: string } | undefined;
 
-  if (typedRequest?.type === "get-error-log") {
+  if (typedRequest?.type === MESSAGE_TYPE.GET_ERROR_LOG) {
     void getStoredErrors().then((errors) => {
       sendResponse?.({ errors });
     });
     return true;
   }
 
-  if (typedRequest?.type === "clear-error-log") {
+  if (typedRequest?.type === MESSAGE_TYPE.CLEAR_ERROR_LOG) {
     void clearStoredErrors().then(() => {
       sendResponse?.({ ok: true });
     });

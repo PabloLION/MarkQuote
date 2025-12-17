@@ -1,12 +1,18 @@
 # Project Backlog
 
-Concise list of outstanding fixes and refactors, grouped by focus area.
+Temporary holding area for new requests before they are organized into epics.
 
 ## Completed / Validated
 
 1. Streamline hotkey permissions so the shortcut works without forcing the popup
-   (guide users through granting host/site access). — shipped; keep tests green.
+   (guide users through granting host/site access). - shipped; keep tests green.
 
-## Parking Lot
+## Pending
 
-- (empty) — feature work is tracked in `docs/prd.md` Epics 4–6.
+- (empty) - all items have been moved to epics.
+
+## Notes
+
+- Feature work is tracked in `docs/epics.md` (Epics 4-6).
+- When adding new requests, add them here first, then move to appropriate epic
+  when planning the next release.

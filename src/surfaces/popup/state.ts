@@ -1,16 +1,17 @@
 import type { ErrorContext } from "../../background/error-context.js";
+import { type MESSAGE_TYPE, STATUS_MESSAGES, URLS } from "../../lib/constants.js";
 
 export type RuntimeMessage =
   | {
-      type: "copied-text-preview";
+      type: typeof MESSAGE_TYPE.COPIED_TEXT_PREVIEW;
       text: string;
     }
   | {
-      type: "copy-protected";
+      type: typeof MESSAGE_TYPE.COPY_PROTECTED;
       url?: string;
     }
   | {
-      type: "popup-ready";
+      type: typeof MESSAGE_TYPE.POPUP_READY;
     };
 
 export type LoggedExtensionError = {
@@ -19,12 +20,11 @@ export type LoggedExtensionError = {
   timestamp: number;
 };
 
-export const FEEDBACK_URL = "https://github.com/PabloLION/MarkQuote/issues";
-export const DEFAULT_STATUS_MESSAGE =
-  "Select text on a page, then trigger MarkQuote to copy it as a Markdown reference.";
-export const COPIED_STATUS_MESSAGE = "Markdown copied to clipboard.";
-export const PROTECTED_STATUS_MESSAGE =
-  "This page is protected, so MarkQuote can't access the selection. Try another tab.";
+// Re-export from shared constants for backward compatibility
+export const FEEDBACK_URL = URLS.FEEDBACK;
+export const DEFAULT_STATUS_MESSAGE = STATUS_MESSAGES.DEFAULT;
+export const COPIED_STATUS_MESSAGE = STATUS_MESSAGES.COPIED;
+export const PROTECTED_STATUS_MESSAGE = STATUS_MESSAGES.PROTECTED;
 export const SAMPLE_PREVIEW =
   "> This was addressed in 2014 when long-standing Markdown contributors released CommonMark, an unambiguous specification and test suite for Markdown.\n> Source: [Wiki:Markdown](https://en.wikipedia.org/wiki/Markdown)";
 
