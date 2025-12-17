@@ -292,6 +292,7 @@ export function initializeOptions(): () => void {
       format: normalizeFormat(context.dom.templateField, draft),
       titleRules: filteredRules("title"),
       urlRules: filteredRules("url"),
+      showConfirmationPopup: draft.showConfirmationPopup,
     };
   }
 

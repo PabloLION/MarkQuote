@@ -1,4 +1,4 @@
-export const CURRENT_OPTIONS_VERSION = 3;
+export const CURRENT_OPTIONS_VERSION = 4;
 
 export interface TitleRule {
   urlPattern: string;
@@ -23,6 +23,8 @@ export interface OptionsPayload {
   format: string;
   titleRules: TitleRule[];
   urlRules: UrlRule[];
+  /** When true, automatically open popup after hotkey/context-menu copy */
+  showConfirmationPopup: boolean;
 }
 
 function isTitleRuleCandidate(value: unknown): value is TitleRule {
@@ -218,6 +220,7 @@ export const DEFAULT_OPTIONS: OptionsPayload = {
   format: DEFAULT_TEMPLATE,
   titleRules: createDefaultTitleRules(),
   urlRules: createDefaultUrlRules(),
+  showConfirmationPopup: false,
 };
 
 export function validateOptionsPayload(payload: unknown): payload is OptionsPayload {
@@ -443,6 +446,7 @@ interface OptionsLike {
   linkRules?: unknown;
   urlRules?: unknown;
   rules?: unknown;
+  showConfirmationPopup?: unknown;
 }
 
 function isOptionsLike(candidate: unknown): candidate is OptionsLike {
@@ -478,6 +482,7 @@ export function normalizeStoredOptions(snapshot: StoredOptionsSnapshot): Options
       format: normalizeFormat(snapshot.options.format, false),
       titleRules,
       urlRules,
+      showConfirmationPopup: sanitizeBoolean(snapshot.options.showConfirmationPopup),
     };
   }
 
@@ -499,5 +504,6 @@ export function normalizeStoredOptions(snapshot: StoredOptionsSnapshot): Options
     format: legacyFormat,
     titleRules: resolvedTitleRules,
     urlRules: resolvedUrlRules,
+    showConfirmationPopup: false,
   };
 }
