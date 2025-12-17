@@ -1,23 +1,74 @@
 /**
+ * Protected page types for specific user guidance.
+ */
+export type ProtectedPageType =
+  | "chrome-internal"
+  | "edge-internal"
+  | "firefox-internal"
+  | "extension-page"
+  | "file-protocol"
+  | "generic"
+  | null;
+
+/**
  * Returns true when the URL points to a browser-internal or privileged surface where content script
  * execution is disallowed. This mirrors Chrome's own restrictions so we can fail gracefully.
  */
 export function isUrlProtected(candidate?: string | null): boolean {
+  return getProtectedPageType(candidate) !== null;
+}
+
+/**
+ * Determines the type of protected page for specific user guidance.
+ * Returns null if the page is not protected.
+ */
+export function getProtectedPageType(candidate?: string | null): ProtectedPageType {
   if (!candidate) {
-    return false;
+    return null;
   }
 
   const url = candidate.toLowerCase();
-  return (
+
+  // Chrome internal pages
+  if (
     url.startsWith("chrome://") ||
     url.startsWith("chrome-error://") ||
     url.startsWith("chrome-untrusted://") ||
     url.startsWith("chrome-search://") ||
-    url.startsWith("edge://") ||
-    url.startsWith("opera://") ||
-    url.startsWith("vivaldi://") ||
-    url.startsWith("brave://") ||
-    url.startsWith("devtools://") ||
-    url.startsWith("about:")
-  );
+    url.startsWith("devtools://")
+  ) {
+    return "chrome-internal";
+  }
+
+  // Chrome extension pages
+  if (url.startsWith("chrome-extension://")) {
+    return "extension-page";
+  }
+
+  // Edge internal pages
+  if (url.startsWith("edge://")) {
+    return "edge-internal";
+  }
+
+  // Firefox internal pages
+  if (url.startsWith("about:") || url.startsWith("moz-extension://")) {
+    return "firefox-internal";
+  }
+
+  // Other browser internal pages (Opera, Vivaldi, Brave)
+  if (url.startsWith("opera://") || url.startsWith("vivaldi://") || url.startsWith("brave://")) {
+    return "chrome-internal"; // Same guidance as Chrome
+  }
+
+  // File protocol pages
+  if (url.startsWith("file://")) {
+    return "file-protocol";
+  }
+
+  // Other extension pages (WebExtensions)
+  if (url.includes("-extension://")) {
+    return "extension-page";
+  }
+
+  return null;
 }
