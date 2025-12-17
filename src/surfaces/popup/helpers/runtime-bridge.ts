@@ -1,3 +1,4 @@
+import { MESSAGE_TYPE } from "../../../lib/constants.js";
 import type { RuntimeMessage } from "../state.js";
 
 interface RuntimeBridgeDeps {
@@ -15,7 +16,7 @@ export interface RuntimeBridge {
 export function createRuntimeBridge(deps: RuntimeBridgeDeps): RuntimeBridge {
   const { runtime, windowRef } = deps;
 
-  runtime.sendMessage({ type: "popup-ready" }).catch(() => {
+  runtime.sendMessage({ type: MESSAGE_TYPE.POPUP_READY }).catch(() => {
     // background may be asleep; ignore
   });
 
@@ -25,7 +26,7 @@ export function createRuntimeBridge(deps: RuntimeBridgeDeps): RuntimeBridge {
       return;
     }
     notifiedClosure = true;
-    runtime.sendMessage({ type: "popup-closed" }).catch(() => {
+    runtime.sendMessage({ type: MESSAGE_TYPE.POPUP_CLOSED }).catch(() => {
       // ignore errors for suspended background worker
     });
   };
@@ -46,7 +47,7 @@ export function createRuntimeBridge(deps: RuntimeBridgeDeps): RuntimeBridge {
       messageListener as Parameters<typeof runtime.onMessage.addListener>[0],
     );
 
-    runtime.sendMessage({ type: "request-selection-copy" }).catch((error) => {
+    runtime.sendMessage({ type: MESSAGE_TYPE.REQUEST_SELECTION_COPY }).catch((error) => {
       deps.onSelectionCopyError?.(error);
     });
   }

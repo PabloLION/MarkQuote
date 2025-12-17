@@ -1,3 +1,4 @@
+import { MESSAGE_TYPE } from "../../../lib/constants.js";
 import { copyMarkdownToClipboard } from "../clipboard.js";
 import type { MessageController } from "../message.js";
 import type { PreviewController } from "../preview.js";
@@ -60,12 +61,12 @@ export function createCopyFlow(deps: CopyFlowDeps): CopyFlow {
   }
 
   async function handleMessage(message: RuntimeMessage): Promise<boolean> {
-    if (message.type === "copied-text-preview") {
+    if (message.type === MESSAGE_TYPE.COPIED_TEXT_PREVIEW) {
       await handleCopiedPreview(message.text);
       return true;
     }
 
-    if (message.type === "copy-protected") {
+    if (message.type === MESSAGE_TYPE.COPY_PROTECTED) {
       handleCopyProtected();
       return true;
     }

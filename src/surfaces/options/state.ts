@@ -1,3 +1,4 @@
+import { TIMEOUTS } from "../../lib/constants.js";
 import { compileRegex, describePattern } from "../../lib/regex.js";
 import {
   CURRENT_OPTIONS_VERSION,
@@ -18,7 +19,7 @@ export const DEFAULT_PREVIEW_SAMPLE = {
   url: DEFAULT_AMAZON_SAMPLE_URL,
 };
 
-export const STATUS_TIMEOUT_MS = 3000;
+export const STATUS_TIMEOUT_MS = TIMEOUTS.STATUS_DISPLAY_MS;
 
 export type DraftOptions = OptionsPayload;
 

@@ -3,6 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { LIMITS, MESSAGE_TYPE, TIMEOUTS, TRIGGER_SOURCE } from "../lib/constants.js";
 import { getErrorMessage, isTransientDisconnectError } from "../lib/errors.js";
 import { Timer } from "../lib/timer.js";
 import { writeClipboardTextFromBackground } from "./background-clipboard.js";
@@ -20,9 +21,6 @@ type PopupPreviewPayload = {
   tabId?: number;
   source?: CopySource;
 };
-
-const POPUP_PREVIEW_RETRY_DELAY_MS = 100; // Short retry window helps bridge popup startup races without noticeable delay.
-const POPUP_PREVIEW_MAX_RETRIES = 3;
 
 let popupReady = false;
 let queuedPopupPreview: PopupPreviewPayload | undefined;
@@ -69,7 +67,7 @@ export async function runCopyPipeline(
 ): Promise<string> {
   const formatted = await formatForClipboard(markdown, title, url);
 
-  if (source === "popup") {
+  if (source === TRIGGER_SOURCE.POPUP) {
     queuePopupPreview({ text: formatted, tabId, source });
   }
 
@@ -143,7 +141,7 @@ function queuePopupPreview(payload: PopupPreviewPayload): void {
 }
 
 function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number): void {
-  const delay = POPUP_PREVIEW_RETRY_DELAY_MS * Math.max(attempt, 1);
+  const delay = TIMEOUTS.POPUP_PREVIEW_RETRY_MS * Math.max(attempt, 1);
   popupPreviewRetryTimer.schedule(() => {
     if (!popupReady) {
       queuedPopupPreview = payload;
@@ -220,7 +218,7 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     const documentId = activePopupDocumentId;
     const runtimeId = chrome.runtime?.id;
     const message = {
-      type: "copied-text-preview",
+      type: MESSAGE_TYPE.COPIED_TEXT_PREVIEW,
       text: payload.text,
     } as const;
 
@@ -242,7 +240,7 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     const normalizedError = runtimeErrorMessage ?? getErrorMessage(error);
     const isTransient = !runtimeErrorMessage || isTransientDisconnectError(runtimeErrorMessage);
 
-    if (isTransient && attempt + 1 < POPUP_PREVIEW_MAX_RETRIES) {
+    if (isTransient && attempt + 1 < LIMITS.POPUP_PREVIEW_MAX_RETRIES) {
       schedulePopupPreviewRetry(payload, attempt + 1);
       return;
     }

@@ -1,3 +1,5 @@
+import { STORAGE_KEYS } from "../lib/constants.js";
+
 export const DEFAULT_TITLE = "Page Title";
 export const DEFAULT_URL = "https://example.com";
 export const E2E_LAST_FORMATTED_MESSAGE = "e2e:get-last-formatted";
@@ -14,6 +16,7 @@ export const E2E_RESET_PREVIEW_STATE_MESSAGE = "e2e:reset-preview-state";
 export const E2E_RESET_STORAGE_MESSAGE = "e2e:reset-storage";
 export const E2E_GET_ACTIVE_TAB_MESSAGE = "e2e:get-active-tab";
 export const E2E_FIND_TAB_MESSAGE = "e2e:find-tab";
-export const ERROR_STORAGE_KEY = "markquote-error-log";
+// Re-export from shared constants for backward compatibility
+export const ERROR_STORAGE_KEY = STORAGE_KEYS.ERROR_LOG;
 export const ACTIVE_TAB_PERMISSION_MESSAGE =
   'Chrome only grants keyboard shortcuts access after you allow the site in the extension\'s "Site access" settings.';

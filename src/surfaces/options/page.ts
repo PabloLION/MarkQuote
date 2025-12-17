@@ -2,6 +2,7 @@
  * Options surface entry point. Coordinates DOM wiring, rule editing helpers, preview updates, and
  * persistence so the giant template can stay modular.
  */
+import { TIMEOUTS } from "../../lib/constants.js";
 import {
   normalizeStoredOptions,
   type OptionsPayload,
@@ -40,7 +41,6 @@ import {
 import { hideStatus, showStatus } from "./status.js";
 
 type ClearConfirmationTimers = Partial<Record<DragScope, ReturnType<typeof setTimeout>>>;
-const CLEAR_CONFIRMATION_TIMEOUT_MS = 5000;
 
 /** Bootstraps the options UI and returns a disposer for tests/HMR. */
 export function initializeOptions(): () => void {
@@ -260,7 +260,7 @@ export function initializeOptions(): () => void {
 
     clearTimers[config.scope] = setTimeout(() => {
       resetClearConfirmation(config.scope);
-    }, CLEAR_CONFIRMATION_TIMEOUT_MS);
+    }, TIMEOUTS.CLEAR_CONFIRMATION_MS);
   }
 
   function confirmClearRules(scope: DragScope): void {
