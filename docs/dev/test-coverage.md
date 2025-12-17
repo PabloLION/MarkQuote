@@ -49,6 +49,13 @@ flowchart LR
     D6["[OPTIONS_PREVIEW]<br/>Options UI edits"]
     D7["[OPTIONS_CHAIN]<br/>URL rule break / continue"]
     D8["[MULTI_FLOW]<br/>Sequential copy matrix"]
+    D9["[PREVIEW_LONG_CONTENT]<br/>Long content pipeline"]
+    D10["[PREVIEW_SHORT_CONTENT]<br/>Short content pipeline"]
+    E0["seedBackgroundError()"]
+    E1["[ERROR_COPY_DETAILS]<br/>Copy markdown report"]
+    E2["[ERROR_MARKDOWN_FORMAT]<br/>Validate report format"]
+    E3["[ERROR_DISMISS_CLEARS]<br/>Dismiss clears state"]
+    E4["[ERROR_BADGE_SYNC]<br/>Badge count sync"]
   end
 
   style ASS fill:#E6F4EA,stroke:#3B8551,stroke-width:2px,color:#13321F
@@ -78,6 +85,12 @@ flowchart LR
   D --> D6
   D --> D7
   D --> D8
+  D --> D9
+  D --> D10
+  E0 --> E1
+  E0 --> E2
+  E0 --> E3
+  E0 --> E4
   E --> F --> G --> H
 ```
 
