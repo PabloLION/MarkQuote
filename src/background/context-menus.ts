@@ -4,7 +4,7 @@ import type { CopySource } from "./types.js";
 
 type ContextMenuConfig = {
   triggerCopy: (tab: chrome.tabs.Tab, source: CopySource) => Promise<void>;
-  ensureOptionsInitialized: () => Promise<void>;
+  initializeOrMigrateOptions: () => Promise<void>;
   clearStoredErrors: () => Promise<void>;
   recordError: (
     context: ErrorContext,
@@ -40,7 +40,7 @@ export function registerContextMenus(config: ContextMenuConfig): void {
       );
     });
 
-    void config.ensureOptionsInitialized();
+    void config.initializeOrMigrateOptions();
     void config.clearStoredErrors();
   });
 

@@ -31,7 +31,7 @@ import {
   initializeBadgeFromStorage,
   recordError,
 } from "./errors.js";
-import { ensureOptionsInitialized, persistOptions } from "./options-persistence.js";
+import { initializeOrMigrateOptions, persistOptions } from "./options-persistence.js";
 import { isUrlProtected } from "./protected-urls.js";
 import type { CopySource } from "./types.js";
 
@@ -181,7 +181,7 @@ async function resetExtensionState(): Promise<void> {
     console.warn("[MarkQuote] Failed to reset storage during E2E reset", error);
   }
 
-  await ensureOptionsInitialized();
+  await initializeOrMigrateOptions();
 }
 
 /**
@@ -326,7 +326,7 @@ registerContextMenus({
   triggerCopy: async (tab, source) => {
     await triggerCopy(tab, source);
   },
-  ensureOptionsInitialized,
+  initializeOrMigrateOptions,
   clearStoredErrors,
   recordError,
 });
