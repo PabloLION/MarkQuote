@@ -6,13 +6,6 @@
  * without shipping a separate debugging build.
  */
 import { Timer } from "../lib/timer.js";
-import {
-  CURRENT_OPTIONS_VERSION,
-  DEFAULT_OPTIONS,
-  normalizeStoredOptions,
-  type OptionsPayload,
-  validateOptionsPayload,
-} from "../options-schema.js";
 import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import {
@@ -36,6 +29,7 @@ import {
   initializeBadgeFromStorage,
   recordError,
 } from "./errors.js";
+import { ensureOptionsInitialized, persistOptions } from "./options-persistence.js";
 import { isUrlProtected } from "./protected-urls.js";
 import type { CopySource } from "./types.js";
 
@@ -486,94 +480,6 @@ function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
       void triggerCopy(targetTab, "hotkey");
     }
   }, HOTKEY_POPUP_TIMEOUT_MS);
-}
-
-/**
- * Persists the latest options payload to sync storage while retaining backwards compatibility with
- * earlier schema versions.
- */
-async function persistOptions(payload: OptionsPayload): Promise<void> {
-  const storageArea = chrome.storage?.sync;
-  if (!storageArea) {
-    console.warn("chrome.storage.sync is unavailable; cannot persist options.");
-    return;
-  }
-
-  const normalized = normalizeStoredOptions({ options: payload });
-  await storageArea.set({
-    options: normalized,
-    format: normalized.format,
-    titleRules: normalized.titleRules,
-    urlRules: normalized.urlRules,
-  });
-}
-
-/**
- * Ensures sync storage contains a valid options payload. This handles first-run defaults as well as
- * migrations from prior versions.
- */
-async function ensureOptionsInitialized(): Promise<void> {
-  const storageArea = chrome.storage?.sync;
-  if (!storageArea) {
-    console.warn("chrome.storage.sync is unavailable; cannot initialize options.");
-    return;
-  }
-
-  try {
-    const snapshot = await storageArea.get([
-      "options",
-      "format",
-      "titleRules",
-      "urlRules",
-      "rules",
-    ]);
-
-    const hasExistingData = Object.values(snapshot).some((value) => {
-      if (Array.isArray(value)) {
-        return value.length > 0;
-      }
-      if (value && typeof value === "object") {
-        return Object.keys(value).length > 0;
-      }
-      return Boolean(value);
-    });
-
-    if (!hasExistingData) {
-      await storageArea.set({
-        options: DEFAULT_OPTIONS,
-        format: DEFAULT_OPTIONS.format,
-        titleRules: DEFAULT_OPTIONS.titleRules,
-        urlRules: DEFAULT_OPTIONS.urlRules,
-      });
-      return;
-    }
-
-    const normalized = normalizeStoredOptions(snapshot);
-
-    if (!validateOptionsPayload(snapshot.options)) {
-      console.info("[MarkQuote] Normalizing legacy options payload before continuing.");
-      await storageArea.set({
-        options: normalized,
-        format: normalized.format,
-        titleRules: normalized.titleRules,
-        urlRules: normalized.urlRules,
-      });
-      return;
-    }
-
-    const existingOptions = snapshot.options as { version?: number } | undefined;
-    if (existingOptions?.version !== CURRENT_OPTIONS_VERSION) {
-      await storageArea.set({
-        options: normalized,
-        format: normalized.format,
-        titleRules: normalized.titleRules,
-        urlRules: normalized.urlRules,
-      });
-    }
-  } catch (error) {
-    console.warn("Failed to initialize options storage.", error);
-    void recordError(ERROR_CONTEXT.InitializeOptions, error);
-  }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
