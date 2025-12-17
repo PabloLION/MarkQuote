@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { compileRegex, isPatternAllowed, MAX_REGEX_PATTERN_LENGTH } from "../../src/lib/regex.js";
-import { SAFE_REGEX_ALLOWLIST } from "../../src/options-schema.js";
+import {
+  compileRegex,
+  isPatternAllowed,
+  MAX_REGEX_PATTERN_LENGTH,
+} from "../../../src/lib/regex.js";
+import { SAFE_REGEX_ALLOWLIST } from "../../../src/options-schema.js";
 
 describe("regex helpers", () => {
   afterEach(() => {
