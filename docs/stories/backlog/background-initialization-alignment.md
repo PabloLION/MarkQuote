@@ -1,4 +1,14 @@
-# Backlog – Background Naming & Initialization Alignment
+# Backlog - Background Naming & Initialization Alignment
+
+> **SUPERSEDED:** This backlog item has been merged into
+> [Story 4.4 - Background Naming & Initialization Alignment](../4.4-background-diagnostics-alignment.md)
+> as part of Epic 4 (Copy Feedback & Diagnostics) for v1.1.0.
+
+---
+
+*Original content preserved below for reference.*
+
+---
 
 ## Overview
 
@@ -49,4 +59,5 @@ regressions and makes onboarding harder.
 
 ## References
 
-- Backlog: Epic 3 (quality) and Epic 4 (core stability) items requesting alignment.
+- Backlog: Epic 3 (quality) and Epic 4 (core stability) items requesting
+  alignment.

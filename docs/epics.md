@@ -96,13 +96,17 @@
 
 ### Stories
 
-| ID | Story | Description |
-|----|-------|-------------|
-| 4.1 | Always-On Confirmation Toggle | Programmatic popup via `chrome.action.openPopup()` for feedback after non-icon triggers |
-| 4.2 | Post-Copy Feedback UX Refresh | Improve messaging, preview, protected-host handling |
-| 4.3 | Structured Diagnostics & GitHub Handoff | Enhanced diagnostics pipeline, popup affordance, URL-safe export |
-| 4.4 | Background Diagnostics Alignment | Rename/refactor initialization helpers, unify reset flows |
-| 4.5 | Runtime Constant Consolidation | Extract shared constants into single module |
+| ID | Story | Description | Depends On |
+|----|-------|-------------|------------|
+| 4.5 | Runtime Constant Consolidation | Extract shared constants into single module | - |
+| 4.4 | Background Naming & Initialization Alignment | Rename/refactor initialization helpers, unify reset flows | 4.5 |
+| 4.3 | Structured Diagnostics & GitHub Handoff | Enhanced diagnostics pipeline, popup affordance, URL-safe export | 4.5, 4.4 |
+| 4.2 | Post-Copy Feedback UX Refresh | Improve messaging, preview, protected-host handling | 4.5, 4.4 |
+| 4.1 | Always-On Confirmation Toggle | Programmatic popup via `chrome.action.openPopup()` for feedback after non-icon triggers | 4.2, 4.3 |
+
+### Implementation Order
+
+1. **4.5** (foundation) → **4.4** (refactor) → **4.3** + **4.2** (parallel) → **4.1** (flagship)
 
 ### Story 4.1 Details: Always-On Confirmation Toggle
 

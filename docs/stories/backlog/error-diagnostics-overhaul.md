@@ -1,19 +1,28 @@
-# Backlog – Error Diagnostics and Reporting
+# Backlog - Error Diagnostics and Reporting
+
+> **SUPERSEDED:** This backlog item has been merged into
+> [Story 4.3 - Structured Diagnostics & GitHub Handoff](../4.3-structured-diagnostics.md)
+> as part of Epic 4 (Copy Feedback & Diagnostics) for v1.1.0.
+
+---
+
+*Original content preserved below for reference.*
+
+---
 
 ## Overview
 
 This backlog item upgrades our error-reporting pipeline so developers and
 testers can reproduce failures quickly. Today the popup surfaces terse messages,
-there is no
-copyable payload, and background logs omit context such as the source trigger or
-tab URL. Smoke testing during Story 3.9 exposed how hard it is to diagnose
-clipboard regressions without richer diagnostics.
+there is no copyable payload, and background logs omit context such as the
+source trigger or tab URL. Smoke testing during Story 3.9 exposed how hard it
+is to diagnose clipboard regressions without richer diagnostics.
 
 ## Objectives
 
 - Embed structured metadata (trigger source, tab URL, stack traces, clipboard
   status) into every error captured by the background worker.
-- Surface a “Copy error details” action in the popup that copies JSON
+- Surface a "Copy error details" action in the popup that copies JSON
   diagnostics to the clipboard.
 - Ensure error badges, popups, and logs stay in sync when errors are cleared or
   reset between tests.
@@ -33,7 +42,7 @@ clipboard regressions without richer diagnostics.
 
 - Every captured error includes the trigger source, tab URL (if available),
   message, stack, and clipboard status flags.
-- Popup error list displays a “Copy details” control that copies the full
+- Popup error list displays a "Copy details" control that copies the full
   diagnostic payload.
 - Clearing errors via the popup or reset commands removes stored diagnostics and
   badge counts.
@@ -50,4 +59,4 @@ clipboard regressions without richer diagnostics.
 
 ## References
 
-- Backlog: Follow-up tasks under “Story 3.9 Completion Tasks”
+- Backlog: Follow-up tasks under "Story 3.9 Completion Tasks"
