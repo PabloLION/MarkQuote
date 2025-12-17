@@ -1,13 +1,19 @@
 /**
- * Prints a formatted smoke test checklist to the terminal.
+ * Smoke test automation script.
+ * Builds the extension, launches Playwright with it loaded, and prints checklist.
  * Run with: pnpm smoke
  */
+import { execSync } from "node:child_process";
 import { promises as fs } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { chromium } from "@playwright/test";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
+const distDir = path.join(rootDir, "dist");
 
 interface PackageJson {
   version?: string;
@@ -20,15 +26,90 @@ async function getVersion(): Promise<string> {
   return pkg.version ?? "unknown";
 }
 
+function runBuild(release: boolean): void {
+  console.log(`Building extension (${release ? "release" : "smoke"})...\n`);
+  const env = release ? { ...process.env, RELEASE_BUILD: "1" } : process.env;
+  execSync("pnpm build", { cwd: rootDir, stdio: "inherit", env });
+  console.log("\n✓ Build complete\n");
+}
+
+async function getExtensionId(
+  context: Awaited<ReturnType<typeof chromium.launchPersistentContext>>,
+): Promise<string> {
+  const page = await context.newPage();
+  await page.goto("chrome://extensions");
+
+  const devModeToggle = page.locator("cr-toggle#devMode");
+  await devModeToggle.waitFor({ state: "visible" });
+
+  if ((await devModeToggle.getAttribute("aria-pressed")) === "false") {
+    await devModeToggle.click();
+    await page.waitForTimeout(500);
+  }
+
+  const extensionCard = page.locator("extensions-item");
+  await extensionCard.first().waitFor({ state: "visible" });
+  const extensionId = await extensionCard.first().getAttribute("id");
+  await page.close();
+
+  if (!extensionId) {
+    throw new Error("Unable to determine extension id from chrome://extensions");
+  }
+
+  return extensionId;
+}
+
+async function launchPlaywright(): Promise<{ cleanup: () => Promise<void> }> {
+  const testUrl = "https://en.wikipedia.org/wiki/Pablo_Picasso";
+  const userDataDir = await mkdtemp(path.join(os.tmpdir(), "markquote-smoke-"));
+
+  console.log("Launching Playwright with extension loaded...");
+  console.log(`  Extension: ${distDir}`);
+  console.log(`  Test page: ${testUrl}`);
+  console.log(`  Profile: ${userDataDir}\n`);
+
+  const context = await chromium.launchPersistentContext(userDataDir, {
+    headless: false,
+    colorScheme: "dark",
+    args: [`--disable-extensions-except=${distDir}`, `--load-extension=${distDir}`],
+    viewport: { width: 1280, height: 800 },
+  });
+
+  // Get extension ID
+  const extensionId = await getExtensionId(context);
+  console.log(`  Extension ID: ${extensionId}\n`);
+
+  // Open popup page first (to see smoke build timestamp)
+  const popupPage = await context.newPage();
+  await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
+
+  // Open options page
+  const optionsPage = await context.newPage();
+  await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
+
+  // Open test page (Wikipedia) last
+  const testPage = await context.newPage();
+  await testPage.goto(testUrl);
+
+  console.log("✓ Playwright launched - browser will stay open for manual testing");
+  console.log("  Opened: Popup, Options, Wikipedia pages\n");
+  console.log("  Press Ctrl+C to close when done.\n");
+
+  const cleanup = async () => {
+    await context.close();
+    await rm(userDataDir, { recursive: true, force: true });
+  };
+
+  return { cleanup };
+}
+
 function printChecklist(version: string): void {
+  const smokePlanPath = path.join("docs", "dev", "smoke-test-plan.md");
+
   const checklist = `
 ╔═══════════════════════════════════════════════════════════════════╗
-║           MarkQuote Smoke Test Checklist (v${version.padEnd(8)})            ║
+║     MarkQuote Smoke Test v${version.padEnd(8)}                              ║
 ╚═══════════════════════════════════════════════════════════════════╝
-
-Setup:
-  pnpm build
-  Load dist/ in chrome://extensions (Developer mode → Load unpacked)
 
 ─────────────────────────────────────────────────────────────────────
 Manual-Only Tests (Playwright cannot automate these):
@@ -55,7 +136,7 @@ Feature Verification (also covered by E2E, but verify visually):
   [ ] 14. Icon renders correctly at all sizes
 
 ─────────────────────────────────────────────────────────────────────
-Full documentation: docs/dev/smoke-test-plan.md
+Full documentation: ${smokePlanPath}
 ─────────────────────────────────────────────────────────────────────
 `;
 
@@ -63,11 +144,30 @@ Full documentation: docs/dev/smoke-test-plan.md
 }
 
 async function main(): Promise<void> {
+  const release = process.argv.includes("--release");
+  runBuild(release);
+
   const version = await getVersion();
   printChecklist(version);
+
+  if (release) {
+    console.log("  ⚠ RELEASE BUILD - verify NO smoke timestamp in popup\n");
+  }
+
+  const { cleanup } = await launchPlaywright();
+
+  // Keep process running until user closes
+  process.on("SIGINT", async () => {
+    console.log("\n\nCleaning up...");
+    await cleanup();
+    process.exit(0);
+  });
+
+  // Keep the process alive
+  await new Promise(() => {});
 }
 
 main().catch((error) => {
-  console.error("Failed to print smoke checklist:", error);
+  console.error("Smoke test setup failed:", error);
   process.exit(1);
 });

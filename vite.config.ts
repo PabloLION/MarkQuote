@@ -26,7 +26,15 @@ export default defineConfig(({ command }) => {
     };
   }
 
+  // Default: smoke build with timestamp. Set RELEASE_BUILD=1 for clean release.
+  const smokeTimestamp = process.env.RELEASE_BUILD
+    ? ""
+    : new Date().toLocaleTimeString("en-GB", { hour12: false });
+
   return {
+    define: {
+      __SMOKE_BUILD_TIME__: JSON.stringify(smokeTimestamp),
+    },
     build: {
       minify: false,
       rollupOptions: {

@@ -4,6 +4,9 @@ import {
   type ModuleImporter,
 } from "./loader-helpers.js";
 
+// Vite injects this at build time when SMOKE_BUILD_TIME env var is set
+declare const __SMOKE_BUILD_TIME__: string;
+
 const POPUP_DEV_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEV_POPUP_ENTRY: string = "/src/surfaces/popup/main.ts";
 
@@ -54,8 +57,22 @@ export function renderBootstrapError(): void {
   }
 }
 
+function renderSmokeBuildTimestamp(): void {
+  // __SMOKE_BUILD_TIME__ is replaced by Vite at build time
+  // It will be empty string for normal builds, timestamp for smoke builds
+  // When empty, this entire function is tree-shaken from the release build
+  const buildTime = typeof __SMOKE_BUILD_TIME__ !== "undefined" ? __SMOKE_BUILD_TIME__ : "";
+  if (!buildTime) return;
+
+  const el = document.createElement("div");
+  el.textContent = `Smoke #${buildTime}`;
+  el.style.cssText = "font-size:10px;color:#888;text-align:left;margin-top:8px;";
+  document.body.appendChild(el);
+}
+
 /* v8 ignore next 8 - bootstrap wrapper with error boundary */
 export async function bootstrapPopup(): Promise<void> {
+  renderSmokeBuildTimestamp();
   try {
     await loadPopupModule();
   } catch (error) {
