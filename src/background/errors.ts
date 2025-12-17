@@ -8,7 +8,40 @@ import { isTransientDisconnectError, logDebug, logError, logInfo } from "../lib/
 import { ACTIVE_TAB_PERMISSION_MESSAGE, ERROR_STORAGE_KEY } from "./constants.js";
 import { ERROR_CONTEXT, type ErrorContext } from "./error-context.js";
 import { isUrlProtected } from "./protected-urls.js";
-import type { LoggedError } from "./types.js";
+import type { CopySource, DiagnosticMetadata, LoggedError } from "./types.js";
+
+/**
+ * Extracts hostname from a URL for privacy-preserving diagnostics.
+ * Returns undefined for invalid URLs or empty strings.
+ */
+function extractHostname(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Builds structured diagnostic metadata for error reports.
+ * Automatically captures extension version and user agent.
+ */
+function buildDiagnosticMetadata(
+  error: unknown,
+  extra?: Record<string, unknown>,
+): DiagnosticMetadata {
+  const { tabUrl, source, tabId } = extra ?? {};
+
+  return {
+    source: typeof source === "string" ? (source as CopySource) : undefined,
+    tabUrl: extractHostname(typeof tabUrl === "string" ? tabUrl : undefined),
+    tabId: typeof tabId === "number" ? tabId : undefined,
+    stack: error instanceof Error ? error.stack : undefined,
+    extensionVersion: chrome.runtime?.getManifest?.()?.version ?? "unknown",
+    userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+  };
+}
 
 /** Restores the badge count based on persisted errors when the worker starts. */
 export async function initializeBadgeFromStorage(): Promise<void> {
@@ -97,11 +130,14 @@ export async function recordError(
       ? `${decoratedMessage}\n${JSON.stringify(Object.fromEntries(metadataEntries), null, 2)}`
       : decoratedMessage;
 
+  const diagnostics = buildDiagnosticMetadata(error, extra);
+
   const updated: LoggedError[] = [
     {
       message: appendedMessage,
       context,
       timestamp: Date.now(),
+      diagnostics,
     },
     ...existing,
   ].slice(0, LIMITS.ERROR_LOG_MAX_ENTRIES);

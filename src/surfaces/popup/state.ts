@@ -1,4 +1,5 @@
 import type { ErrorContext } from "../../background/error-context.js";
+import type { DiagnosticMetadata } from "../../background/types.js";
 import { type MESSAGE_TYPE, STATUS_MESSAGES, URLS } from "../../lib/constants.js";
 
 export type RuntimeMessage =
@@ -18,6 +19,8 @@ export type LoggedExtensionError = {
   message: string;
   context: ErrorContext;
   timestamp: number;
+  /** Structured diagnostic metadata for GitHub issue reports */
+  diagnostics?: DiagnosticMetadata;
 };
 
 // Re-export from shared constants for backward compatibility

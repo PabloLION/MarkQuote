@@ -218,4 +218,108 @@ describe("background/errors", () => {
       expect(payload[ERROR_STORAGE_KEY][0].context).toBe(context);
     });
   }
+
+  describe("structured diagnostics", () => {
+    beforeEach(() => {
+      sinonChrome.runtime.getManifest.returns({ version: "1.0.3" });
+    });
+
+    it("captures extension version in diagnostics", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.InitializeOptions, "test error");
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { extensionVersion: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.extensionVersion).toBe("1.0.3");
+    });
+
+    it("captures user agent in diagnostics", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.InitializeOptions, "test error");
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { userAgent: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.userAgent).toBeDefined();
+    });
+
+    it("extracts hostname from full tabUrl for privacy", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.InjectSelectionScript, "test error", {
+        tabUrl: "https://example.com/path/to/page?query=1",
+      });
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { tabUrl: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.tabUrl).toBe("example.com");
+    });
+
+    it("captures source in diagnostics", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.InjectSelectionScript, "test error", {
+        source: "hotkey",
+      });
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { source: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.source).toBe("hotkey");
+    });
+
+    it("captures tabId in diagnostics", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.TabClipboardWrite, "test error", {
+        tabId: 42,
+      });
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { tabId: number } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.tabId).toBe(42);
+    });
+
+    it("captures stack trace from Error objects", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+      const error = new Error("test error");
+
+      await recordError(ERROR_CONTEXT.InitializeOptions, error);
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { stack: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.stack).toContain("Error: test error");
+    });
+
+    it("handles invalid tabUrl gracefully", async () => {
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.InjectSelectionScript, "test error", {
+        tabUrl: "not-a-valid-url",
+      });
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { tabUrl?: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.tabUrl).toBeUndefined();
+    });
+
+    it("handles missing runtime.getManifest gracefully", async () => {
+      sinonChrome.runtime.getManifest.returns(undefined as unknown as chrome.runtime.Manifest);
+      sinonChrome.storage.local.get.resolves({ [ERROR_STORAGE_KEY]: [] });
+
+      await recordError(ERROR_CONTEXT.InitializeOptions, "test error");
+
+      const payload = sinonChrome.storage.local.set.firstCall?.args?.[0] as {
+        [ERROR_STORAGE_KEY]: Array<{ diagnostics?: { extensionVersion: string } }>;
+      };
+      expect(payload[ERROR_STORAGE_KEY][0].diagnostics?.extensionVersion).toBe("unknown");
+    });
+  });
 });

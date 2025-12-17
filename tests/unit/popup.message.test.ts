@@ -18,6 +18,7 @@ function buildDom() {
     problemBadge: null,
     errorContainer: null,
     errorList: null,
+    copyDetailsButton: null,
     reportErrorsButton: null,
     dismissErrorsButton: null,
   };
