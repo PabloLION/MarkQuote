@@ -123,6 +123,43 @@ export const STATUS_MESSAGES = {
   PROTECTED: "This page is protected, so MarkQuote can't access the selection. Try another tab.",
 } as const;
 
+/**
+ * Specific guidance for protected page types.
+ * These provide actionable information when the extension can't access page content.
+ */
+export const PROTECTED_PAGE_MESSAGES = {
+  /** Chrome internal pages (chrome://, chrome-extension://) */
+  CHROME_INTERNAL:
+    "Extensions cannot access browser settings pages. Please navigate to a regular web page.",
+  /** File protocol pages */
+  FILE_PROTOCOL:
+    "Enable 'Allow access to file URLs' in extension settings (chrome://extensions) to copy from local files.",
+  /** Other extension pages */
+  EXTENSION_PAGE: "Extensions cannot access pages from other extensions. Try a regular web page.",
+  /** Edge internal pages */
+  EDGE_INTERNAL:
+    "Extensions cannot access browser settings pages. Please navigate to a regular web page.",
+  /** Firefox internal pages */
+  FIREFOX_INTERNAL:
+    "Extensions cannot access browser settings pages. Please navigate to a regular web page.",
+  /** Generic protected page */
+  GENERIC: "This page is protected and cannot be accessed by extensions. Try a regular web page.",
+} as const;
+
+// =============================================================================
+// PREVIEW LIMITS
+// =============================================================================
+
+/**
+ * Limits for preview display in the popup.
+ */
+export const PREVIEW_LIMITS = {
+  /** Maximum characters to show before truncation */
+  MAX_CHARS: 500,
+  /** Maximum lines to show before truncation */
+  MAX_LINES: 10,
+} as const;
+
 // =============================================================================
 // URLS
 // =============================================================================

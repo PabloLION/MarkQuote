@@ -132,6 +132,41 @@
         white-space: inherit;
       }
 
+      .preview-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: var(--space-2);
+        font-size: var(--font-size-xs);
+        color: var(--text-muted);
+      }
+
+      .preview-footer[hidden] {
+        display: none;
+      }
+
+      #preview-stats {
+        opacity: 0.7;
+      }
+
+      #preview-toggle {
+        background: none;
+        border: none;
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--font-size-xs);
+        color: var(--accent-color);
+        cursor: pointer;
+        border-radius: var(--radius-md);
+      }
+
+      #preview-toggle:hover {
+        background: rgba(37, 99, 235, 0.1);
+      }
+
+      #preview-toggle[hidden] {
+        display: none;
+      }
+
       .badge {
         display: inline-flex;
         align-items: center;
@@ -216,6 +251,10 @@
     <div id="message" class="status-message" hidden role="status" aria-live="polite" aria-atomic="true">
       <div id="message-text" class="status-text"></div>
       <pre id="preview" class="status-preview" hidden aria-label="Copied Markdown preview"><code class="language-markdown"></code></pre>
+      <div class="preview-footer">
+        <span id="preview-stats" hidden></span>
+        <button id="preview-toggle" hidden>Show more</button>
+      </div>
     </div>
     <script type="module" src="./popup-loader.js"></script>
   </body>
