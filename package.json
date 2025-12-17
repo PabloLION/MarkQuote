@@ -1,6 +1,6 @@
 {
   "name": "markquote",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Copy webpage selections as Markdown quotes with reference source link.",
   "private": true,
   "type": "module",

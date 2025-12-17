@@ -8,58 +8,58 @@
     <style>
       body {
         margin: 0;
-        padding: 32px;
+        padding: var(--space-8);
       }
 
       main {
         max-width: 900px;
         margin: 0 auto;
         display: grid;
-        gap: 24px;
+        gap: var(--space-6);
       }
 
       header h1 {
-        margin-bottom: 8px;
-        font-size: 1.75rem;
+        margin-bottom: var(--space-2);
+        font-size: var(--font-size-3xl);
       }
 
       header p {
         margin: 0;
-        line-height: 1.5;
+        line-height: var(--line-height-normal);
       }
 
       form {
         display: grid;
-        gap: 24px;
+        gap: var(--space-6);
       }
 
       section {
         background-color: var(--panel-background);
         border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
         display: grid;
-        gap: 16px;
+        gap: var(--space-4);
       }
 
       .section-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 16px;
+        gap: var(--space-4);
         flex-wrap: wrap;
       }
 
       .section-info {
         display: grid;
-        gap: 8px;
+        gap: var(--space-2);
         min-width: 0;
       }
 
       .section-actions {
         display: inline-flex;
         align-items: center;
-        gap: 12px;
+        gap: var(--space-3);
       }
 
       .section-actions button {
@@ -94,7 +94,7 @@
 
       section h2 {
         margin: 0;
-        font-size: 1.25rem;
+        font-size: var(--font-size-xl);
       }
 
       label {
@@ -105,10 +105,10 @@
       textarea {
         resize: vertical;
         min-height: 140px;
-        padding: 12px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-        font-size: 0.95rem;
-        border-radius: 8px;
+        padding: var(--space-3);
+        font-family: var(--font-mono);
+        font-size: var(--font-size-sm);
+        border-radius: var(--radius-md);
         border: 1px solid var(--border-color);
         background-color: var(--surface-background);
         color: inherit;
@@ -127,34 +127,34 @@
 
       .token-help {
         margin: 0;
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         color: inherit;
       }
 
       .token-help code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-family: var(--font-mono);
         background: rgba(15, 23, 42, 0.08);
-        padding: 2px 6px;
-        border-radius: 6px;
+        padding: 2px var(--space-2);
+        border-radius: var(--radius-sm);
       }
 
       .preview-controls {
         display: grid;
-        gap: 12px;
+        gap: var(--space-3);
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       }
 
       .preview-controls label {
         display: grid;
-        gap: 6px;
+        gap: var(--space-2);
         font-weight: 500;
       }
 
       .preview-controls select,
       .preview-controls input {
         border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 8px;
+        border-radius: var(--radius-md);
+        padding: var(--space-2);
         background: var(--surface-background);
         color: inherit;
       }
@@ -168,18 +168,18 @@
       .template-actions,
       .form-actions {
         display: flex;
-        gap: 12px;
+        gap: var(--space-3);
       }
 
       pre {
         background-color: var(--surface-background);
-        border-radius: 8px;
+        border-radius: var(--radius-md);
         border: 1px solid var(--border-color);
-        padding: 16px;
+        padding: var(--space-4);
         margin: 0;
         white-space: pre-wrap;
         word-break: break-word;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        font-family: var(--font-mono);
       }
 
       table {
@@ -189,14 +189,14 @@
 
       thead th {
         text-align: left;
-        font-size: 0.9rem;
+        font-size: var(--font-size-sm);
         font-weight: 600;
         border-bottom: 1px solid var(--border-color);
-        padding-bottom: 8px;
+        padding-bottom: var(--space-2);
       }
 
       tbody td {
-        padding: 8px 8px 0 0;
+        padding: var(--space-2) var(--space-2) 0 0;
       }
 
       tbody td:last-child {
@@ -261,8 +261,8 @@
 
       tbody input {
         width: 100%;
-        padding: 8px;
-        border-radius: 8px;
+        padding: var(--space-2);
+        border-radius: var(--radius-md);
         border: 1px solid var(--border-color);
         background-color: var(--surface-background);
         color: inherit;
@@ -273,10 +273,10 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        gap: 16px;
+        gap: var(--space-4);
         flex-wrap: wrap;
         border-top: 1px solid var(--border-color);
-        padding-top: 16px;
+        padding-top: var(--space-4);
       }
 
       .rules-footer .danger {
@@ -297,13 +297,13 @@
 
       .rules-output {
         display: grid;
-        gap: 8px;
-        font-size: 0.9rem;
+        gap: var(--space-2);
+        font-size: var(--font-size-sm);
       }
 
       .rules-output div {
         display: grid;
-        gap: 4px;
+        gap: var(--space-1);
       }
 
       .rules-output-label {
@@ -312,13 +312,13 @@
 
       .rules-output code {
         background: rgba(15, 23, 42, 0.08);
-        padding: 4px 6px;
-        border-radius: 6px;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        padding: var(--space-1) var(--space-2);
+        border-radius: var(--radius-sm);
+        font-family: var(--font-mono);
       }
 
       .unsaved-indicator {
-        font-size: 0.85rem;
+        font-size: var(--font-size-sm);
         font-weight: 600;
         color: var(--danger-color);
       }
@@ -326,20 +326,20 @@
       .rules-actions {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: var(--space-2);
         margin-left: auto;
         width: min(200px, 100%);
       }
 
       .clear-status {
-        font-size: 0.875rem;
+        font-size: var(--font-size-sm);
         color: var(--danger-color);
         margin: 0;
       }
 
       #status {
         min-height: 1.25rem;
-        font-size: 0.95rem;
+        font-size: var(--font-size-sm);
       }
 
       #status[data-variant='success'] {
@@ -352,11 +352,11 @@
 
       @media (max-width: 720px) {
         body {
-          padding: 16px;
+          padding: var(--space-4);
         }
 
         section {
-          padding: 16px;
+          padding: var(--space-4);
         }
 
         thead {
@@ -365,9 +365,9 @@
 
         tbody tr {
           display: grid;
-          gap: 8px;
+          gap: var(--space-2);
           border-bottom: 1px solid var(--border-color);
-          padding-bottom: 12px;
+          padding-bottom: var(--space-3);
         }
 
         tbody td {
