@@ -3,6 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { getErrorMessage, isTransientDisconnectError } from "../lib/errors.js";
 import { Timer } from "../lib/timer.js";
 import { writeClipboardTextFromBackground } from "./background-clipboard.js";
 import { copyTextWithNavigatorClipboard } from "./clipboard-injection.js";
@@ -238,10 +239,8 @@ async function deliverPopupPreview(payload: PopupPreviewPayload, attempt: number
     clearE2ePreviewError();
   } catch (error) {
     const runtimeErrorMessage = chrome.runtime.lastError?.message;
-    const normalizedError =
-      runtimeErrorMessage ?? (error instanceof Error ? error.message : String(error));
-    const isTransient =
-      !runtimeErrorMessage || runtimeErrorMessage.includes("Receiving end does not exist");
+    const normalizedError = runtimeErrorMessage ?? getErrorMessage(error);
+    const isTransient = !runtimeErrorMessage || isTransientDisconnectError(runtimeErrorMessage);
 
     if (isTransient && attempt + 1 < POPUP_PREVIEW_MAX_RETRIES) {
       schedulePopupPreviewRetry(payload, attempt + 1);
