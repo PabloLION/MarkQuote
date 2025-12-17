@@ -74,7 +74,7 @@ async function main(): Promise<void> {
 
     await ensureManifestVersionMatches(version);
 
-    const releaseDir = path.join(".dev", "releases");
+    const releaseDir = "releases";
     await fs.mkdir(releaseDir, { recursive: true });
 
     await runBuild();
