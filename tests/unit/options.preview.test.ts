@@ -43,6 +43,7 @@ const createContext = (): OptionsContext => {
       urlClearStatusElement: document.createElement("div"),
       saveUrlRuleButton: document.createElement("button"),
       urlUnsavedIndicator: document.createElement("span"),
+      showConfirmationPopupCheckbox: document.createElement("input"),
     },
     storage: undefined,
     previewSample: { title: "Original", url: "https://example.com" },

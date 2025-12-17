@@ -55,6 +55,7 @@ test("[OPTIONS_PREVIEW] options UI edits update popup preview", async () => {
         enabled: true,
       },
     ],
+    showConfirmationPopup: false,
   };
 
   await setOptionsPayload(controlPage, initialOptions);
@@ -136,6 +137,7 @@ test("[OPTIONS_CHAIN] chained URL rules respect break versus continue", async ()
     format: "{{URL}}",
     titleRules,
     urlRules: augmentedUrlRules,
+    showConfirmationPopup: false,
   };
 
   await setOptionsPayload(controlPage, options);

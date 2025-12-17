@@ -292,6 +292,7 @@ export function initializeOptions(): () => void {
       format: normalizeFormat(context.dom.templateField, draft),
       titleRules: filteredRules("title"),
       urlRules: filteredRules("url"),
+      showConfirmationPopup: draft.showConfirmationPopup,
     };
   }
 
@@ -378,6 +379,7 @@ export function initializeOptions(): () => void {
       if (context.dom.templateField) {
         context.dom.templateField.value = draft.format;
       }
+      context.dom.showConfirmationPopupCheckbox.checked = draft.showConfirmationPopup;
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
@@ -394,12 +396,14 @@ export function initializeOptions(): () => void {
         "urlRules",
         "linkRules",
         "rules",
+        "showConfirmationPopup",
       ]);
       context.draft = cloneOptions(normalizeStoredOptions(snapshot));
       draft = context.draft;
       if (context.dom.templateField) {
         context.dom.templateField.value = draft.format;
       }
+      context.dom.showConfirmationPopupCheckbox.checked = draft.showConfirmationPopup;
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
@@ -413,6 +417,7 @@ export function initializeOptions(): () => void {
       if (context.dom.templateField) {
         context.dom.templateField.value = draft.format;
       }
+      context.dom.showConfirmationPopupCheckbox.checked = draft.showConfirmationPopup;
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
@@ -676,6 +681,14 @@ export function initializeOptions(): () => void {
       draft.format = DEFAULT_TEMPLATE;
       updatePreviewView();
       showStatus(context, "Template restored to default.");
+    },
+    { signal },
+  );
+
+  context.dom.showConfirmationPopupCheckbox.addEventListener(
+    "change",
+    () => {
+      draft.showConfirmationPopup = context.dom.showConfirmationPopupCheckbox.checked;
     },
     { signal },
   );

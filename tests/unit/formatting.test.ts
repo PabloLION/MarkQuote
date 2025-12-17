@@ -50,6 +50,7 @@ describe("formatWithOptions", () => {
           enabled: true,
         },
       ],
+      showConfirmationPopup: false,
     };
 
     const result = formatWithOptions(options, {
@@ -67,6 +68,7 @@ describe("formatWithOptions", () => {
       format: "> {{TEXT}}\n> Source: [{{TITLE}}]({{URL}})",
       titleRules: [],
       urlRules: [],
+      showConfirmationPopup: false,
     };
 
     const output = formatWithOptions(options, {

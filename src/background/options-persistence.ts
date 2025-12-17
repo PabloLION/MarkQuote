@@ -31,6 +31,7 @@ export async function persistOptions(payload: OptionsPayload): Promise<void> {
     format: normalized.format,
     titleRules: normalized.titleRules,
     urlRules: normalized.urlRules,
+    showConfirmationPopup: normalized.showConfirmationPopup,
   });
 }
 
@@ -70,6 +71,7 @@ export async function initializeOrMigrateOptions(): Promise<void> {
         format: DEFAULT_OPTIONS.format,
         titleRules: DEFAULT_OPTIONS.titleRules,
         urlRules: DEFAULT_OPTIONS.urlRules,
+        showConfirmationPopup: DEFAULT_OPTIONS.showConfirmationPopup,
       });
       return;
     }
@@ -83,6 +85,7 @@ export async function initializeOrMigrateOptions(): Promise<void> {
         format: normalized.format,
         titleRules: normalized.titleRules,
         urlRules: normalized.urlRules,
+        showConfirmationPopup: normalized.showConfirmationPopup,
       });
       return;
     }
@@ -94,6 +97,7 @@ export async function initializeOrMigrateOptions(): Promise<void> {
         format: normalized.format,
         titleRules: normalized.titleRules,
         urlRules: normalized.urlRules,
+        showConfirmationPopup: normalized.showConfirmationPopup,
       });
     }
   } catch (error) {

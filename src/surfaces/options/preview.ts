@@ -19,6 +19,7 @@ export function updatePreview(context: OptionsContext, rules: PreviewRulesAdapte
     format: normalizeFormat(templateField, context.draft),
     titleRules,
     urlRules,
+    showConfirmationPopup: false,
   } as const;
 
   previewElement.textContent = formatWithOptions(options, {
