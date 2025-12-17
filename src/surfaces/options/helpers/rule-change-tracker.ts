@@ -1,4 +1,5 @@
 import type { TitleRule, UrlRule } from "../../../options-schema.js";
+import { type BuiltRuleConfigs, getConfigForScope } from "../rules-config.js";
 import type { DragScope, RuleConfig, RuleWithFlags } from "../rules-types.js";
 
 type RuleConfigMap = {
@@ -25,14 +26,14 @@ function ensureButtonLabel<TRule extends RuleWithFlags>(config: RuleConfig<TRule
   }
 }
 
-function restoreButtonLabel<TRule extends RuleWithFlags>(config: RuleConfig<TRule>): void {
+function restoreButtonLabel(config: RuleConfig<TitleRule> | RuleConfig<UrlRule>): void {
   /* v8 ignore next - ensureButtonLabel always sets dataset.label before this; fallback handles race conditions */
   const label = config.saveButton.dataset.label ?? "Save changes";
   config.saveButton.textContent = label;
 }
 
-function applySavingState<TRule extends RuleWithFlags>(
-  config: RuleConfig<TRule>,
+function applySavingState(
+  config: RuleConfig<TitleRule> | RuleConfig<UrlRule>,
   scope: DragScope,
   saving: boolean,
   dirtyState: DirtyFlags,
@@ -58,7 +59,7 @@ export function createRuleChangeTracker(configs: RuleConfigMap): RuleChangeTrack
 
   function setDirty(scope: DragScope, dirty: boolean): void {
     dirtyState[scope] = dirty;
-    const config = scope === "title" ? configs.title : configs.url;
+    const config = getConfigForScope(configs, scope);
 
     config.unsavedIndicator.hidden = !dirty;
     if (!savingState[scope]) {
@@ -79,12 +80,7 @@ export function createRuleChangeTracker(configs: RuleConfigMap): RuleChangeTrack
       return;
     }
 
-    if (scope === "title") {
-      applySavingState(configs.title, scope, saving, dirtyState, savingState);
-      return;
-    }
-
-    applySavingState(configs.url, scope, saving, dirtyState, savingState);
+    applySavingState(getConfigForScope(configs, scope), scope, saving, dirtyState, savingState);
   }
 
   function rememberSaveButtonLabels(): void {

@@ -1,6 +1,7 @@
 import type { TitleRule, UrlRule } from "../../options-schema.js";
 import type { OptionsContext } from "./context.js";
 import type {
+  DragScope,
   RuleConfig,
   RuleFieldDescriptor,
   RuleFieldKeys,
@@ -11,6 +12,17 @@ import { sanitizeTitleRule, sanitizeUrlRule } from "./state.js";
 export interface BuiltRuleConfigs {
   title: RuleConfig<TitleRule>;
   url: RuleConfig<UrlRule>;
+}
+
+/**
+ * Helper to get the appropriate rule config based on scope.
+ * Eliminates the common `scope === "title" ? configs.title : configs.url` pattern.
+ */
+export function getConfigForScope(
+  configs: BuiltRuleConfigs,
+  scope: DragScope,
+): RuleConfig<TitleRule> | RuleConfig<UrlRule> {
+  return scope === "title" ? configs.title : configs.url;
 }
 
 export function buildRuleConfigs(context: OptionsContext): BuiltRuleConfigs {
