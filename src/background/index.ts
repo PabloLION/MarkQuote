@@ -7,7 +7,9 @@
  */
 
 import { MESSAGE_TYPE, STORAGE_KEYS, TIMEOUTS, TRIGGER_SOURCE } from "../lib/constants.js";
+import { logInfo } from "../lib/errors.js";
 import { Timer } from "../lib/timer.js";
+import { normalizeStoredOptions } from "../options-schema.js";
 import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import {
@@ -190,6 +192,49 @@ async function resetExtensionState(): Promise<void> {
  */
 function getRuntimeLastErrorMessage(): string {
   return chrome.runtime.lastError?.message ?? "Unknown Chrome runtime error";
+}
+
+/**
+ * Feature detection for chrome.action.openPopup (Chrome 127+).
+ * Returns false for older browsers that don't support this API.
+ */
+function supportsOpenPopup(): boolean {
+  return typeof chrome.action?.openPopup === "function";
+}
+
+/**
+ * Opens the confirmation popup after a copy operation if the user preference is enabled.
+ * Only called for hotkey/context-menu sources, not popup-initiated copies.
+ *
+ * @param windowId - The window ID to open the popup in (for proper focus)
+ */
+async function maybeOpenConfirmationPopup(windowId?: number): Promise<void> {
+  if (!supportsOpenPopup()) {
+    logInfo("Confirmation popup skipped: chrome.action.openPopup not available (Chrome < 127)");
+    return;
+  }
+
+  const storageArea = chrome.storage?.sync;
+  if (!storageArea) {
+    return;
+  }
+
+  try {
+    const snapshot = await storageArea.get(["options", "showConfirmationPopup"]);
+    const options = normalizeStoredOptions(snapshot);
+
+    if (!options.showConfirmationPopup) {
+      return;
+    }
+
+    const popupOptions = windowId !== undefined ? { windowId } : undefined;
+    await chrome.action.openPopup(popupOptions);
+    logInfo("Confirmation popup opened after copy");
+  } catch (error) {
+    // Popup may fail to open in some contexts (e.g., no active window)
+    // This is not critical, so we just log it
+    console.debug("[MarkQuote] Could not open confirmation popup", error);
+  }
 }
 
 /**
@@ -545,7 +590,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           error,
         );
       })
-      .finally(() => {
+      .finally(async () => {
         const title = sender.tab?.title || DEFAULT_TITLE;
         const url = sender.tab?.url || DEFAULT_URL;
         const tabId = sender.tab?.id;
@@ -555,7 +600,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           clearPendingSource(tabId);
         }
 
-        void runCopyPipeline(request.markdown, title, url, source, sender.tab?.id);
+        await runCopyPipeline(request.markdown, title, url, source, sender.tab?.id);
+
+        // Open confirmation popup for non-popup sources if preference is enabled
+        if (source !== TRIGGER_SOURCE.POPUP) {
+          void maybeOpenConfirmationPopup(sender.tab?.windowId);
+        }
       });
   }
 
