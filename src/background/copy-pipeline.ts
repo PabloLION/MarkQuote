@@ -3,6 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
+import { Timer } from "../lib/timer.js";
 import { writeClipboardTextFromBackground } from "./background-clipboard.js";
 import { copyTextWithNavigatorClipboard } from "./clipboard-injection.js";
 import { ERROR_CONTEXT } from "./error-context.js";
@@ -24,7 +25,7 @@ const POPUP_PREVIEW_MAX_RETRIES = 3;
 
 let popupReady = false;
 let queuedPopupPreview: PopupPreviewPayload | undefined;
-let queuedPopupRetryTimer: ReturnType<typeof setTimeout> | undefined;
+const popupPreviewRetryTimer = new Timer();
 let activePopupDocumentId: string | undefined;
 
 const isE2EEnabled = (import.meta.env?.VITE_E2E ?? "").toLowerCase() === "true";
@@ -98,10 +99,7 @@ export async function runCopyPipeline(
 
 export function markPopupReady(): void {
   popupReady = true;
-  if (queuedPopupRetryTimer) {
-    clearTimeout(queuedPopupRetryTimer);
-    queuedPopupRetryTimer = undefined;
-  }
+  popupPreviewRetryTimer.cancel();
   if (!queuedPopupPreview) {
     return;
   }
@@ -144,11 +142,8 @@ function queuePopupPreview(payload: PopupPreviewPayload): void {
 }
 
 function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number): void {
-  cancelPopupPreviewRetry();
-
   const delay = POPUP_PREVIEW_RETRY_DELAY_MS * Math.max(attempt, 1);
-  queuedPopupRetryTimer = setTimeout(() => {
-    queuedPopupRetryTimer = undefined;
+  popupPreviewRetryTimer.schedule(() => {
     if (!popupReady) {
       queuedPopupPreview = payload;
       return;
@@ -160,10 +155,7 @@ function schedulePopupPreviewRetry(payload: PopupPreviewPayload, attempt: number
 }
 
 function cancelPopupPreviewRetry(): void {
-  if (queuedPopupRetryTimer) {
-    clearTimeout(queuedPopupRetryTimer);
-    queuedPopupRetryTimer = undefined;
-  }
+  popupPreviewRetryTimer.cancel();
 }
 
 async function copyTextToTab(

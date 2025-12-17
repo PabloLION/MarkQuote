@@ -5,6 +5,7 @@
  * copy sources). Production logging is intentionally retained so support can diagnose field issues
  * without shipping a separate debugging build.
  */
+import { Timer } from "../lib/timer.js";
 import {
   CURRENT_OPTIONS_VERSION,
   DEFAULT_OPTIONS,
@@ -42,7 +43,7 @@ type RuntimeMessageListener = Parameters<typeof chrome.runtime.onMessage.addList
 type RuntimeSendResponse = Parameters<RuntimeMessageListener>[2];
 
 const pendingCopySources = new Map<number, CopySource>();
-let hotkeyPopupFallbackTimer: ReturnType<typeof setTimeout> | undefined;
+const hotkeyPopupFallbackTimer = new Timer();
 let hotkeyFallbackTab: chrome.tabs.Tab | undefined;
 const PENDING_COPY_SESSION_KEY = "markquote/pending-copy-sources";
 const HOTKEY_POPUP_TIMEOUT_MS = 1000; // 1 second mirrors Chrome's own popup warm-up before falling back.
@@ -59,12 +60,7 @@ function hasValidTabId(tab: chrome.tabs.Tab | undefined): tab is chrome.tabs.Tab
 }
 
 function cancelHotkeyFallback(): void {
-  if (hotkeyPopupFallbackTimer === undefined) {
-    return;
-  }
-
-  clearTimeout(hotkeyPopupFallbackTimer);
-  hotkeyPopupFallbackTimer = undefined;
+  hotkeyPopupFallbackTimer.cancel();
 }
 
 function isCopySource(candidate: unknown): candidate is CopySource {
@@ -477,10 +473,8 @@ async function resolveHotkeyTab(
  */
 function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
   hotkeyFallbackTab = tab;
-  cancelHotkeyFallback();
 
-  hotkeyPopupFallbackTimer = setTimeout(() => {
-    hotkeyPopupFallbackTimer = undefined;
+  hotkeyPopupFallbackTimer.schedule(() => {
     const targetTab = hotkeyFallbackTab;
     hotkeyFallbackTab = undefined;
     void recordError(
