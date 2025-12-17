@@ -35,6 +35,7 @@
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "test:e2e": "playwright test",
     "sanity:chrome-clipboard": "tsx scripts/sanity/chrome-clipboard.ts",
+    "smoke": "tsx scripts/smoke-checklist.ts",
     "test:unit": "vitest --run --coverage",
     "test:unit:watch": "vitest --watch",
     "tool:gen-icons": "svg2png assets/icon.svg --width=16 --height=16 --output=public/icons/icon-16.png && svg2png assets/icon.svg --width=32 --height=32 --output=public/icons/icon-32.png && svg2png assets/icon.svg --width=48 --height=48 --output=public/icons/icon-48.png && svg2png assets/icon.svg --width=128 --height=128 --output=public/icons/icon-128.png",
