@@ -59,7 +59,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand,
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -77,7 +77,7 @@ describe("handleE2eMessage", () => {
     const tab = { id: 8 } as any;
     chrome.tabs.get.resolves(tab);
 
-    const triggerCopy = vi.fn().mockResolvedValue(undefined);
+    const handleCopyRequest = vi.fn().mockResolvedValue(undefined);
     const sendResponse = vi.fn();
 
     const handled = handleE2eMessage({
@@ -86,7 +86,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy,
+      handleCopyRequest,
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -96,7 +96,7 @@ describe("handleE2eMessage", () => {
     expect(handled).toBe(true);
     await flushMicrotasks();
 
-    expect(triggerCopy).toHaveBeenCalledWith(tab, "context-menu");
+    expect(handleCopyRequest).toHaveBeenCalledWith(tab, "context-menu");
     expect(sendResponse).toHaveBeenCalledWith({ ok: true });
   });
 
@@ -114,7 +114,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog,
       clearErrorLog: vi.fn(),
@@ -139,7 +139,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog,
@@ -162,7 +162,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -190,7 +190,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError,
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -214,7 +214,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -243,7 +243,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -276,7 +276,7 @@ describe("handleE2eMessage", () => {
       sendResponse: setPinnedResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -294,7 +294,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -326,7 +326,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),
@@ -356,7 +356,7 @@ describe("handleE2eMessage", () => {
       sendResponse,
       persistOptions: vi.fn(),
       recordError: vi.fn(),
-      triggerCopy: vi.fn(),
+      handleCopyRequest: vi.fn(),
       triggerCommand: vi.fn(),
       getErrorLog: vi.fn(),
       clearErrorLog: vi.fn(),

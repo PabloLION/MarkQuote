@@ -236,10 +236,13 @@ function notifyCopyProtected(
 }
 
 /**
- * Injects the selection script for a tab when the host is permitted. Protected pages are handled
- * gracefully by notifying the popup instead.
+ * Handles a copy request by injecting the selection script into the target tab. Protected pages
+ * are handled gracefully by notifying the popup instead.
  */
-async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource): Promise<void> {
+async function handleCopyRequest(
+  tab: chrome.tabs.Tab | undefined,
+  source: CopySource,
+): Promise<void> {
   if (!hasValidTabId(tab)) {
     return;
   }
@@ -249,7 +252,10 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
   try {
     await pendingSourcesRestored;
   } catch (error) {
-    console.debug("[MarkQuote] Pending copy sources failed to restore before triggerCopy", error);
+    console.debug(
+      "[MarkQuote] Pending copy sources failed to restore before handleCopyRequest",
+      error,
+    );
   }
   const targetUrl = getTabUrl(tab);
   if (isUrlProtected(targetUrl)) {
@@ -323,8 +329,8 @@ async function triggerCopy(tab: chrome.tabs.Tab | undefined, source: CopySource)
 }
 
 registerContextMenus({
-  triggerCopy: async (tab, source) => {
-    await triggerCopy(tab, source);
+  handleCopyRequest: async (tab, source) => {
+    await handleCopyRequest(tab, source);
   },
   initializeOrMigrateOptions,
   clearStoredErrors,
@@ -379,7 +385,7 @@ async function handleHotkeyCommand(
           injectionSucceeded: null,
           injectionError: null,
         });
-        await triggerCopy(fallbackTab, source);
+        await handleCopyRequest(fallbackTab, source);
       } else {
         console.warn("[MarkQuote] Hotkey: unable to resolve tab after settings failure.");
       }
@@ -405,7 +411,7 @@ async function handleHotkeyCommand(
         injectionSucceeded: null,
         injectionError: null,
       });
-      await triggerCopy(resolvedTab, source);
+      await handleCopyRequest(resolvedTab, source);
     } else {
       console.warn("[MarkQuote] Hotkey: unable to resolve active tab for fallback copy.");
     }
@@ -437,7 +443,7 @@ async function handleHotkeyCommand(
         resolvedTab: Boolean(resolvedTab && hasValidTabId(resolvedTab)),
       });
       if (resolvedTab) {
-        triggerCopy(resolvedTab, source);
+        handleCopyRequest(resolvedTab, source);
       }
     });
 }
@@ -477,7 +483,7 @@ function scheduleHotkeyFallback(tab: chrome.tabs.Tab): void {
       { source: "hotkey" },
     );
     if (targetTab) {
-      void triggerCopy(targetTab, "hotkey");
+      void handleCopyRequest(targetTab, "hotkey");
     }
   }, TIMEOUTS.HOTKEY_POPUP_MS);
 }
@@ -517,8 +523,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse,
     persistOptions,
     recordError,
-    triggerCopy: async (tab, e2eSource) => {
-      await triggerCopy(tab, e2eSource);
+    handleCopyRequest: async (tab, e2eSource) => {
+      await handleCopyRequest(tab, e2eSource);
     },
     triggerCommand: async (tab, forcePinned) => {
       await handleHotkeyCommand(tab, forcePinned);
@@ -612,7 +618,7 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
         return;
       }
 
-      void triggerCopy(targetTab, "popup");
+      void handleCopyRequest(targetTab, "popup");
       sendResponse?.({ ok: true });
     })
     .catch((error) => {

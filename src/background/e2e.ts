@@ -49,7 +49,7 @@ type MessageContext = {
     error: unknown,
     extra?: Record<string, unknown>,
   ) => Promise<void>;
-  triggerCopy: (tab: chrome.tabs.Tab | undefined, source: CopySource) => Promise<void>;
+  handleCopyRequest: (tab: chrome.tabs.Tab | undefined, source: CopySource) => Promise<void>;
   triggerCommand: (tab: chrome.tabs.Tab | undefined, forcePinned?: boolean) => Promise<void>;
   getErrorLog: () => Promise<LoggedError[]>;
   clearErrorLog: () => Promise<void>;
@@ -124,7 +124,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
     sendResponse,
     persistOptions,
     recordError,
-    triggerCopy,
+    handleCopyRequest,
     triggerCommand,
     getErrorLog,
     clearErrorLog,
@@ -227,7 +227,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
         return;
       }
 
-      await triggerCopy(tab, source ?? "context-menu");
+      await handleCopyRequest(tab, source ?? "context-menu");
       sendResponse?.({ ok: true });
     })().catch((error) => {
       sendResponse?.({ ok: false, error: error instanceof Error ? error.message : String(error) });
