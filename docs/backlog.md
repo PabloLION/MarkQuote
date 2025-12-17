@@ -9,7 +9,11 @@ Temporary holding area for new requests before they are organized into epics.
 
 ## Pending
 
-- (empty) - all items have been moved to epics.
+- **E2E: Protected page message tests** - Add E2E tests for protected page
+  detection (`chrome://`, `file://`). Requires investigation into stubbing
+  protected page message flow since Chrome doesn't allow loading `chrome://`
+  pages in Playwright. Tests should verify context-specific messages are shown.
+  Related: Story 4.2.
 
 ## Notes
 
