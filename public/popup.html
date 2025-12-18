@@ -185,10 +185,12 @@
       }
 
       #error-container {
+        position: relative;
         display: flex;
         flex-direction: column;
-        gap: var(--space-3);
+        gap: var(--space-2);
         padding: var(--space-3);
+        padding-right: var(--space-6);
         border-radius: var(--radius-lg);
         background: rgba(217, 48, 37, 0.12);
         border: 1px solid rgba(217, 48, 37, 0.35);
@@ -199,26 +201,70 @@
         display: none;
       }
 
-      .error-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: var(--space-3);
+      .error-message {
         font-weight: 600;
+        color: #b91c1c;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .error-message {
+          color: #fca5a5;
+        }
+      }
+
+      .dismiss-x {
+        position: absolute;
+        top: var(--space-2);
+        right: var(--space-2);
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: #b91c1c;
+        cursor: pointer;
+        opacity: 0.7;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .dismiss-x:hover {
+        opacity: 1;
+        background: rgba(217, 48, 37, 0.15);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .dismiss-x {
+          color: #fca5a5;
+        }
       }
 
       .error-actions {
-        display: inline-flex;
+        display: flex;
         gap: var(--space-2);
+      }
+
+      .error-actions button {
+        width: auto;
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--font-size-sm);
       }
 
       #error-list {
         margin: 0;
         padding-left: 18px;
-        color: #5f2120;
+        color: #991b1b;
         font-size: var(--font-size-sm);
         max-height: 160px;
         overflow-y: auto;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        #error-list {
+          color: #fca5a5;
+        }
       }
 
     </style>
@@ -239,13 +285,15 @@
       </button>
     </header>
     <div id="error-container" hidden>
-      <div class="error-header">
-        <span>We hit a problem while copying.</span>
-        <div class="error-actions">
-          <button id="copy-details-button">Copy details</button>
-          <button id="report-errors-button">Report issue</button>
-          <button id="dismiss-errors-button" class="secondary">Dismiss</button>
-        </div>
+      <button id="dismiss-errors-button" class="dismiss-x" aria-label="Dismiss errors">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M1 1l12 12M13 1L1 13"/>
+        </svg>
+      </button>
+      <div class="error-message">We hit a problem while copying.</div>
+      <div class="error-actions">
+        <button id="copy-details-button">Copy details</button>
+        <button id="report-errors-button">Report issue</button>
       </div>
       <ul id="error-list"></ul>
     </div>
