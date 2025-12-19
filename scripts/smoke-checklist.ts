@@ -33,39 +33,12 @@ function runBuild(release: boolean): void {
   console.log("\n✓ Build complete\n");
 }
 
-async function getExtensionId(
-  context: Awaited<ReturnType<typeof chromium.launchPersistentContext>>,
-): Promise<string> {
-  const page = await context.newPage();
-  await page.goto("chrome://extensions");
-
-  const devModeToggle = page.locator("cr-toggle#devMode");
-  await devModeToggle.waitFor({ state: "visible" });
-
-  if ((await devModeToggle.getAttribute("aria-pressed")) === "false") {
-    await devModeToggle.click();
-    await page.waitForTimeout(500);
-  }
-
-  const extensionCard = page.locator("extensions-item");
-  await extensionCard.first().waitFor({ state: "visible" });
-  const extensionId = await extensionCard.first().getAttribute("id");
-  await page.close();
-
-  if (!extensionId) {
-    throw new Error("Unable to determine extension id from chrome://extensions");
-  }
-
-  return extensionId;
-}
-
 async function launchPlaywright(): Promise<{ cleanup: () => Promise<void> }> {
-  const testUrl = "https://en.wikipedia.org/wiki/Pablo_Picasso";
   const userDataDir = await mkdtemp(path.join(os.tmpdir(), "markquote-smoke-"));
+  const readmePath = path.join(rootDir, "README.md");
 
   console.log("Launching Playwright with extension loaded...");
   console.log(`  Extension: ${distDir}`);
-  console.log(`  Test page: ${testUrl}`);
   console.log(`  Profile: ${userDataDir}\n`);
 
   const context = await chromium.launchPersistentContext(userDataDir, {
@@ -75,24 +48,37 @@ async function launchPlaywright(): Promise<{ cleanup: () => Promise<void> }> {
     viewport: { width: 1280, height: 800 },
   });
 
-  // Get extension ID
-  const extensionId = await getExtensionId(context);
+  // Get extension ID (keeps chrome://extensions open)
+  const extensionsPage = await context.newPage();
+  await extensionsPage.goto("chrome://extensions");
+  const devModeToggle = extensionsPage.locator("cr-toggle#devMode");
+  await devModeToggle.waitFor({ state: "visible" });
+  if ((await devModeToggle.getAttribute("aria-pressed")) === "false") {
+    await devModeToggle.click();
+    await extensionsPage.waitForTimeout(500);
+  }
+  const extensionCard = extensionsPage.locator("extensions-item");
+  await extensionCard.first().waitFor({ state: "visible" });
+  const extensionId = await extensionCard.first().getAttribute("id");
+  if (!extensionId) throw new Error("Unable to determine extension ID");
+
   console.log(`  Extension ID: ${extensionId}\n`);
 
-  // Open popup page first (to see smoke build timestamp)
+  // Open all test pages
   const popupPage = await context.newPage();
   await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
 
-  // Open options page
   const optionsPage = await context.newPage();
   await optionsPage.goto(`chrome-extension://${extensionId}/options.html`);
 
-  // Open test page (Wikipedia) last
-  const testPage = await context.newPage();
-  await testPage.goto(testUrl);
+  const filePage = await context.newPage();
+  await filePage.goto(`file://${readmePath}`);
+
+  const wikiPage = await context.newPage();
+  await wikiPage.goto("https://en.wikipedia.org/wiki/Pablo_Picasso");
 
   console.log("✓ Playwright launched - browser will stay open for manual testing");
-  console.log("  Opened: Popup, Options, Wikipedia pages\n");
+  console.log("  Tabs: chrome://extensions, Popup, Options, file://, Wikipedia\n");
   console.log("  Press Ctrl+C to close when done.\n");
 
   const cleanup = async () => {
@@ -104,39 +90,20 @@ async function launchPlaywright(): Promise<{ cleanup: () => Promise<void> }> {
 }
 
 function printChecklist(version: string): void {
-  const smokePlanPath = path.join("docs", "dev", "smoke-test-plan.md");
-
   const checklist = `
 ╔═══════════════════════════════════════════════════════════════════╗
 ║     MarkQuote Smoke Test v${version.padEnd(8)}                              ║
 ╚═══════════════════════════════════════════════════════════════════╝
 
-─────────────────────────────────────────────────────────────────────
-Manual-Only Tests (Playwright cannot automate these):
-─────────────────────────────────────────────────────────────────────
+Manual-only tests (cannot be automated with Playwright):
 
-  [ ] 1. Toolbar icon click (pinned) → popup opens with preview
-  [ ] 2. Keyboard shortcut (Alt+C) with pinned icon → popup opens
-  [ ] 3. Protected chrome:// page → shows "Chrome internal pages" message
-  [ ] 4. Protected file:// page → shows "Local file pages" message
-  [ ] 5. Always-on confirmation toggle → popup auto-opens after copy
+  [ ] 1. Pin extension → click icon → popup opens with preview
+  [ ] 2. Pin extension → select text → Alt+C → popup opens
+  [ ] 3. Go to chrome://extensions tab → click icon → protected page message
+  [ ] 4. Go to file:// tab → click icon → protected page message
+  [ ] 5. Options: enable confirmation toggle → Alt+C on Wikipedia → popup auto-opens
 
-─────────────────────────────────────────────────────────────────────
-Feature Verification (also covered by E2E, but verify visually):
-─────────────────────────────────────────────────────────────────────
-
-  [ ] 6. Context menu "Copy as Markdown Quote" → copies blockquote
-  [ ] 7. Keyboard shortcut (unpinned) → copies to clipboard
-  [ ] 8. Options page rule editing → changes persist after reload
-  [ ] 9. Error badge appears on extension icon after failed copy
-  [ ] 10. Error list displays in popup with "Copy details" button
-  [ ] 11. "Copy details" generates markdown error report
-  [ ] 12. "Dismiss" clears errors and removes badge
-  [ ] 13. Long preview shows "Show more" toggle
-  [ ] 14. Icon renders correctly at all sizes
-
-─────────────────────────────────────────────────────────────────────
-Full documentation: ${smokePlanPath}
+Tabs opened: chrome://extensions, Popup, Options, file://, Wikipedia
 ─────────────────────────────────────────────────────────────────────
 `;
 
