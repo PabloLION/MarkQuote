@@ -401,13 +401,10 @@ chrome.commands.onCommand.addListener((command, tab) => {
 });
 
 /**
- * Handles the keyboard shortcut flow. Chrome requires the action to be pinned before the popup can
- * open, so we detect that case and fall back to direct copying.
+ * Handles the keyboard shortcut flow. Opens popup via chrome.action.openPopup().
+ * If popup fails to open (e.g., no focused window), falls back to direct copying.
  */
-async function handleHotkeyCommand(
-  tab: chrome.tabs.Tab | undefined,
-  overridePinned?: boolean,
-): Promise<void> {
+async function handleHotkeyCommand(tab: chrome.tabs.Tab | undefined): Promise<void> {
   cancelHotkeyFallback();
   const source: CopySource = "hotkey";
   resetHotkeyDiagnostics();
@@ -419,59 +416,9 @@ async function handleHotkeyCommand(
     resolvedTabId: hasValidTabId(resolvedTab) ? resolvedTab.id : null,
   });
 
-  let isPinned = true;
-  const forcedPinned = consumeForcedHotkeyPinnedState();
-  if (overridePinned !== undefined) {
-    isPinned = overridePinned;
-  } else if (forcedPinned !== undefined) {
-    isPinned = forcedPinned;
-  } else {
-    try {
-      const settings = await chrome.action.getUserSettings();
-      isPinned = Boolean(settings?.isOnToolbar);
-      console.info("[MarkQuote] Hotkey: action settings", settings);
-    } catch (error) {
-      console.warn("[MarkQuote] Hotkey: failed to read action settings", error);
-      await recordError(ERROR_CONTEXT.HotkeyOpenPopup, error, { source });
-      const fallbackTab = resolvedTab ?? tab;
-      if (fallbackTab) {
-        updateHotkeyDiagnostics({
-          injectionAttempted: false,
-          injectionSucceeded: null,
-          injectionError: null,
-        });
-        await handleCopyRequest(fallbackTab, source);
-      } else {
-        console.warn("[MarkQuote] Hotkey: unable to resolve tab after settings failure.");
-      }
-      return;
-    }
-  }
-  if (!isPinned) {
-    await recordError(
-      ERROR_CONTEXT.HotkeyOpenPopup,
-      "Shortcut ran while the toolbar icon was hidden. Pin MarkQuote to finish copying automatically.",
-      {
-        source,
-        tabUrl: resolvedTab?.url,
-        tabId: resolvedTab?.id ?? null,
-        tabProvidedInEvent: Boolean(tab && hasValidTabId(tab)),
-        resolvedTab: Boolean(resolvedTab && hasValidTabId(resolvedTab)),
-        fallbackTriggered: Boolean(resolvedTab),
-      },
-    );
-    if (resolvedTab) {
-      updateHotkeyDiagnostics({
-        injectionAttempted: false,
-        injectionSucceeded: null,
-        injectionError: null,
-      });
-      await handleCopyRequest(resolvedTab, source);
-    } else {
-      console.warn("[MarkQuote] Hotkey: unable to resolve active tab for fallback copy.");
-    }
-    return;
-  }
+  // Note: openPopup() works for unpinned extensions (Chrome 127+) as long as window is focused.
+  // Previously we checked isPinned and fell back early, but research shows this is unnecessary.
+  // If openPopup() fails for any reason, the catch block handles fallback to copy.
 
   if (resolvedTab?.windowId !== undefined) {
     await chrome.windows.update(resolvedTab.windowId, { focused: true }).catch((error) => {
@@ -581,8 +528,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     handleCopyRequest: async (tab, e2eSource) => {
       await handleCopyRequest(tab, e2eSource);
     },
-    triggerCommand: async (tab, forcePinned) => {
-      await handleHotkeyCommand(tab, forcePinned);
+    triggerCommand: async (tab) => {
+      await handleHotkeyCommand(tab);
     },
     getErrorLog: getStoredErrors,
     clearErrorLog: clearStoredErrors,

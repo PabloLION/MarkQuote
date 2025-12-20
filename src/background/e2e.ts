@@ -50,7 +50,7 @@ type MessageContext = {
     extra?: Record<string, unknown>,
   ) => Promise<void>;
   handleCopyRequest: (tab: chrome.tabs.Tab | undefined, source: CopySource) => Promise<void>;
-  triggerCommand: (tab: chrome.tabs.Tab | undefined, forcePinned?: boolean) => Promise<void>;
+  triggerCommand: (tab: chrome.tabs.Tab | undefined) => Promise<void>;
   getErrorLog: () => Promise<LoggedError[]>;
   clearErrorLog: () => Promise<void>;
   resetStorage: () => Promise<void>;
@@ -176,7 +176,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
   }
 
   if (message.type === E2E_TRIGGER_COMMAND_MESSAGE) {
-    const { tabId, forcePinned } = request as { tabId?: number; forcePinned?: boolean };
+    const { tabId } = request as { tabId?: number };
     void (async () => {
       let tab: chrome.tabs.Tab | undefined;
       try {
@@ -189,7 +189,7 @@ export function handleE2eMessage(context: MessageContext): boolean {
         return;
       }
 
-      await triggerCommand(tab, forcePinned);
+      await triggerCommand(tab);
       sendResponse?.({ ok: true });
     })().catch((error) => {
       sendResponse?.({ ok: false, error: error instanceof Error ? error.message : String(error) });

@@ -69,7 +69,7 @@ describe("handleE2eMessage", () => {
     expect(handled).toBe(true);
     await flushMicrotasks();
 
-    expect(triggerCommand).toHaveBeenCalledWith(tab, undefined);
+    expect(triggerCommand).toHaveBeenCalledWith(tab);
     expect(sendResponse).toHaveBeenCalledWith({ ok: true });
   });
 
