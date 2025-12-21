@@ -644,17 +644,19 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
 }
 
 /**
- * Picks the most suitable tab for copy execution. Prefers the active HTTP(S) tab, but gracefully
- * falls back to other candidates if needed.
+ * Picks the most suitable tab for copy execution. Prioritizes the active tab so protected page
+ * detection works correctly, then falls back to HTTP tabs if needed.
  */
 function pickBestTab(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab | undefined {
-  const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
   const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith("chrome-extension://");
 
-  return (
-    tabs.find((tab) => tab.active && isHttpTab(tab)) ??
-    tabs.find((tab) => isHttpTab(tab)) ??
-    tabs.find((tab) => !isExtensionTab(tab)) ??
-    tabs[0]
-  );
+  // Active tab takes priority - protected detection happens later
+  const activeTab = tabs.find((tab) => tab.active && !isExtensionTab(tab));
+  if (activeTab) {
+    return activeTab;
+  }
+
+  // Fallback: prefer HTTP tabs over other types
+  const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
+  return tabs.find((tab) => isHttpTab(tab)) ?? tabs.find((tab) => !isExtensionTab(tab)) ?? tabs[0];
 }
