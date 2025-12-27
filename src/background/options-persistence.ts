@@ -32,6 +32,7 @@ export async function persistOptions(payload: OptionsPayload): Promise<void> {
     titleRules: normalized.titleRules,
     urlRules: normalized.urlRules,
     showConfirmationPopup: normalized.showConfirmationPopup,
+    showSmokeBuildIndicator: normalized.showSmokeBuildIndicator,
   });
 }
 
@@ -72,6 +73,7 @@ export async function initializeOrMigrateOptions(): Promise<void> {
         titleRules: DEFAULT_OPTIONS.titleRules,
         urlRules: DEFAULT_OPTIONS.urlRules,
         showConfirmationPopup: DEFAULT_OPTIONS.showConfirmationPopup,
+        showSmokeBuildIndicator: DEFAULT_OPTIONS.showSmokeBuildIndicator,
       });
       return;
     }
@@ -86,6 +88,7 @@ export async function initializeOrMigrateOptions(): Promise<void> {
         titleRules: normalized.titleRules,
         urlRules: normalized.urlRules,
         showConfirmationPopup: normalized.showConfirmationPopup,
+        showSmokeBuildIndicator: normalized.showSmokeBuildIndicator,
       });
       return;
     }
@@ -98,6 +101,7 @@ export async function initializeOrMigrateOptions(): Promise<void> {
         titleRules: normalized.titleRules,
         urlRules: normalized.urlRules,
         showConfirmationPopup: normalized.showConfirmationPopup,
+        showSmokeBuildIndicator: normalized.showSmokeBuildIndicator,
       });
     }
   } catch (error) {

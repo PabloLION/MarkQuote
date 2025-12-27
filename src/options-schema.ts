@@ -25,6 +25,8 @@ export interface OptionsPayload {
   urlRules: UrlRule[];
   /** When true, automatically open popup after hotkey/context-menu copy */
   showConfirmationPopup: boolean;
+  /** When true, show smoke build indicator in popup (only visible in smoke builds) */
+  showSmokeBuildIndicator: boolean;
 }
 
 function isTitleRuleCandidate(value: unknown): value is TitleRule {
@@ -96,7 +98,7 @@ function sanitizeString(value: unknown): string {
 }
 
 /* v8 ignore next 21 - legacy format support: booleans may be stored as strings/numbers in older storage versions; tests use current format */
-function sanitizeBoolean(value: unknown): boolean {
+function sanitizeBoolean(value: unknown, defaultValue = false): boolean {
   if (typeof value === "boolean") {
     return value;
   }
@@ -115,7 +117,7 @@ function sanitizeBoolean(value: unknown): boolean {
     return value !== 0;
   }
 
-  return false;
+  return defaultValue;
 }
 
 type StringFieldKey = string;
@@ -221,6 +223,7 @@ export const DEFAULT_OPTIONS: OptionsPayload = {
   titleRules: createDefaultTitleRules(),
   urlRules: createDefaultUrlRules(),
   showConfirmationPopup: false,
+  showSmokeBuildIndicator: true,
 };
 
 export function validateOptionsPayload(payload: unknown): payload is OptionsPayload {
@@ -447,6 +450,7 @@ interface OptionsLike {
   urlRules?: unknown;
   rules?: unknown;
   showConfirmationPopup?: unknown;
+  showSmokeBuildIndicator?: unknown;
 }
 
 function isOptionsLike(candidate: unknown): candidate is OptionsLike {
@@ -483,6 +487,7 @@ export function normalizeStoredOptions(snapshot: StoredOptionsSnapshot): Options
       titleRules,
       urlRules,
       showConfirmationPopup: sanitizeBoolean(snapshot.options.showConfirmationPopup),
+      showSmokeBuildIndicator: sanitizeBoolean(snapshot.options.showSmokeBuildIndicator, true),
     };
   }
 
@@ -505,5 +510,6 @@ export function normalizeStoredOptions(snapshot: StoredOptionsSnapshot): Options
     titleRules: resolvedTitleRules,
     urlRules: resolvedUrlRules,
     showConfirmationPopup: false,
+    showSmokeBuildIndicator: true,
   };
 }
