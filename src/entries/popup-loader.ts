@@ -58,13 +58,22 @@ export function renderBootstrapError(): void {
   }
 }
 
-function renderSmokeBuildIndicator(): void {
+async function renderSmokeBuildIndicator(): Promise<void> {
   // __SMOKE_BUILD_TIME__ and __SMOKE_BUILD_VERSION__ are replaced by Vite at build time
   // They will be empty strings for release builds, populated for smoke builds
   const buildTime = typeof __SMOKE_BUILD_TIME__ !== "undefined" ? __SMOKE_BUILD_TIME__ : "";
   const buildVersion =
     typeof __SMOKE_BUILD_VERSION__ !== "undefined" ? __SMOKE_BUILD_VERSION__ : "";
   if (!buildTime || !buildVersion) return;
+
+  // Check user preference (default to true for smoke builds)
+  try {
+    const result = await chrome.storage.sync.get("options");
+    const showIndicator = result.options?.showSmokeBuildIndicator ?? true;
+    if (!showIndicator) return;
+  } catch {
+    // If storage read fails, show indicator anyway (it's a smoke build)
+  }
 
   const el = document.createElement("div");
   el.id = "smoke-build-indicator";
@@ -75,7 +84,7 @@ function renderSmokeBuildIndicator(): void {
 
 /* v8 ignore next 8 - bootstrap wrapper with error boundary */
 export async function bootstrapPopup(): Promise<void> {
-  renderSmokeBuildIndicator();
+  await renderSmokeBuildIndicator();
   try {
     await loadPopupModule();
   } catch (error) {
