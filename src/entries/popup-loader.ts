@@ -66,7 +66,7 @@ async function renderSmokeBuildIndicator(): Promise<void> {
     typeof __SMOKE_BUILD_VERSION__ !== "undefined" ? __SMOKE_BUILD_VERSION__ : "";
   if (!buildTime || !buildVersion) return;
 
-  // Check user preference (default to true for smoke builds)
+  /* v8 ignore start - smoke-build only code; verified during actual smoke tests, not unit tests */
   try {
     const result = await chrome.storage.sync.get("options");
     const showIndicator = result.options?.showSmokeBuildIndicator ?? true;
@@ -80,7 +80,7 @@ async function renderSmokeBuildIndicator(): Promise<void> {
   el.textContent = `Smoke v${buildVersion} #${buildTime}`;
   el.style.cssText = "font-size:10px;color:#888;text-align:left;margin-top:8px;";
   document.body.appendChild(el);
-}
+} /* v8 ignore stop */
 
 /* v8 ignore next 8 - bootstrap wrapper with error boundary */
 export async function bootstrapPopup(): Promise<void> {

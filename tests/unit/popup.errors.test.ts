@@ -280,6 +280,45 @@ describe("popup error controller", () => {
     controller.dispose();
   });
 
+  it("restores button text after Copied! timeout", async () => {
+    vi.useFakeTimers();
+
+    try {
+      const dom = buildDom();
+      dom.copyDetailsButton!.textContent = "Copy details";
+      const clipboardWriteSpy = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        clipboard: { writeText: clipboardWriteSpy },
+      });
+
+      const runtime = {
+        sendMessage: vi.fn().mockResolvedValue({
+          errors: [{ message: "Test", context: "init", timestamp: 1 }],
+        }),
+      } as unknown as typeof chrome.runtime;
+
+      const controller = createErrorController(dom, runtime, () => {});
+      await controller.refresh();
+
+      dom.copyDetailsButton?.click();
+
+      // Flush microtasks to let async click handler complete (without advancing timers)
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(dom.copyDetailsButton?.textContent).toBe("Copied!");
+
+      // Advance past the 1500ms restoration timeout
+      await vi.advanceTimersByTimeAsync(1500);
+
+      expect(dom.copyDetailsButton?.textContent).toBe("Copy details");
+
+      controller.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("handles clipboard write failure gracefully", async () => {
     const dom = buildDom();
     const clipboardWriteSpy = vi.fn().mockRejectedValue(new Error("Not allowed"));

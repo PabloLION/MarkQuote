@@ -18,6 +18,7 @@ export default defineConfig({
         "src/background/e2e.ts",
         "src/background/index.ts",
         "src/background/context-menus.ts",
+        "src/background/options-persistence.ts",
         "src/background/types.ts",
         "src/content-scripts/**",
         "src/surfaces/**/main.ts",

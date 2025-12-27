@@ -214,4 +214,24 @@ describe("popup preview controller", () => {
 
     expect(dom.preview.textContent).toBe("Test text");
   });
+
+  it("truncates at word boundary when space is within 80% of limit", () => {
+    const dom = buildDom();
+    const controller = createPreviewController(dom);
+    // Create text with space at position 450 (within 80-100% of 500 limit)
+    // 450 'a' chars + space + 100 'b' chars = 551 total
+    const textBeforeSpace = "a".repeat(450);
+    const textAfterSpace = "b".repeat(100);
+    const longText = `${textBeforeSpace} ${textAfterSpace}`;
+
+    controller.render(longText);
+
+    const displayed = dom.previewCode?.textContent ?? "";
+    // Should truncate at the space (position 450) rather than at exactly 500
+    expect(displayed.endsWith("…")).toBe(true);
+    // The text before ellipsis should end at the space boundary
+    const textWithoutEllipsis = displayed.slice(0, -1);
+    expect(textWithoutEllipsis).toBe(textBeforeSpace);
+    expect(textWithoutEllipsis.length).toBe(450);
+  });
 });
