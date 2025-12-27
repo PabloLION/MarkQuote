@@ -350,8 +350,9 @@ async function handleCopyRequest(
         injectionError: null,
       });
     }
-  } catch (_error) {
-    const lastErrorMessage = getRuntimeLastErrorMessage();
+  } catch (error) {
+    // For async/await Chrome APIs, errors are thrown as exceptions, not set in chrome.runtime.lastError
+    const lastErrorMessage = error instanceof Error ? error.message : getRuntimeLastErrorMessage();
     if (lastErrorMessage.includes("must request permission")) {
       notifyCopyProtected(tab, source, targetUrl);
       clearPendingSource(tabId);
