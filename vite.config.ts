@@ -1,6 +1,18 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+
+interface PackageJson {
+  version?: string;
+}
+
+function getPackageVersion(): string {
+  const packagePath = resolve(__dirname, "package.json");
+  const content = readFileSync(packagePath, "utf-8");
+  const pkg: PackageJson = JSON.parse(content);
+  return pkg.version ?? "0.0.0";
+}
 
 export default defineConfig(({ command }) => {
   if (command === "serve") {
@@ -27,13 +39,16 @@ export default defineConfig(({ command }) => {
   }
 
   // Default: smoke build with timestamp. Set RELEASE_BUILD=1 for clean release.
-  const smokeTimestamp = process.env.RELEASE_BUILD
+  const isReleaseBuild = process.env.RELEASE_BUILD === "1";
+  const smokeTimestamp = isReleaseBuild
     ? ""
     : new Date().toLocaleTimeString("en-GB", { hour12: false });
+  const version = getPackageVersion();
 
   return {
     define: {
       __SMOKE_BUILD_TIME__: JSON.stringify(smokeTimestamp),
+      __SMOKE_BUILD_VERSION__: JSON.stringify(isReleaseBuild ? "" : version),
     },
     build: {
       minify: false,

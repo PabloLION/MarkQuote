@@ -4,8 +4,9 @@ import {
   type ModuleImporter,
 } from "./loader-helpers.js";
 
-// Vite injects this at build time when SMOKE_BUILD_TIME env var is set
+// Vite injects these at build time for smoke builds (empty for release builds)
 declare const __SMOKE_BUILD_TIME__: string;
+declare const __SMOKE_BUILD_VERSION__: string;
 
 const POPUP_DEV_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const DEV_POPUP_ENTRY: string = "/src/surfaces/popup/main.ts";
@@ -57,22 +58,24 @@ export function renderBootstrapError(): void {
   }
 }
 
-function renderSmokeBuildTimestamp(): void {
-  // __SMOKE_BUILD_TIME__ is replaced by Vite at build time
-  // It will be empty string for normal builds, timestamp for smoke builds
-  // When empty, this entire function is tree-shaken from the release build
+function renderSmokeBuildIndicator(): void {
+  // __SMOKE_BUILD_TIME__ and __SMOKE_BUILD_VERSION__ are replaced by Vite at build time
+  // They will be empty strings for release builds, populated for smoke builds
   const buildTime = typeof __SMOKE_BUILD_TIME__ !== "undefined" ? __SMOKE_BUILD_TIME__ : "";
-  if (!buildTime) return;
+  const buildVersion =
+    typeof __SMOKE_BUILD_VERSION__ !== "undefined" ? __SMOKE_BUILD_VERSION__ : "";
+  if (!buildTime || !buildVersion) return;
 
   const el = document.createElement("div");
-  el.textContent = `Smoke #${buildTime}`;
+  el.id = "smoke-build-indicator";
+  el.textContent = `Smoke v${buildVersion} #${buildTime}`;
   el.style.cssText = "font-size:10px;color:#888;text-align:left;margin-top:8px;";
   document.body.appendChild(el);
 }
 
 /* v8 ignore next 8 - bootstrap wrapper with error boundary */
 export async function bootstrapPopup(): Promise<void> {
-  renderSmokeBuildTimestamp();
+  renderSmokeBuildIndicator();
   try {
     await loadPopupModule();
   } catch (error) {
