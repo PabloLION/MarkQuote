@@ -127,15 +127,16 @@ async function main(): Promise<void> {
 
   const { cleanup } = await launchPlaywright();
 
-  // Keep process running until user closes
-  process.on("SIGINT", async () => {
-    console.log("\n\nCleaning up...");
-    await cleanup();
-    process.exit(0);
+  // Wait for SIGINT (Ctrl+C) to exit gracefully
+  await new Promise<void>((resolve) => {
+    process.on("SIGINT", () => {
+      console.log("\n\nCleaning up...");
+      resolve();
+    });
   });
 
-  // Keep the process alive
-  await new Promise(() => {});
+  await cleanup();
+  console.log("Done.\n");
 }
 
 main().catch((error) => {
