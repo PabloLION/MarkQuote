@@ -56,6 +56,7 @@ test("[OPTIONS_PREVIEW] options UI edits update popup preview", async () => {
       },
     ],
     showConfirmationPopup: false,
+    showSmokeBuildIndicator: true,
   };
 
   await setOptionsPayload(controlPage, initialOptions);
@@ -138,6 +139,7 @@ test("[OPTIONS_CHAIN] chained URL rules respect break versus continue", async ()
     titleRules,
     urlRules: augmentedUrlRules,
     showConfirmationPopup: false,
+    showSmokeBuildIndicator: true,
   };
 
   await setOptionsPayload(controlPage, options);

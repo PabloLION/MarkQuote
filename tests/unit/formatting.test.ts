@@ -51,6 +51,7 @@ describe("formatWithOptions", () => {
         },
       ],
       showConfirmationPopup: false,
+      showSmokeBuildIndicator: true,
     };
 
     const result = formatWithOptions(options, {
@@ -69,6 +70,7 @@ describe("formatWithOptions", () => {
       titleRules: [],
       urlRules: [],
       showConfirmationPopup: false,
+      showSmokeBuildIndicator: true,
     };
 
     const output = formatWithOptions(options, {
