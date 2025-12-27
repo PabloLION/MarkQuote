@@ -95,13 +95,17 @@ function printChecklist(version: string): void {
 ║     MarkQuote Smoke Test v${version.padEnd(8)}                              ║
 ╚═══════════════════════════════════════════════════════════════════╝
 
-Manual-only tests (cannot be automated with Playwright):
+UNPINNED (extension icon hidden in puzzle menu):
 
-  [ ] 1. Pin extension → click icon → popup opens with preview
-  [ ] 2. Pin extension → select text → Alt+C → popup opens
-  [ ] 3. Go to chrome://extensions tab → click icon → protected page message
-  [ ] 4. Go to file:// tab → click icon → protected page message
-  [ ] 5. Options: enable confirmation toggle → Alt+C on Wikipedia → popup auto-opens
+  [ ] 1. Wikipedia: select text → Alt+C → popup auto-opens with preview
+  [ ] 2. Options: verify confirmation popup toggle is ON (default)
+  [ ] 3. chrome://extensions: Alt+C → protected page message in popup
+
+PINNED (extension icon visible in toolbar):
+
+  [ ] 4. Wikipedia: click icon → popup shows preview
+  [ ] 5. Wikipedia: select text → Alt+C → popup opens with preview
+  [ ] 6. file:// tab: click icon → protected page message
 
 Tabs opened: chrome://extensions, Popup, Options, file://, Wikipedia
 ─────────────────────────────────────────────────────────────────────
