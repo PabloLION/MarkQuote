@@ -293,6 +293,7 @@ export function initializeOptions(): () => void {
       titleRules: filteredRules("title"),
       urlRules: filteredRules("url"),
       showConfirmationPopup: draft.showConfirmationPopup,
+      showSmokeBuildIndicator: draft.showSmokeBuildIndicator,
     };
   }
 
@@ -371,6 +372,13 @@ export function initializeOptions(): () => void {
     await persistOptions();
   }
 
+  /** Syncs the smoke build indicator checkbox with draft state (only exists in smoke builds) */
+  function syncSmokeBuildIndicatorCheckbox(): void {
+    if (context.dom.showSmokeBuildIndicatorCheckbox) {
+      context.dom.showSmokeBuildIndicatorCheckbox.checked = draft.showSmokeBuildIndicator;
+    }
+  }
+
   async function loadOptions(): Promise<void> {
     if (!context.storage) {
       showStatus(context, "Chrome storage is unavailable; using defaults.", "error");
@@ -380,6 +388,7 @@ export function initializeOptions(): () => void {
         context.dom.templateField.value = draft.format;
       }
       context.dom.showConfirmationPopupCheckbox.checked = draft.showConfirmationPopup;
+      syncSmokeBuildIndicatorCheckbox();
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
@@ -397,6 +406,7 @@ export function initializeOptions(): () => void {
         "linkRules",
         "rules",
         "showConfirmationPopup",
+        "showSmokeBuildIndicator",
       ]);
       context.draft = cloneOptions(normalizeStoredOptions(snapshot));
       draft = context.draft;
@@ -404,6 +414,7 @@ export function initializeOptions(): () => void {
         context.dom.templateField.value = draft.format;
       }
       context.dom.showConfirmationPopupCheckbox.checked = draft.showConfirmationPopup;
+      syncSmokeBuildIndicatorCheckbox();
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
@@ -418,6 +429,7 @@ export function initializeOptions(): () => void {
         context.dom.templateField.value = draft.format;
       }
       context.dom.showConfirmationPopupCheckbox.checked = draft.showConfirmationPopup;
+      syncSmokeBuildIndicatorCheckbox();
       renderRules("title");
       renderRules("url");
       applyDefaultPreviewSamples();
@@ -692,6 +704,18 @@ export function initializeOptions(): () => void {
     },
     { signal },
   );
+
+  // Smoke build indicator checkbox - only exists in smoke/test builds
+  if (context.dom.showSmokeBuildIndicatorCheckbox) {
+    context.dom.showSmokeBuildIndicatorCheckbox.addEventListener(
+      "change",
+      () => {
+        draft.showSmokeBuildIndicator =
+          context.dom.showSmokeBuildIndicatorCheckbox?.checked ?? true;
+      },
+      { signal },
+    );
+  }
 
   context.dom.form.addEventListener(
     "submit",

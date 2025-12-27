@@ -25,6 +25,10 @@ export interface OptionsDom {
   saveUrlRuleButton: HTMLButtonElement;
   urlUnsavedIndicator: HTMLElement;
   showConfirmationPopupCheckbox: HTMLInputElement;
+  /** Only present in smoke builds - controls visibility of smoke build indicator in popup */
+  showSmokeBuildIndicatorCheckbox: HTMLInputElement | null;
+  /** Container for smoke build settings - only present in smoke builds */
+  smokeBuildSettingsContainer: HTMLElement | null;
 }
 
 export function loadDom(): OptionsDom | null {
@@ -60,6 +64,12 @@ export function loadDom(): OptionsDom | null {
   const urlUnsavedIndicator = requireElement<HTMLElement>("url-unsaved-indicator");
 
   const showConfirmationPopupCheckbox = requireElement<HTMLInputElement>("show-confirmation-popup");
+
+  // Smoke build elements - only present in smoke/test builds
+  const showSmokeBuildIndicatorCheckbox = optionalElement<HTMLInputElement>(
+    "show-smoke-build-indicator",
+  );
+  const smokeBuildSettingsContainer = optionalElement<HTMLElement>("smoke-build-settings");
 
   const requiredElements = [
     form,
@@ -121,6 +131,8 @@ export function loadDom(): OptionsDom | null {
     saveUrlRuleButton,
     urlUnsavedIndicator,
     showConfirmationPopupCheckbox,
+    showSmokeBuildIndicatorCheckbox,
+    smokeBuildSettingsContainer,
   } satisfies OptionsDom;
 }
 

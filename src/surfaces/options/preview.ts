@@ -20,6 +20,7 @@ export function updatePreview(context: OptionsContext, rules: PreviewRulesAdapte
     titleRules,
     urlRules,
     showConfirmationPopup: false,
+    showSmokeBuildIndicator: true,
   } as const;
 
   previewElement.textContent = formatWithOptions(options, {

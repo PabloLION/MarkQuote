@@ -42,6 +42,7 @@ export function cloneOptions(options: OptionsPayload): OptionsPayload {
     titleRules: options.titleRules.map((rule) => cloneTitleRule(rule)),
     urlRules: options.urlRules.map((rule) => cloneUrlRule(rule)),
     showConfirmationPopup: options.showConfirmationPopup,
+    showSmokeBuildIndicator: options.showSmokeBuildIndicator,
   };
 }
 
