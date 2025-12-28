@@ -222,7 +222,7 @@ export const DEFAULT_OPTIONS: OptionsPayload = {
   format: DEFAULT_TEMPLATE,
   titleRules: createDefaultTitleRules(),
   urlRules: createDefaultUrlRules(),
-  showConfirmationPopup: false,
+  showConfirmationPopup: true,
   showSmokeBuildIndicator: true,
 };
 
