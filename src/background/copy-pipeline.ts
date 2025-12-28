@@ -126,6 +126,15 @@ export function setPopupDocumentId(documentId: string | undefined): void {
   activePopupDocumentId = documentId;
 }
 
+/**
+ * Clears any queued popup preview. Called when navigating to a protected page
+ * to prevent stale previews from being displayed.
+ */
+export function clearQueuedPopupPreview(): void {
+  queuedPopupPreview = undefined;
+  cancelPopupPreviewRetry();
+}
+
 function queuePopupPreview(payload: PopupPreviewPayload): void {
   queuedPopupPreview = payload;
 

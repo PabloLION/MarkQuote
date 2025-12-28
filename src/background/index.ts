@@ -13,6 +13,7 @@ import { normalizeStoredOptions } from "../options-schema.js";
 import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import {
+  clearQueuedPopupPreview,
   markPopupClosed,
   markPopupReady,
   resetE2ePreviewState,
@@ -271,6 +272,9 @@ function notifyCopyProtected(
     source,
     url,
   });
+
+  // Clear any stale preview so protected page message shows instead
+  clearQueuedPopupPreview();
 
   if (tab?.windowId !== undefined) {
     chrome.action.openPopup({ windowId: tab.windowId }).catch((error) => {
