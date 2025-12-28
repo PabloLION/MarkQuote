@@ -597,7 +597,7 @@
               context menu. The keyboard shortcut (Alt+C) always opens the popup.
             </span>
           </label>
-          <div id="smoke-build-settings">
+          <div id="smoke-build-settings" style="display: none;">
             <label class="checkbox-setting">
               <input type="checkbox" id="show-smoke-build-indicator" checked />
               <span class="checkbox-label">Show smoke build indicator</span>
@@ -606,6 +606,14 @@
               </span>
             </label>
           </div>
+          <script>
+            (function() {
+              const isSmokeMode = typeof __SMOKE_BUILD_TIME__ !== 'undefined' && __SMOKE_BUILD_TIME__;
+              if (isSmokeMode) {
+                document.getElementById('smoke-build-settings').style.display = '';
+              }
+            })();
+          </script>
         </section>
 
         <section aria-labelledby="preview-heading">
