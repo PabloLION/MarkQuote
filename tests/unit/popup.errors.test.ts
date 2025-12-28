@@ -308,8 +308,8 @@ describe("popup error controller", () => {
 
       expect(dom.copyDetailsButton?.textContent).toBe("Copied!");
 
-      // Advance past the 1500ms restoration timeout
-      await vi.advanceTimersByTimeAsync(1500);
+      // Advance past the COPIED_FEEDBACK_MS restoration timeout
+      await vi.advanceTimersByTimeAsync(1500); // TIMEOUTS.COPIED_FEEDBACK_MS
 
       expect(dom.copyDetailsButton?.textContent).toBe("Copy details");
 

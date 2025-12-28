@@ -7,7 +7,6 @@ export type ProtectedPageType =
   | "firefox-internal"
   | "extension-page"
   | "file-protocol"
-  | "generic"
   | null;
 
 /**

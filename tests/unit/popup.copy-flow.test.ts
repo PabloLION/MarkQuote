@@ -16,6 +16,7 @@ const createPreview = () => ({
   clear: vi.fn(),
   isTruncated: vi.fn().mockReturnValue(false),
   toggleExpanded: vi.fn(),
+  dispose: vi.fn(),
 });
 
 const createMessages = () => ({

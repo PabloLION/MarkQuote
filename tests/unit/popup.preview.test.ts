@@ -234,4 +234,14 @@ describe("popup preview controller", () => {
     expect(textWithoutEllipsis).toBe(textBeforeSpace);
     expect(textWithoutEllipsis.length).toBe(450);
   });
+
+  it("cleans up event listeners on dispose", () => {
+    const dom = buildDom();
+    const removeEventListenerSpy = vi.spyOn(dom.previewToggle!, "removeEventListener");
+
+    const controller = createPreviewController(dom);
+    controller.dispose();
+
+    expect(removeEventListenerSpy).toHaveBeenCalledWith("click", expect.any(Function));
+  });
 });

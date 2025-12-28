@@ -8,6 +8,8 @@ export interface PreviewController {
   isTruncated(): boolean;
   /** Toggles between truncated and full preview */
   toggleExpanded(): void;
+  /** Cleans up event listeners */
+  dispose(): void;
 }
 
 interface TruncationResult {
@@ -45,7 +47,7 @@ function truncatePreview(text: string): TruncationResult {
     result = result.slice(0, PREVIEW_LIMITS.MAX_CHARS);
     // Find last word boundary to avoid cutting mid-word
     const lastSpace = result.lastIndexOf(" ");
-    if (lastSpace > PREVIEW_LIMITS.MAX_CHARS * 0.8) {
+    if (lastSpace > PREVIEW_LIMITS.MAX_CHARS * PREVIEW_LIMITS.WORD_BOUNDARY_RATIO) {
       result = result.slice(0, lastSpace);
     }
   }
@@ -75,6 +77,7 @@ export function createPreviewController(dom: PopupDom): PreviewController {
   let fullText = "";
   let isExpanded = false;
   let currentTruncation: TruncationResult | null = null;
+  const cleanupFns: Array<() => void> = [];
 
   const updateDisplay = () => {
     if (!currentTruncation) {
@@ -135,11 +138,18 @@ export function createPreviewController(dom: PopupDom): PreviewController {
       isExpanded = !isExpanded;
       updateDisplay();
     },
+    dispose() {
+      for (const fn of cleanupFns) {
+        fn();
+      }
+    },
   };
 
   // Wire up toggle button click handler
   if (previewToggle) {
-    previewToggle.addEventListener("click", () => controller.toggleExpanded());
+    const handleToggle = () => controller.toggleExpanded();
+    previewToggle.addEventListener("click", handleToggle);
+    cleanupFns.push(() => previewToggle.removeEventListener("click", handleToggle));
   }
 
   return controller;

@@ -31,7 +31,8 @@ function getProtectedMessage(url?: string): string {
     case "file-protocol":
       return PROTECTED_PAGE_MESSAGES.FILE_PROTOCOL;
     default:
-      return PROTECTED_PAGE_MESSAGES.GENERIC;
+      // pageType is null for non-protected pages; use generic protected message
+      return STATUS_MESSAGES.PROTECTED;
   }
 }
 

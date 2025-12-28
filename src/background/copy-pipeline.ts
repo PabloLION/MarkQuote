@@ -162,7 +162,7 @@ async function copyTextToTab(
   source: CopySource | undefined,
 ): Promise<boolean> {
   /* v8 ignore next 7 - tests always pass valid tabId; guard handles undefined/invalid from corrupted messages */
-  if (!Number.isInteger(tabId) || tabId === undefined || tabId < 0) {
+  if (tabId === undefined || !Number.isInteger(tabId) || tabId < 0) {
     const safeTabId = typeof tabId === "number" && Number.isInteger(tabId) ? tabId : null;
     void recordError(ERROR_CONTEXT.TabClipboardWrite, "Invalid tab id for clipboard copy", {
       tabId: safeTabId,

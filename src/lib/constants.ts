@@ -59,6 +59,8 @@ export const TIMEOUTS = {
   CLEAR_CONFIRMATION_MS: 5000,
   /** Maximum time to wait for entry loaders before showing error */
   LOADER_MS: 5000,
+  /** How long to show "Copied!" feedback before reverting button text */
+  COPIED_FEEDBACK_MS: 1500,
 } as const;
 
 // =============================================================================
@@ -142,8 +144,6 @@ export const PROTECTED_PAGE_MESSAGES = {
   /** Firefox internal pages */
   FIREFOX_INTERNAL:
     "Extensions cannot access browser settings pages. Please navigate to a regular web page.",
-  /** Generic protected page */
-  GENERIC: "This page is protected and cannot be accessed by extensions. Try a regular web page.",
 } as const;
 
 // =============================================================================
@@ -158,6 +158,8 @@ export const PREVIEW_LIMITS = {
   MAX_CHARS: 500,
   /** Maximum lines to show before truncation */
   MAX_LINES: 10,
+  /** Threshold ratio for word boundary truncation (0.8 = last 20% of text) */
+  WORD_BOUNDARY_RATIO: 0.8,
 } as const;
 
 // =============================================================================

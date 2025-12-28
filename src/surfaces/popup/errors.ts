@@ -2,6 +2,7 @@
  * Manages the popup's error log UI, wiring the background diagnostics into the visible badge list
  * and providing affordances to clear/report issues.
  */
+import { TIMEOUTS } from "../../lib/constants.js";
 import type { PopupDom } from "./dom.js";
 import type { LoggedExtensionError } from "./state.js";
 
@@ -196,7 +197,7 @@ export function createErrorController(
       copyDetailsButton.textContent = "Copied!";
       setTimeout(() => {
         copyDetailsButton.textContent = originalText;
-      }, 1500);
+      }, TIMEOUTS.COPIED_FEEDBACK_MS);
     }
   };
 
