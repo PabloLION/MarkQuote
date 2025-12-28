@@ -9,6 +9,13 @@ Temporary holding area for new requests before they are organized into epics.
 
 ## Pending
 
+- **Split popup toggles for hotkey and context menu** - Add two independent
+  toggles: "Show popup after keyboard shortcut" and "Show popup after right-click
+  copy". Each toggle controls popup behavior regardless of whether the extension
+  is pinned or unpinned. Currently only the right-click toggle exists; hotkey
+  always opens popup. Requires refactoring `handleHotkeyCommand()` to copy
+  directly (like context menu does) so the popup becomes optional for hotkey too.
+
 - **E2E: Protected page message tests** - Add E2E tests for protected page
   detection (`chrome://`, `file://`). Requires investigation into stubbing
   protected page message flow since Chrome doesn't allow loading `chrome://`
