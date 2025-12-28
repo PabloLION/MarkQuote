@@ -343,6 +343,8 @@ export function initializeOptions(): () => void {
         format: payload.format ?? DEFAULT_TEMPLATE,
         titleRules: payload.titleRules,
         urlRules: payload.urlRules,
+        showConfirmationPopup: payload.showConfirmationPopup,
+        showSmokeBuildIndicator: payload.showSmokeBuildIndicator,
       });
 
       const message = scope
