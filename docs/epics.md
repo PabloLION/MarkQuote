@@ -14,7 +14,7 @@
 | 1 | Core Functionality & Foundation | 1.1-1.5 | Done |
 | 2 | Enhanced Interaction & Configuration | 2.1-2.5 | Done |
 | 3 | Launch Hardening & Quality Gates | 3.1-3.10 | Done (v1.0.4) |
-| 4 | Copy Feedback & Diagnostics | 4.1-4.5 | In Progress (v1.1.0) |
+| 4 | Copy Feedback & Diagnostics | 4.1-4.6 | Done (v1.1.0) |
 | 5 | MarkQuote Hub & History | 5.1-5.3 | Backlog |
 | 6 | Power User & Accessibility | 6.1-6.3 | Backlog |
 
@@ -83,7 +83,7 @@
 
 **Goal:** Deliver richer post-copy feedback and shareable diagnostics so users and maintainers can triage issues quickly without sacrificing UX.
 
-**Status:** In Progress (v1.1.0)
+**Status:** Done (v1.1.0)
 
 ### Key Decisions
 
@@ -103,10 +103,11 @@
 | 4.3 | Structured Diagnostics & GitHub Handoff | Enhanced diagnostics pipeline, popup affordance, URL-safe export | 4.5, 4.4 |
 | 4.2 | Post-Copy Feedback UX Refresh | Improve messaging, preview, protected-host handling | 4.5, 4.4 |
 | 4.1 | Always-On Confirmation Toggle | Programmatic popup via `chrome.action.openPopup()` for feedback after non-icon triggers | 4.2, 4.3 |
+| 4.6 | Smoke Test Script & Checklist | Playwright-based smoke test automation with Epic 4 feature checklist | 4.1 |
 
 ### Implementation Order
 
-1. **4.5** (foundation) → **4.4** (refactor) → **4.3** + **4.2** (parallel) → **4.1** (flagship)
+1. **4.5** (foundation) → **4.4** (refactor) → **4.3** + **4.2** (parallel) → **4.1** (flagship) → **4.6** (tooling)
 
 ### Story 4.1 Details: Always-On Confirmation Toggle
 
