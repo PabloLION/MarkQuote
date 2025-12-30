@@ -135,6 +135,13 @@ export function clearQueuedPopupPreview(): void {
   cancelPopupPreviewRetry();
 }
 
+/**
+ * Returns the tabId of the currently queued popup preview, or undefined if none.
+ */
+export function getQueuedPopupPreviewTabId(): number | undefined {
+  return queuedPopupPreview?.tabId;
+}
+
 function queuePopupPreview(payload: PopupPreviewPayload): void {
   queuedPopupPreview = payload;
 

@@ -14,6 +14,7 @@ import { DEFAULT_TITLE, DEFAULT_URL } from "./constants.js";
 import { registerContextMenus } from "./context-menus.js";
 import {
   clearQueuedPopupPreview,
+  getQueuedPopupPreviewTabId,
   markPopupClosed,
   markPopupReady,
   resetE2ePreviewState,
@@ -502,8 +503,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request?.type === MESSAGE_TYPE.POPUP_READY) {
     setPopupDocumentId(sender.documentId);
-    markPopupReady();
     cancelHotkeyFallback();
+
+    // Check if active tab is protected BEFORE delivering queued preview.
+    // Only clear if the protected tab is the SOURCE of the queued preview.
+    // This prevents stale previews on protected pages while preserving
+    // previews from other tabs (e.g., when popup is opened via E2E bridge).
+    void chrome.tabs
+      .query({ lastFocusedWindow: true, active: true, windowType: "normal" })
+      .then((tabs) => {
+        const activeTab = tabs[0];
+        const activeUrl = getTabUrl(activeTab);
+        const queuedTabId = getQueuedPopupPreviewTabId();
+
+        // Clear preview only if:
+        // 1. Active tab is protected, AND
+        // 2. Active tab is the source of the queued preview (or no tabId recorded)
+        if (isUrlProtected(activeUrl)) {
+          const activeTabId = activeTab?.id;
+          if (queuedTabId === undefined || queuedTabId === activeTabId) {
+            clearQueuedPopupPreview();
+          }
+        }
+        markPopupReady();
+      })
+      .catch(() => {
+        // If query fails, still mark popup ready (fail-open)
+        markPopupReady();
+      });
+
     sendResponse?.({ ok: true });
     return false;
   }
@@ -655,15 +683,22 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
 function pickBestTab(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab | undefined {
   // Filter out popup tabs (we should never copy from ourselves)
   const isPopupTab = (tab: chrome.tabs.Tab) => tab.url?.includes("/popup.html");
+  const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
 
-  // Active tab takes priority - protected detection happens downstream
-  // This allows extension pages (like options.html) to show appropriate protected messages
+  // Active tab takes priority IF it's an HTTP tab (copyable).
+  // If active tab is protected (extension page, chrome:// etc), prefer HTTP tabs.
   const activeTab = tabs.find((tab) => tab.active && !isPopupTab(tab));
-  if (activeTab) {
+
+  if (activeTab && isHttpTab(activeTab)) {
     return activeTab;
   }
 
-  // Fallback: prefer HTTP tabs, then any non-popup tab
-  const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
-  return tabs.find((tab) => isHttpTab(tab)) ?? tabs.find((tab) => !isPopupTab(tab)) ?? tabs[0];
+  // Active tab is protected or not found - prefer any HTTP tab
+  const httpTab = tabs.find((tab) => isHttpTab(tab));
+  if (httpTab) {
+    return httpTab;
+  }
+
+  // No HTTP tabs - return active tab (will trigger protected message) or any non-popup tab
+  return activeTab ?? tabs.find((tab) => !isPopupTab(tab)) ?? tabs[0];
 }
