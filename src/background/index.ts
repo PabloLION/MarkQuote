@@ -653,15 +653,17 @@ function handleSelectionCopyRequest(sendResponse: RuntimeSendResponse): boolean 
  * detection works correctly, then falls back to HTTP tabs if needed.
  */
 function pickBestTab(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab | undefined {
-  const isExtensionTab = (tab: chrome.tabs.Tab) => tab.url?.startsWith("chrome-extension://");
+  // Filter out popup tabs (we should never copy from ourselves)
+  const isPopupTab = (tab: chrome.tabs.Tab) => tab.url?.includes("/popup.html");
 
-  // Active tab takes priority - protected detection happens later
-  const activeTab = tabs.find((tab) => tab.active && !isExtensionTab(tab));
+  // Active tab takes priority - protected detection happens downstream
+  // This allows extension pages (like options.html) to show appropriate protected messages
+  const activeTab = tabs.find((tab) => tab.active && !isPopupTab(tab));
   if (activeTab) {
     return activeTab;
   }
 
-  // Fallback: prefer HTTP tabs over other types
+  // Fallback: prefer HTTP tabs, then any non-popup tab
   const isHttpTab = (tab: chrome.tabs.Tab) => Boolean(tab.url?.startsWith("http"));
-  return tabs.find((tab) => isHttpTab(tab)) ?? tabs.find((tab) => !isExtensionTab(tab)) ?? tabs[0];
+  return tabs.find((tab) => isHttpTab(tab)) ?? tabs.find((tab) => !isPopupTab(tab)) ?? tabs[0];
 }
