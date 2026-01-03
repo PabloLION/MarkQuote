@@ -1,44 +1,109 @@
 # Chrome Web Store Credentials Handling
 
-The Chrome Web Store Publish API relies on four values that are stored outside of git.
+The Chrome Web Store Publish API relies on four values stored outside of git.
 
-| Variable        | Where to find it                                                                                                                                                                                                                                                                                                                                            | Notes                                                                                                                          |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `EXTENSION_ID`  | 1. Visit [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).<br>2. Click **Items** in the left nav.<br>3. Select the MarkQuote listing (or create a new draft by clicking **New Item** and uploading a ZIP).<br>4. Copy the 32-character ID shown in the URL (`.../detail/<id>`) or in the **Item ID** box on the right. | Draft listings immediately receive a permanent ID; reuse it for every upload.                                                  |
-| `CLIENT_ID`     | 1. Open [Google Cloud Console](https://console.cloud.google.com/).<br>2. Select the project tied to MarkQuote (or create one).<br>3. Go to **APIs & Services → Credentials**.<br>4. Under **OAuth 2.0 Client IDs**, click the desktop client created for the Web Store API and copy its **Client ID**.                                                      | If no client exists, click **Create Credentials → OAuth client ID**, choose **Desktop app**, and name it `markquote-webstore`. |
-| `CLIENT_SECRET` | Same dialog as `CLIENT_ID`: click the desktop client and note the **Client secret** value.                                                                                                                                                                                                                                                                  | Regenerating the secret invalidates existing refresh tokens.                                                                   |
-| `REFRESH_TOKEN` | 1. Follow the consent flow in [chrome-web-store-publish-api.md](chrome-web-store-publish-api.md).<br>2. When prompted, paste the authorization code back into the token exchange request.<br>3. Copy the `refresh_token` from the JSON response.                                                                                                            | Each refresh token is bound to one `CLIENT_ID`/`CLIENT_SECRET`. Keep only the latest active token.                             |
+| Variable | Description |
+|----------|-------------|
+| `EXTENSION_ID` | 32-character ID from Chrome Web Store dashboard URL |
+| `CLIENT_ID` | OAuth 2.0 Web application client ID |
+| `CLIENT_SECRET` | OAuth 2.0 client secret |
+| `REFRESH_TOKEN` | Long-lived token for automated access |
 
-## Storage Plan
+## Current Setup
 
-- Store credentials in the shared 1Password vault (entry: **MarkQuote / Chrome Web Store Publish**).
-- Developers needing release access copy values into `.dev/secrets/chrome-web-store.env` (ignored by git).
-- Use `scripts/package/publish/chrome-web-store.env.example` as the onboarding template.
-- Rotate secrets whenever a maintainer leaves or quarterly—update 1Password and regenerate refresh
-  token via the OAuth flow described in `chrome-web-store-publish-api.md`.
+- **Project:** markquote-chrome-extension (Google Cloud)
+- **OAuth Client:** markquote-webstore-web (Web application type)
+- **Redirect URI:** `https://developers.google.com/oauthplayground`
+- **Extension ID:** `dkkofldploogohjfehdnibphccbhjjgb`
 
-## Local Usage
+## Regenerating the Refresh Token
 
-For a fresh setup:
+The refresh token expires in **7 days** while the OAuth consent screen is in
+Testing mode. When it expires, follow these steps to regenerate:
 
-1. **Create the draft listing** on the Chrome Web Store Developer Dashboard and upload any build so the item receives its permanent `EXTENSION_ID`.
-2. **Enable the Chrome Web Store API** for your Google Cloud project, then create a desktop OAuth client to obtain `CLIENT_ID` and `CLIENT_SECRET`.
-3. **Generate `REFRESH_TOKEN`:** follow the consent flow in `chrome-web-store-publish-api.md` using the newly created client.
+### Quick Steps (2 minutes)
 
-Place the four values in `.dev/secrets/chrome-web-store.env` (template in
-`scripts/package/publish/chrome-web-store.env.example`). The publish script automatically sources it when
-present; extra variables can still be exported manually before invocation when needed.
+1. Open [OAuth Playground](https://developers.google.com/oauthplayground)
 
-## Access Control
+2. Click the **gear icon (⚙️)** in the top right:
+   - Check **"Use your own OAuth credentials"**
+   - Client ID: (copy from `.dev/secrets/chrome-web-store.env`)
+   - Client Secret: (copy from `.dev/secrets/chrome-web-store.env`)
+   - Close settings
 
-- Only maintainers (listed in `#team-maintainers` Slack channel) have 1Password access.
-- Extension ID is safe to share internally but not publicly.
-- Never commit `.dev/secrets` directory or raw credential values to git history.
+3. **Step 1 - Select & authorize APIs:**
+   - In the input box, enter: `https://www.googleapis.com/auth/chromewebstore`
+   - Click **Authorize APIs**
+   - Sign in with publisher Google account and approve
 
-## Incident Response
+4. **Step 2 - Exchange authorization code for tokens:**
+   - Click **Exchange authorization code for tokens**
+   - Copy the **Refresh token** value
 
-If credentials leak or access is revoked:
+5. Update `.dev/secrets/chrome-web-store.env`:
 
-1. Revoke tokens via Google Cloud Console (`OAuth 2.0 Client IDs → Delete`).
-2. Generate replacements following the Publish API guide.
-3. Update secrets in 1Password and notify maintainers.
+   ```bash
+   export REFRESH_TOKEN="<paste-new-token-here>"
+   ```
+
+6. Test it works:
+
+   ```bash
+   pnpm publish:chrome releases/markquote-v<version>.zip
+   ```
+
+## Making the Token Permanent (Optional)
+
+To avoid regenerating every 7 days, publish the OAuth consent screen:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Select project **markquote-chrome-extension**
+3. Navigate to **APIs & Services → OAuth consent screen**
+4. Click **Publish App**
+5. Confirm the prompt
+
+**Note:** Publishing moves the app from Testing to Production. For the
+`chromewebstore` scope, Google typically does not require verification since
+it's not a sensitive scope. After publishing, refresh tokens become permanent.
+
+## Storage
+
+- Credentials stored in `.dev/secrets/chrome-web-store.env` (gitignored via `/.dev`)
+- Template available at `scripts/package/publish/chrome-web-store.env.example`
+- The publish script automatically sources the env file when present
+
+## Fresh Setup (New Machine)
+
+1. **Get EXTENSION_ID:** Visit the
+   [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole),
+   click on MarkQuote, copy ID from URL (`.../detail/<id>`)
+
+2. **Get CLIENT_ID/SECRET:** In
+   [Google Cloud Console](https://console.cloud.google.com/) →
+   APIs & Services → Credentials → click `markquote-webstore-web`
+
+3. **Generate REFRESH_TOKEN:** Follow "Regenerating the Refresh Token" above
+
+4. **Create env file:**
+
+   ```bash
+   cp scripts/package/publish/chrome-web-store.env.example \
+      .dev/secrets/chrome-web-store.env
+   # Edit and fill in all four values
+   ```
+
+## Security Notes
+
+- Never commit `.dev/secrets/` directory (already in `.gitignore`)
+- Extension ID is not sensitive (public in store URL)
+- CLIENT_SECRET is sensitive but useless without Google account approval
+- REFRESH_TOKEN is most sensitive - grants publish access
+
+## If Credentials Are Compromised
+
+1. Go to Google Cloud Console → APIs & Services → Credentials
+2. Delete the compromised OAuth client
+3. Create a new Web application OAuth client
+4. Add `https://developers.google.com/oauthplayground` as redirect URI
+5. Regenerate refresh token via OAuth Playground
+6. Update `.dev/secrets/chrome-web-store.env`
