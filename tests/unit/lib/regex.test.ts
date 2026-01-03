@@ -27,7 +27,7 @@ describe("regex helpers", () => {
 
   it("respects the maximum pattern length boundary", () => {
     const allowed = "a".repeat(MAX_REGEX_PATTERN_LENGTH);
-    const disallowed = allowed + "b";
+    const disallowed = `${allowed}b`;
 
     expect(compileRegex(allowed, () => {})).toBeInstanceOf(RegExp);
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});

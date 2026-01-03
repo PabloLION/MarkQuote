@@ -1,6 +1,6 @@
 import chrome from "sinon-chrome";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ERROR_CONTEXT, type ErrorContext } from "../../src/background/error-context.js";
+import { ERROR_CONTEXT } from "../../src/background/error-context.js";
 import type { CopySource } from "../../src/background/types.js";
 
 const flushMicrotasks = async () => {

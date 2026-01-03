@@ -3,7 +3,7 @@
  * popup. The module doubles as an instrumentation point for end-to-end tests.
  */
 import { formatForClipboard } from "../clipboard.js";
-import { LIMITS, MESSAGE_TYPE, TIMEOUTS, TRIGGER_SOURCE } from "../lib/constants.js";
+import { LIMITS, MESSAGE_TYPE, TIMEOUTS } from "../lib/constants.js";
 import { getErrorMessage, isTransientDisconnectError } from "../lib/errors.js";
 import { Timer } from "../lib/timer.js";
 import { writeClipboardTextFromBackground } from "./background-clipboard.js";

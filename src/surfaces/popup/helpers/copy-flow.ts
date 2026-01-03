@@ -1,7 +1,4 @@
-import {
-  getProtectedPageType,
-  type ProtectedPageType,
-} from "../../../background/protected-urls.js";
+import { getProtectedPageType } from "../../../background/protected-urls.js";
 import { MESSAGE_TYPE, PROTECTED_PAGE_MESSAGES, STATUS_MESSAGES } from "../../../lib/constants.js";
 import { copyMarkdownToClipboard } from "../clipboard.js";
 import type { MessageController } from "../message.js";

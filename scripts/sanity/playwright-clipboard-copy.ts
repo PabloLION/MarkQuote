@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 
       document.addEventListener("copy", async (event) => {
         event.preventDefault();
-        const text = "playwright-clipboard-" + Date.now();
+        const text = `playwright-clipboard-${Date.now()}`;
         // Store the marker so we can read it later.
         (window as unknown as { lastCopied?: string }).lastCopied = text;
         await navigator.clipboard.writeText(text);

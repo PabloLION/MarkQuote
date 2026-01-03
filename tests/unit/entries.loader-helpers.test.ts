@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  createImportController,
-  isRunningUnderVitest,
-  LOADER_TIMEOUT_MS,
-} from "../../src/entries/loader-helpers.js";
+import { createImportController, isRunningUnderVitest } from "../../src/entries/loader-helpers.js";
 
 describe("entries/loader-helpers", () => {
   afterEach(() => {

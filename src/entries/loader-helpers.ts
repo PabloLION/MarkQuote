@@ -47,7 +47,7 @@ export function isRunningUnderVitest(meta: ImportMeta): boolean {
   if ((meta as VitestAwareImportMeta).vitest) {
     return true;
   }
-  if (typeof process !== "undefined" && process.env?.VITEST) {
+  if (process?.env?.VITEST) {
     return true;
   }
   /* v8 ignore next 6 - fallback detection path, earlier checks succeed in vitest */

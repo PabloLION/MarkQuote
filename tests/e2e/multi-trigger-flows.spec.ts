@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import {
   clearBackgroundErrors,
   findTabByUrl,
-  getBackgroundErrors,
   getHotkeyDiagnostics,
   readLastFormatted,
   resetHotkeyDiagnostics,

@@ -63,7 +63,7 @@ test("[PREVIEW_LONG_CONTENT] background pipeline formats long content correctly"
 
   // Wait for preview to be formatted with the long content
   // The formatted content includes blockquote syntax (> ) and source line
-  const formattedContent = await expect
+  const _formattedContent = await expect
     .poll(async () => (await readLastFormatted(popupPage)).formatted, {
       message: "Waiting for formatted preview.",
     })

@@ -1,5 +1,5 @@
 import type { TitleRule, UrlRule } from "../../../options-schema.js";
-import { type BuiltRuleConfigs, getConfigForScope } from "../rules-config.js";
+import { getConfigForScope } from "../rules-config.js";
 import type { DragScope, RuleConfig, RuleWithFlags } from "../rules-types.js";
 
 type RuleConfigMap = {
