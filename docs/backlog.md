@@ -22,22 +22,17 @@ Temporary holding area for new requests before they are organized into epics.
   pages in Playwright. Tests should verify context-specific messages are shown.
   Related: Story 4.2.
 
-## Known Limitations (v1.1.0)
+## Fixed in v1.1.1
 
-These are documented UX issues to address in v1.2.0 as part of the copy flow refactor:
+- **No selection shows stale preview** - Fixed. Content script now sends
+  `{ noSelection: true }` message when no text is selected, which clears
+  the queued preview in background. Popup shows default state instead of
+  stale content.
 
-- **No selection shows stale preview** - When user triggers copy (hotkey/context
-  menu) with no text selected, the popup displays the last copied content instead
-  of a "no selection" message. **Note:** The clipboard is NOT touched in this
-  case (content script returns early, copy pipeline never runs). This is a
-  display/UX issue only, not data corruption. Fix requires changes to the copy
-  pipeline to track whether a NEW copy happened vs. just displaying queued content.
-
-- **Same-extension options page message** - When on the extension's own options
-  page (`chrome-extension://[id]/options.html`), the protected message says
-  "Extensions cannot access pages from other extensions" which is technically
-  inaccurate since it's the SAME extension. Should say something like "Cannot
-  copy from extension settings pages" or detect same-extension pages specifically.
+- **Same-extension options page message** - Fixed. Added `same-extension-page`
+  detection in `getProtectedPageType()` that compares URL extension ID with
+  `chrome.runtime.id`. Shows specific message: "Cannot copy from extension
+  settings pages. Please navigate to a regular web page."
 
 ## Notes
 

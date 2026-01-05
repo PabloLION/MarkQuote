@@ -572,6 +572,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  // Handle "no selection" notification from content script
+  if (request?.noSelection === true) {
+    const tabId = sender.tab?.id;
+    if (tabId) {
+      clearPendingSource(tabId);
+    }
+    // Clear any stale queued preview so popup shows default state
+    clearQueuedPopupPreview();
+
+    // Notify popup to clear any already-displayed preview (handles race condition
+    // where popup received old queued preview before content script ran)
+    void chrome.runtime.sendMessage({ type: MESSAGE_TYPE.NO_SELECTION }).catch(() => {
+      // Popup may not be open; ignore silently
+    });
+
+    return false;
+  }
+
   if (request?.markdown) {
     pendingSourcesRestored
       .catch((error) => {
