@@ -3,6 +3,8 @@ import { convertHtmlToMarkdown } from "../converter.js";
 (() => {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
+    // Notify background that there was no selection so it can clear stale preview
+    chrome.runtime.sendMessage({ noSelection: true });
     return;
   }
 
@@ -19,5 +21,12 @@ import { convertHtmlToMarkdown } from "../converter.js";
 
   const html = container.innerHTML;
   const markdown = convertHtmlToMarkdown(html);
+
+  // Also notify if the selection was empty after processing
+  if (!markdown.trim()) {
+    chrome.runtime.sendMessage({ noSelection: true });
+    return;
+  }
+
   chrome.runtime.sendMessage({ markdown });
 })();

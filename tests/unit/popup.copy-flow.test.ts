@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { STATUS_MESSAGES } from "../../src/lib/constants.js";
 import { copyMarkdownToClipboard } from "../../src/surfaces/popup/clipboard.js";
 import { createCopyFlow } from "../../src/surfaces/popup/helpers/copy-flow.js";
 import { COPIED_STATUS_MESSAGE, PROTECTED_STATUS_MESSAGE } from "../../src/surfaces/popup/state.js";
@@ -140,6 +141,18 @@ describe("popup copy flow", () => {
       label: "Protected",
       variant: "warning",
     });
+  });
+
+  it("handles no-selection messages by clearing preview and showing default", async () => {
+    const preview = createPreview();
+    const messages = createMessages();
+    const copyFlow = createCopyFlow({ preview, messages });
+
+    const handled = await copyFlow.handleMessage({ type: "no-selection" });
+
+    expect(handled).toBe(true);
+    expect(preview.clear).toHaveBeenCalledTimes(1);
+    expect(messages.set).toHaveBeenCalledWith(STATUS_MESSAGES.DEFAULT);
   });
 
   it("returns false for unknown messages", async () => {

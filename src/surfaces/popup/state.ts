@@ -12,6 +12,9 @@ export type RuntimeMessage =
       url?: string;
     }
   | {
+      type: typeof MESSAGE_TYPE.NO_SELECTION;
+    }
+  | {
       type: typeof MESSAGE_TYPE.POPUP_READY;
     };
 

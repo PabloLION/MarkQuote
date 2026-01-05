@@ -1,7 +1,23 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getProtectedPageType, isUrlProtected } from "../../src/background/protected-urls.js";
 
+const originalChrome = globalThis.chrome;
+
 describe("background/protected-urls", () => {
+  beforeEach(() => {
+    // Mock chrome.runtime.id for same-extension detection
+    globalThis.chrome = {
+      ...originalChrome,
+      runtime: {
+        ...originalChrome?.runtime,
+        id: "test-extension-id",
+      },
+    } as typeof chrome;
+  });
+
+  afterEach(() => {
+    globalThis.chrome = originalChrome;
+  });
   it("flags known browser-internal URLs", () => {
     const protectedSamples = [
       "chrome://extensions/",
@@ -38,8 +54,19 @@ describe("background/protected-urls", () => {
       );
     });
 
-    it("returns extension-page for Chrome extension URLs", () => {
-      expect(getProtectedPageType("chrome-extension://abc123/popup.html")).toBe("extension-page");
+    it("returns extension-page for other Chrome extension URLs", () => {
+      expect(getProtectedPageType("chrome-extension://other-ext-id/popup.html")).toBe(
+        "extension-page",
+      );
+    });
+
+    it("returns same-extension-page for this extension's own URLs", () => {
+      expect(getProtectedPageType("chrome-extension://test-extension-id/options.html")).toBe(
+        "same-extension-page",
+      );
+      expect(getProtectedPageType("chrome-extension://test-extension-id/popup.html")).toBe(
+        "same-extension-page",
+      );
     });
 
     it("returns edge-internal for Edge URLs", () => {

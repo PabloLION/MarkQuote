@@ -32,6 +32,7 @@ export const MESSAGE_TYPE = {
   // Popup ↔ Background
   COPIED_TEXT_PREVIEW: "copied-text-preview",
   COPY_PROTECTED: "copy-protected",
+  NO_SELECTION: "no-selection",
   POPUP_READY: "popup-ready",
   POPUP_CLOSED: "popup-closed",
   REQUEST_SELECTION_COPY: "request-selection-copy",
@@ -138,6 +139,9 @@ export const PROTECTED_PAGE_MESSAGES = {
     "Enable 'Allow access to file URLs' in extension settings (chrome://extensions) to copy from local files.",
   /** Other extension pages */
   EXTENSION_PAGE: "Extensions cannot access pages from other extensions. Try a regular web page.",
+  /** This extension's own pages (options, popup when viewed as tab) */
+  SAME_EXTENSION_PAGE:
+    "Cannot copy from extension settings pages. Please navigate to a regular web page.",
   /** Edge internal pages */
   EDGE_INTERNAL:
     "Extensions cannot access browser settings pages. Please navigate to a regular web page.",

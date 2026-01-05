@@ -1,4 +1,16 @@
 /**
+ * Extracts the extension ID from an extension URL.
+ * @param url - The full URL (original case preserved)
+ * @param prefix - The protocol prefix (e.g., "chrome-extension://")
+ * @returns The extension ID or empty string if not parseable
+ */
+function extractExtensionId(url: string, prefix: string): string {
+  const afterPrefix = url.slice(prefix.length);
+  const slashIndex = afterPrefix.indexOf("/");
+  return slashIndex === -1 ? afterPrefix : afterPrefix.slice(0, slashIndex);
+}
+
+/**
  * Protected page types for specific user guidance.
  */
 export type ProtectedPageType =
@@ -6,6 +18,7 @@ export type ProtectedPageType =
   | "edge-internal"
   | "firefox-internal"
   | "extension-page"
+  | "same-extension-page"
   | "file-protocol"
   | null;
 
@@ -39,9 +52,11 @@ export function getProtectedPageType(candidate?: string | null): ProtectedPageTy
     return "chrome-internal";
   }
 
-  // Chrome extension pages
+  // Chrome extension pages - distinguish between own extension and others
   if (url.startsWith("chrome-extension://")) {
-    return "extension-page";
+    const ownExtensionId = chrome.runtime.id;
+    const urlExtensionId = extractExtensionId(candidate, "chrome-extension://");
+    return urlExtensionId === ownExtensionId ? "same-extension-page" : "extension-page";
   }
 
   // Edge internal pages

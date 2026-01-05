@@ -25,6 +25,8 @@ function getProtectedMessage(url?: string): string {
       return PROTECTED_PAGE_MESSAGES.FIREFOX_INTERNAL;
     case "extension-page":
       return PROTECTED_PAGE_MESSAGES.EXTENSION_PAGE;
+    case "same-extension-page":
+      return PROTECTED_PAGE_MESSAGES.SAME_EXTENSION_PAGE;
     case "file-protocol":
       return PROTECTED_PAGE_MESSAGES.FILE_PROTOCOL;
     default:
@@ -90,6 +92,11 @@ export function createCopyFlow(deps: CopyFlowDeps): CopyFlow {
     deps.messages.set(message, { label: "Protected", variant: "warning" });
   }
 
+  function handleNoSelection(): void {
+    deps.preview.clear();
+    deps.messages.set(STATUS_MESSAGES.DEFAULT);
+  }
+
   async function handleMessage(message: RuntimeMessage): Promise<boolean> {
     if (message.type === MESSAGE_TYPE.COPIED_TEXT_PREVIEW) {
       await handleCopiedPreview(message.text);
@@ -98,6 +105,11 @@ export function createCopyFlow(deps: CopyFlowDeps): CopyFlow {
 
     if (message.type === MESSAGE_TYPE.COPY_PROTECTED) {
       handleCopyProtected(message.url);
+      return true;
+    }
+
+    if (message.type === MESSAGE_TYPE.NO_SELECTION) {
+      handleNoSelection();
       return true;
     }
 
